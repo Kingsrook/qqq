@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.FilterUseCase;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -177,6 +178,7 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setFilter(filter);
+         queryInput.setInputSource(QInputSource.USER);
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
          QValueFormatter.setBlobValuesToDownloadUrls(table, queryOutput.getRecords());

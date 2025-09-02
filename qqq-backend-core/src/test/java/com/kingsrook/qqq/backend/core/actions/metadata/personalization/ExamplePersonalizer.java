@@ -27,6 +27,9 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
@@ -40,8 +43,19 @@ import com.kingsrook.qqq.backend.core.utils.Pair;
  *******************************************************************************/
 public class ExamplePersonalizer implements TableMetaDataPersonalizerInterface
 {
-   private static Set<String>                               customizableTables     = new HashSet<>();
-   private static ListingHash<String, Pair<String, String>> fieldsToRemoveByUserId = new ListingHash<>();
+   private static Set<String>                                       customizableTables     = new HashSet<>();
+   private static ListingHash<String, Pair<String, String>>         fieldsToRemoveByUserId = new ListingHash<>();
+   private static ListingHash<String, Pair<String, QFieldMetaData>> fieldsToAddByUserId    = new ListingHash<>();
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static void registerInQInstance()
+   {
+      QContext.getQInstance().addSupplementalCustomizer(TableMetaDataPersonalizerInterface.CUSTOMIZER_TYPE, new QCodeReference(ExamplePersonalizer.class));
+   }
 
 
 
@@ -56,6 +70,11 @@ public class ExamplePersonalizer implements TableMetaDataPersonalizerInterface
          return (input.getTable());
       }
 
+      if(!QInputSource.USER.equals(input.getInputSource()))
+      {
+         return (input.getTable());
+      }
+
       QTableMetaData clone = input.getTable().clone();
 
       String userId = QContext.getQSession().getUser().getIdReference();
@@ -66,6 +85,16 @@ public class ExamplePersonalizer implements TableMetaDataPersonalizerInterface
          if(input.getTableName().equals(tableName))
          {
             clone.getFields().remove(fieldName);
+         }
+      }
+
+      for(Pair<String, QFieldMetaData> pair : CollectionUtils.nonNullList(fieldsToAddByUserId.get(userId)))
+      {
+         String         tableName = pair.getA();
+         QFieldMetaData field     = pair.getB();
+         if(input.getTableName().equals(tableName))
+         {
+            clone.getFields().put(field.getName(), field);
          }
       }
 
@@ -97,9 +126,20 @@ public class ExamplePersonalizer implements TableMetaDataPersonalizerInterface
    /***************************************************************************
     *
     ***************************************************************************/
+   public static void addFieldToAddForUserId(String tableName, QFieldMetaData field, String userId)
+   {
+      fieldsToAddByUserId.add(userId, Pair.of(tableName, field));
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
    public static void reset()
    {
       customizableTables.clear();
       fieldsToRemoveByUserId.clear();
+      fieldsToAddByUserId.clear();
    }
 }

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
@@ -54,6 +55,8 @@ public class TableMetaDataAction
       {
          throw (new QNotFoundException("Table [" + tableMetaDataInput.getTableName() + "] was not found."));
       }
+      table = TableMetaDataPersonalizerAction.execute(tableMetaDataInput);
+
       QBackendMetaData backendForTable = QContext.getQInstance().getBackendForTable(table.getName());
       tableMetaDataOutput.setTable(new QFrontendTableMetaData(tableMetaDataInput, backendForTable, table, true, true));
 

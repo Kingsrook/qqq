@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
@@ -541,4 +542,15 @@ public class GetInput extends AbstractTableActionInput implements QueryOrGetInpu
       return (queryHints.contains(queryHint));
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public GetInput withInputSource(InputSource inputSource)
+   {
+      super.withInputSource(inputSource);
+      return (this);
+   }
 }

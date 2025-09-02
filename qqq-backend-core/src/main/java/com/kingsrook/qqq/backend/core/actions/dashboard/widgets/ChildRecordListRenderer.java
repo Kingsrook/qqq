@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
@@ -282,6 +283,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             queryInput.setShouldTranslatePossibleValues(true);
             queryInput.setShouldGenerateDisplayValues(true);
             queryInput.setFilter(filter);
+            queryInput.setInputSource(QInputSource.USER);
             queryOutput = new QueryAction().execute(queryInput);
 
             QValueFormatter.setBlobValuesToDownloadUrls(rightTable, queryOutput.getRecords());

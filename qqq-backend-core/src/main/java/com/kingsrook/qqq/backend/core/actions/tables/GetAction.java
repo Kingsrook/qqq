@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.GetActionCacheHelper;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
@@ -90,6 +91,8 @@ public class GetAction
       {
          throw (new QException("Requested to Get a record from an unrecognized table: " + getInput.getTableName()));
       }
+      table = TableMetaDataPersonalizerAction.execute(getInput);
+      getInput.setTableMetaData(table);
 
       postGetRecordCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.getInput = getInput;
@@ -334,6 +337,7 @@ public class GetAction
 
       queryInput.setFilter(filter);
       queryInput.setCommonParamsFrom(getInput);
+      queryInput.setInputSource(getInput.getInputSource());
       return queryInput;
    }
 
@@ -369,7 +373,7 @@ public class GetAction
 
       if(getInput.getShouldOmitHiddenFields() || getInput.getShouldMaskPasswords())
       {
-         Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(getInput.getTableName()).getFields();
+         Map<String, QFieldMetaData> fields = getInput.getTable().getFields();
          for(String fieldName : fields.keySet())
          {
             QFieldMetaData field = fields.get(fieldName);

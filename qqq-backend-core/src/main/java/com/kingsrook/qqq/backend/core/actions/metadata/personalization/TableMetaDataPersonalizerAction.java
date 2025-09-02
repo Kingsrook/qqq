@@ -53,6 +53,10 @@ public class TableMetaDataPersonalizerAction
     * returning the table that was modified (as a clone!) or the original table
     * if no personalization applied.
     *
+    * Note that the output table (e.g., w/ personalizations) will NOT be set
+    * in the input `tableActionInput` - though callers may very likely want
+    * to do this themselves afterwards.
+    *
     * @param tableActionInput an action-input - e.g., to QueryAction or
     * TableMetaDataAction - with a table set in it (most likely through
     * tableName being set), and likely an InputSource, so the personalizer

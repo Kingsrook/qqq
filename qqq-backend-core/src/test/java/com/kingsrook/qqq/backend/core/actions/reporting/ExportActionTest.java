@@ -31,6 +31,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -38,6 +40,8 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -53,6 +57,7 @@ import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -75,7 +80,7 @@ class ExportActionTest extends BaseTest
       int    recordCount = 1000;
       String filename    = "/tmp/ReportActionTest.csv";
 
-      runReport(recordCount, filename, ReportFormat.CSV, false);
+      runExport(recordCount, filename, ReportFormat.CSV, false);
 
       File file = new File(filename);
       @SuppressWarnings("unchecked")
@@ -97,7 +102,7 @@ class ExportActionTest extends BaseTest
       int    recordCount = 10_000;
       String filename    = "/tmp/ReportActionTest.csv";
 
-      runReport(recordCount, filename, ReportFormat.CSV, false);
+      runExport(recordCount, filename, ReportFormat.CSV, false);
 
       File file = new File(filename);
       @SuppressWarnings("unchecked")
@@ -117,7 +122,7 @@ class ExportActionTest extends BaseTest
       int    recordCount = 1000;
       String filename    = "/tmp/ReportActionTest.xlsx";
 
-      runReport(recordCount, filename, ReportFormat.XLSX, true);
+      runExport(recordCount, filename, ReportFormat.XLSX, true);
 
       File file = new File(filename);
       LocalMacDevUtils.openFile(file.getAbsolutePath());
@@ -136,7 +141,7 @@ class ExportActionTest extends BaseTest
       int    recordCount = 1000;
       String filename    = "/tmp/ReportActionTest-POI.xlsx";
 
-      runReport(recordCount, filename, ReportFormat.XLSX, true);
+      runExport(recordCount, filename, ReportFormat.XLSX, true);
 
       File file = new File(filename);
       LocalMacDevUtils.openFile(file.getAbsolutePath());
@@ -212,17 +217,28 @@ class ExportActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void runReport(int recordCount, String filename, ReportFormat reportFormat, boolean specifyFields) throws IOException, QException
+   private void runExport(int recordCount, String filename, ReportFormat reportFormat, boolean specifyFields) throws IOException, QException
+   {
+      runExport("person", recordCount, filename, reportFormat, specifyFields);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void runExport(String tableName, int recordCount, String filename, ReportFormat reportFormat, boolean specifyFields) throws IOException, QException
    {
       try(FileOutputStream outputStream = new FileOutputStream(filename))
       {
          ExportInput exportInput = new ExportInput();
-         exportInput.setTableName("person");
+         exportInput.setTableName(tableName);
          QTableMetaData table = exportInput.getTable();
 
          exportInput.setReportDestination(new ReportDestination().withReportFormat(reportFormat).withReportOutputStream(outputStream));
          exportInput.setQueryFilter(new QQueryFilter());
          exportInput.setLimit(recordCount);
+         exportInput.setInputSource(QInputSource.USER);
 
          if(specifyFields)
          {
@@ -319,7 +335,7 @@ class ExportActionTest extends BaseTest
       int    recordCount = 1000;
       String filename    = "/tmp/ReportActionTest.json";
 
-      runReport(recordCount, filename, ReportFormat.JSON, false);
+      runExport(recordCount, filename, ReportFormat.JSON, false);
 
       File file = new File(filename);
       @SuppressWarnings("unchecked")
@@ -328,6 +344,46 @@ class ExportActionTest extends BaseTest
       assertEquals(recordCount, jsonArray.length());
       JSONObject row0 = jsonArray.getJSONObject(0);
       assertNotNull(row0.optString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizedTable() throws QException, IOException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(new QRecord().withValue("firstName", "Homer").withValue("lastName", "Simpson")));
+      new InsertAction().execute(insertInput);
+
+      //////////////////////////////////////////////////////////////
+      // run a default export - assert it contains lastName field //
+      //////////////////////////////////////////////////////////////
+      String fullFileName = "/tmp/full.csv";
+      runExport(TestUtils.TABLE_NAME_PERSON_MEMORY, 1, fullFileName, ReportFormat.CSV, false);
+      String fullFileContent = FileUtils.readFileToString(new File(fullFileName), StandardCharsets.UTF_8.name());
+      assertThat(fullFileContent)
+         .contains("First Name").contains("Homer")
+         .contains("Last Name").contains("Simpson");
+
+      /////////////////////////////////////////////////
+      // now personalize the table to remove a field //
+      /////////////////////////////////////////////////
+      String userId = "jdoe";
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY, "lastName", userId);
+      QContext.getQSession().getUser().setIdReference(userId);
+
+      String limitedFileName = "/tmp/limited.csv";
+      runExport(TestUtils.TABLE_NAME_PERSON_MEMORY, 1, limitedFileName, ReportFormat.CSV, false);
+      String limitedFileContent = FileUtils.readFileToString(new File(limitedFileName), StandardCharsets.UTF_8.name());
+      assertThat(limitedFileContent)
+         .contains("First Name").contains("Homer")
+         .doesNotContain("Last Name").doesNotContain("Simpson");
    }
 
 }

@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryActionCacheHelper;
@@ -47,6 +48,7 @@ import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -104,6 +106,8 @@ public class QueryAction
       {
          throw (new QException("A table named [" + queryInput.getTableName() + "] was not found in the active QInstance"));
       }
+      table = TableMetaDataPersonalizerAction.execute(queryInput);
+      queryInput.setTableMetaData(table);
 
       validateFieldNamesToInclude(queryInput);
 
@@ -219,6 +223,12 @@ public class QueryAction
                      {
                         String         joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
                         QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+
+                        /////////////////////////////////
+                        // personalize the join table! //
+                        /////////////////////////////////
+                        joinTable = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(joinTable).withInputSource(queryInput.getInputSource()));
+
                         if(joinTable != null)
                         {
                            selectedQueryJoins.put(joinTableOrAlias, joinTable);
@@ -448,7 +458,7 @@ public class QueryAction
          //////////////////////////////////////////////////
          // build up sets of passwords and hidden fields //
          //////////////////////////////////////////////////
-         Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(queryInput.getTableName()).getFields();
+         Map<String, QFieldMetaData> fields = queryInput.getTable().getFields();
          for(String fieldName : fields.keySet())
          {
             QFieldMetaData field = fields.get(fieldName);

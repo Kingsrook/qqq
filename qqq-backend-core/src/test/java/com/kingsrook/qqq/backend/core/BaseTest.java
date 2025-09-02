@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core;
 
 import java.time.ZoneId;
 import java.util.TimeZone;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -59,6 +60,8 @@ public class BaseTest
 
       QContext.init(TestUtils.defineInstance(), newSession());
       resetMemoryRecordStore();
+
+      ExamplePersonalizer.reset();
    }
 
 

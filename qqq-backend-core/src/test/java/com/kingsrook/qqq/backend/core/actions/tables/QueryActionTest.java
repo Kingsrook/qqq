@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -628,6 +629,49 @@ class QueryActionTest extends BaseTest
       assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
          .withFieldNamesToInclude(Set.of("noDb.noJoin.id"))))
          .hasMessageContaining("1 unrecognized field name: noDb.noJoin.id");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTablePersonalization() throws QException
+   {
+      QContext.getQSession().getUser().setIdReference("jdoe");
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_PERSON, "noOfShoes", QContext.getQSession().getUser().getIdReference());
+
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_SHAPE);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_SHAPE, "noOfSides", QContext.getQSession().getUser().getIdReference());
+
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("firstName", "Darin")));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // assert that validateFieldNamesToInclude works as expected (e.g., considers personalized-removed fields are not valid fields //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertThatThrownBy(() -> new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(Set.of("id", "noOfShoes"))))
+         .hasMessageContaining("1 unrecognized field name: noOfShoes");
+
+      assertThatThrownBy(() -> new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE).withSelect(true))
+         .withFieldNamesToInclude(Set.of(TestUtils.TABLE_NAME_SHAPE + ".noOfSides", TestUtils.TABLE_NAME_SHAPE + ".id"))))
+         .hasMessageContaining("1 unrecognized field name: shape.noOfSides");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // customize firstName field to do a to-upper-case                                                   //
+      // this is verifying that QueryAction.postRecordActions has access to the personalized tableMetaData //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals("Darin", QueryAction.execute(TestUtils.TABLE_NAME_PERSON_MEMORY, new QQueryFilter()).get(0).getValueString("firstName"));
+      ExamplePersonalizer.addFieldToAddForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY,
+         QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getField("firstName").clone().withBehavior(CaseChangeBehavior.TO_UPPER_CASE),
+         QContext.getQSession().getUser().getIdReference());
+      assertEquals("DARIN", QueryAction.execute(TestUtils.TABLE_NAME_PERSON_MEMORY, new QQueryFilter()).get(0).getValueString("firstName"));
    }
 
 }
