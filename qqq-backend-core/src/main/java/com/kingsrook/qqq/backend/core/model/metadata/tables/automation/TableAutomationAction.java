@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables.automation;
 
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
@@ -32,7 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 /*******************************************************************************
  ** Definition of a specific action to run against a table
  *******************************************************************************/
-public class TableAutomationAction implements QMetaDataObject
+public class TableAutomationAction implements QMetaDataObject, Cloneable
 {
    private String       name;
    private TriggerEvent triggerEvent;
@@ -362,4 +363,52 @@ public class TableAutomationAction implements QMetaDataObject
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public TableAutomationAction clone()
+   {
+      try
+      {
+         TableAutomationAction clone = (TableAutomationAction) super.clone();
+
+         if(filter != null)
+         {
+            clone.filter = filter.clone();
+         }
+
+         if(values != null)
+         {
+            clone.values = new HashMap<>();
+            for(Map.Entry<String, Serializable> entry : values.entrySet())
+            {
+               try
+               {
+                  if(entry.getValue() instanceof Cloneable cloneable)
+                  {
+                     clone.values.put(entry.getKey(), (Serializable) cloneable.getClass().getMethod("clone").invoke(cloneable));
+                  }
+               }
+               catch(Exception e)
+               {
+                  clone.values.put(entry.getKey(), entry.getValue());
+               }
+            }
+         }
+
+         if(codeReference != null)
+         {
+            clone.codeReference = codeReference.clone();
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

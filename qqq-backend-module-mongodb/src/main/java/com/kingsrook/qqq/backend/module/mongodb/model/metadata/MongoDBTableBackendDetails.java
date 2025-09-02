@@ -78,4 +78,19 @@ public class MongoDBTableBackendDetails extends QTableBackendDetails
       return (this);
    }
 
+
+
+   /***************************************************************************
+    * finish the cloning operation started in the base class. copy all state
+    * from the subclass into the input clone (which can be safely casted to
+    * the subclass's type, as it was obtained by super.clone())
+    ***************************************************************************/
+   @Override
+   protected QTableBackendDetails finishClone(QTableBackendDetails abstractClone)
+   {
+      MongoDBTableBackendDetails clone = (MongoDBTableBackendDetails) abstractClone;
+      clone.tableName = tableName;
+      return (clone);
+   }
+
 }

@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
  ** A section of fields - a logical grouping.
  ** TODO - this class should be named QTableSection!
  *******************************************************************************/
-public class QFieldSection implements QMetaDataObject
+public class QFieldSection implements QMetaDataObject, Cloneable
 {
    private String name;
    private String label;
@@ -429,4 +429,34 @@ public class QFieldSection implements QMetaDataObject
       QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, this.helpContents);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QFieldSection clone()
+   {
+      try
+      {
+         QFieldSection clone = (QFieldSection) super.clone();
+         if(fieldNames != null)
+         {
+            clone.fieldNames = new ArrayList<>(fieldNames);
+         }
+         if(helpContents != null)
+         {
+            clone.helpContents = new ArrayList<>(helpContents);
+         }
+         if(icon != null)
+         {
+            clone.icon = icon.clone();
+         }
+         return (clone);
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

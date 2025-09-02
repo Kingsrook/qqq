@@ -236,4 +236,24 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
          }
       }
    }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   protected ApiTableMetaDataContainer finishClone(QSupplementalTableMetaData abstractClone)
+   {
+      ApiTableMetaDataContainer clone = (ApiTableMetaDataContainer) abstractClone;
+      if(apis != null)
+      {
+         clone.apis = new LinkedHashMap<>();
+         for(Map.Entry<String, ApiTableMetaData> entry : apis.entrySet())
+         {
+            clone.apis.put(entry.getKey(), entry.getValue().clone());
+         }
+      }
+      return null;
+   }
 }

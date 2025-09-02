@@ -28,13 +28,16 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -190,6 +193,51 @@ class AbstractFilesystemTableBackendDetailsTest extends BaseTest
       assertThat(e.getReasons())
          .withFailMessage("Expected any of:\n%s\nTo match: [%s]", e.getReasons(), reason)
          .anyMatch(s -> s.contains(reason));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testClone()
+   {
+      QTableMetaData table = new QTableMetaData();
+      table.withBackendDetails(new S3TableBackendDetails()
+         .withContentTypeStrategy(S3TableBackendDetails.ContentTypeStrategy.HARDCODED)
+         .withHardcodedContentType("a")
+         .withBasePath("b")
+         .withGlob("c")
+         .withRecordFormat(RecordFormat.CSV)
+         .withCardinality(Cardinality.ONE)
+         .withContentsFieldName("d"));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make a clone - change things - make sure some stay the same, and some change (but only in the clone (showing it is deep)) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QTableMetaData clone = table.clone();
+      S3TableBackendDetails cloneBackendDetails = (S3TableBackendDetails) clone.getBackendDetails();
+      cloneBackendDetails.setContentTypeStrategy(S3TableBackendDetails.ContentTypeStrategy.FROM_FIELD);
+      cloneBackendDetails.setContentTypeFieldName("z");
+      cloneBackendDetails.setBasePath("y");
+      cloneBackendDetails.setCardinality(Cardinality.MANY);
+      // leave glob and record format as they were
+
+      S3TableBackendDetails originalBackendDetails = (S3TableBackendDetails) table.getBackendDetails();
+      assertEquals("a", originalBackendDetails.getHardcodedContentType());
+      assertNull(originalBackendDetails.getContentTypeFieldName());
+      assertEquals("b", originalBackendDetails.getBasePath());
+      assertEquals("c", originalBackendDetails.getGlob());
+      assertEquals(RecordFormat.CSV, originalBackendDetails.getRecordFormat());
+      assertEquals(Cardinality.ONE, originalBackendDetails.getCardinality());
+
+      assertEquals("a", originalBackendDetails.getHardcodedContentType());
+      assertEquals("z", cloneBackendDetails.getContentTypeFieldName());
+      assertEquals("y", cloneBackendDetails.getBasePath());
+      assertEquals("c", cloneBackendDetails.getGlob());
+      assertEquals(RecordFormat.CSV, cloneBackendDetails.getRecordFormat());
+      assertEquals(Cardinality.MANY, cloneBackendDetails.getCardinality());
    }
 
 }

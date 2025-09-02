@@ -30,7 +30,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
  ** Base-class for table-level meta-data defined by some supplemental module, etc,
  ** outside of qqq core
  *******************************************************************************/
-public abstract class QSupplementalTableMetaData
+public abstract class QSupplementalTableMetaData implements Cloneable
 {
 
 
@@ -82,4 +82,35 @@ public abstract class QSupplementalTableMetaData
       // noop in base class //
       ////////////////////////
    }
+
+
+
+   /***************************************************************************
+    * adding cloneable to this type hierarchy - subclasses need to implement
+    * finishClone to copy ther specific state.
+    ***************************************************************************/
+   @Override
+   public final QSupplementalTableMetaData clone()
+   {
+      try
+      {
+         QSupplementalTableMetaData clone = (QSupplementalTableMetaData) super.clone();
+         finishClone(clone);
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
+
+
+
+   /***************************************************************************
+    * finish the cloning operation started in the base class. copy all state
+    * from the subclass into the input clone (which can be safely casted to
+    * the subclass's type, as it was obtained by super.clone())
+    ***************************************************************************/
+   protected abstract QSupplementalTableMetaData finishClone(QSupplementalTableMetaData abstractClone);
+
 }

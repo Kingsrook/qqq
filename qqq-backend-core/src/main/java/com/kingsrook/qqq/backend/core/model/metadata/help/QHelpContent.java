@@ -45,7 +45,7 @@ import org.commonmark.renderer.html.HtmlRenderer;
  ** May be dynamically added to meta-data via (non-meta-) data - see
  ** HelpContentMetaDataProvider and QInstanceHelpContentManager
  *******************************************************************************/
-public class QHelpContent implements QMetaDataObject
+public class QHelpContent implements QMetaDataObject, Cloneable
 {
    private String        content;
    private HelpFormat    format;
@@ -271,4 +271,28 @@ public class QHelpContent implements QMetaDataObject
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QHelpContent clone()
+   {
+      try
+      {
+         QHelpContent clone = (QHelpContent) super.clone();
+
+         if(roles != null)
+         {
+            clone.roles = new HashSet<>(roles);
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

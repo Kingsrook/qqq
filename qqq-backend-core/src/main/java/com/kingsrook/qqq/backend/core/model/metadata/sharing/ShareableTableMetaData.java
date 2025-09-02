@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.sharing;
 
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +37,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 /*******************************************************************************
  ** meta data to attach to a table, to describe that its records are shareable.
  *******************************************************************************/
-public class ShareableTableMetaData implements Serializable
+public class ShareableTableMetaData implements Serializable, Cloneable
 {
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // this is the name of the table that is a many-to-one join to the table whose records are being shared.  //
@@ -393,6 +394,31 @@ public class ShareableTableMetaData implements Serializable
       if(StringUtils.hasContent(audiencePossibleValueSourceName))
       {
          qInstanceValidator.assertCondition(qInstance.getPossibleValueSource(audiencePossibleValueSourceName) != null, prefix + "unrecognized audiencePossibleValueSourceName [" + audiencePossibleValueSourceName + "]");
+      }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public ShareableTableMetaData clone()
+   {
+      try
+      {
+         ShareableTableMetaData clone = (ShareableTableMetaData) super.clone();
+
+         if(audienceTypes != null)
+         {
+            clone.audienceTypes = new HashMap<>(audienceTypes);
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
       }
    }
 }

@@ -78,4 +78,19 @@ public class RDBMSTableBackendDetails extends QTableBackendDetails
       return (this);
    }
 
+
+
+   /***************************************************************************
+    * finish the cloning operation started in the base class. copy all state
+    * from the subclass into the input clone (which can be safely casted to
+    * the subclass's type, as it was obtained by super.clone())
+    ***************************************************************************/
+   @Override
+   protected QTableBackendDetails finishClone(QTableBackendDetails abstractClone)
+   {
+      RDBMSTableBackendDetails clone = (RDBMSTableBackendDetails) abstractClone;
+      clone.tableName = tableName;
+      return (clone);
+   }
+
 }
