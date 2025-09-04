@@ -73,7 +73,7 @@
    </modules>
 
    <properties>
-      <revision>0.26.1-SNAPSHOT</revision>
+      <revision>0.27.0-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -152,6 +152,17 @@
                      </execution>
                   </executions>
                </plugin>
+               <plugin>
+  <groupId>org.sonatype.central</groupId>
+  <artifactId>central-publishing-maven-plugin</artifactId>
+  <version>0.8.0</version>
+  <extensions>true</extensions>
+  <configuration>
+    <publishingServerId>central</publishingServerId>
+    <autoPublish>true</autoPublish>
+    <waitUntil>uploaded</waitUntil>
+  </configuration>
+</plugin>
             </plugins>
          </build>
       </profile>
@@ -295,6 +306,16 @@
                   </goals>
                </execution>
             </executions>
+         </plugin>
+         <!-- Version management plugin for automated version setting in CI -->
+         <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <version>2.16.2</version>
+            <configuration>
+               <generateBackupPoms>false</generateBackupPoms>
+               <allowSnapshots>true</allowSnapshots>
+            </configuration>
          </plugin>
          <plugin>
             <groupId>com.amashchenko.maven.plugin</groupId>

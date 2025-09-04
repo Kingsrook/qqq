@@ -1,10 +1,80 @@
+###############################################################################
+## 
+## CircleCI Configuration for QQQ Project
+## =====================================
+##
+## This configuration implements a GitFlow-based CI/CD strategy with the following workflows:
+##
+## WORKFLOWS:
+## ----------
+## 1. test_only          - Runs on feature branches (build, test, API version check)
+## 2. deploy_snapshot    - Runs on develop branch (publishes -SNAPSHOT versions)
+## 3. release_candidate  - Runs on release/* branches (publishes -RC.n versions)
+## 4. production_release - Runs on main branch with v* tags (publishes stable versions)
+## 5. hotfix_release     - Runs on hotfix/* branches (publishes patch versions)
+##
+## BRANCH STRATEGY:
+## ----------------
+## - main: Production releases (X.Y.Z) → Maven Central releases repository
+## - develop: Development snapshots (X.Y.Z-SNAPSHOT) → Maven Central snapshots repository  
+## - release/*: Release candidates (X.Y.0-RC.n) → Maven Central releases repository
+## - hotfix/*: Hotfix releases (X.Y.(Z+1)) → Maven Central releases repository
+## - feature/*: Feature development → Build and test only
+##
+## VERSION MANAGEMENT:
+## ------------------
+## - Versions are managed automatically using .circleci/calculate-version.sh
+## - CI automatically calculates and sets appropriate versions based on branch type
+## - Supports GitFlow versioning: RC increments, hotfix patches, develop bumps
+## - CI automatically creates Git tags and GitHub releases
+## - Maven Central publishing is handled by central-publishing-maven-plugin
+##
+## AUTHENTICATION:
+## ---------------
+## - Maven Central: CENTRAL_USERNAME, CENTRAL_PASSWORD
+## - GPG Signing: GPG_PRIVATE_KEY_B64, GPG_KEYNAME, GPG_PASSPHRASE
+## - GitHub: GITHUB_TOKEN (for creating releases and tags)
+##
+## DEPENDENCIES:
+## -------------
+## - localstack/platform@2.1: For consistent execution environment
+## - browser-tools@1.4.7: For Chrome/ChromeDriver in testing
+##
+###############################################################################
 version: 2.1
 
+
+
+###############################################################################
+## ORBS (Reusable CI Components)
+## =============================
+## localstack/platform@2.1: Provides consistent execution environment across all jobs
+## browser-tools@1.4.7: Installs Chrome and ChromeDriver for browser-based testing
+###############################################################################
 orbs:
   localstack: localstack/platform@2.1
   browser-tools: circleci/browser-tools@1.4.7
+  slack: circleci/slack@5.2.1
 
+
+
+###############################################################################
+## COMMANDS (Reusable Step Collections)
+## ===================================
+## These commands define common operations that can be reused across multiple jobs
+## to avoid duplication and ensure consistency.
+###############################################################################
 commands:
+
+
+  ###############################################################################
+  ## Builds the project and sets up the development environment
+  ## - Restores Maven dependency cache for faster builds
+  ## - Installs Chrome/ChromeDriver for browser testing
+  ## - Creates .env file with database credentials
+  ## - Compiles the project with Maven
+  ## - Saves Maven cache for future builds
+  ###############################################################################
   mvn_build:
     steps:
       - checkout
@@ -26,12 +96,16 @@ commands:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
+  ###############################################################################
+  ## Runs the complete Maven lifecycle including tests and generates reports
+  ## - Restores Maven dependency cache
+  ## - Runs Maven verify (compile, test, package, verify)
+  ## - Collects JaCoCo code coverage reports
+  ## - Stores test output artifacts
+  ## - Saves JUnit test results for CircleCI test reporting
+  ###############################################################################
   mvn_verify:
     steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
           name: Run Maven Verify
           command: |
@@ -61,12 +135,15 @@ commands:
       - store_test_results:
           path: ~/test-results
 
+  ###############################################################################
+  ## Validates API version compatibility across middleware components
+  ## - Builds the project without running tests
+  ## - Assembles the Javalin middleware application
+  ## - Runs ValidateApiVersions tool to check API compatibility
+  ## - Ensures all middleware components have compatible API versions
+  ###############################################################################
   check_middleware_api_versions:
       steps:
-        - checkout
-        - restore_cache:
-            keys:
-              - v1-dependencies-{{ checksum "pom.xml" }}
         - run:
             name: Build and Run ValidateApiVersions
             command: |
@@ -74,18 +151,16 @@ commands:
               mvn -s .circleci/mvn-settings.xml -T4 --no-transfer-progress -pl qqq-middleware-javalin package appassembler:assemble -DskipTests
               qqq-middleware-javalin/target/appassembler/bin/ValidateApiVersions -r $(pwd)
 
+  ###############################################################################
+  ## Publishes artifacts to Maven Central (Sonatype Central Portal)
+  ## - Restores Maven dependency cache
+  ## - Debugs Maven settings to verify configuration
+  ## - Sets up GPG signing for artifact verification
+  ## - Deploys signed artifacts to Maven Central using release profile
+  ## - Saves Maven cache for future builds
+  ###############################################################################
   mvn_jar_deploy:
     steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run:
-          name: Debug effective settings 
-          command: |
-            mvn -s .circleci/mvn-settings.xml -B help:effective-settings -Doutput=effective-settings.xml
-            grep -n "<id>central</id>" effective-settings.xml || true
-            gpg --batch --list-secret-keys --keyid-format=long
       - run:
           name: Setup GPG for signing
           command: |
@@ -96,12 +171,17 @@ commands:
       - run:
           name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
-            mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
+            mvn -s .circleci/mvn-settings.xml -P release -B -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
+  ###############################################################################
+  ## Installs AsciiDoc processor for generating HTML documentation
+  ## - Updates package list and installs asciidoctor
+  ## - Used by publish_asciidoc job for documentation generation
+  ###############################################################################
   install_asciidoctor:
     steps:
       - checkout
@@ -111,6 +191,12 @@ commands:
             sudo apt-get update
             sudo apt install -y asciidoctor
 
+  ###############################################################################
+  ## Generates HTML documentation from AsciiDoc source files
+  ## - Processes docs/index.adoc to create HTML documentation
+  ## - Stores generated HTML as CircleCI artifacts
+  ## - Used by publish_asciidoc job for documentation publishing
+  ###############################################################################
   run_asciidoctor:
     steps:
       - run:
@@ -122,37 +208,194 @@ commands:
           path: docs/index.html
           when: always
 
+  ###############################################################################
+  ## Automated version management using calculate-version.sh
+  ## - Determines appropriate version based on branch type and current version
+  ## - Uses versions-maven-plugin to update pom.xml
+  ## - Handles GitFlow versioning strategy automatically
+  ## - Supports RC increments, hotfix patches, and develop version bumps
+  ###############################################################################
+  manage_version:
+    steps:
+      - add_ssh_keys   # injects the CircleCI User Key (write-capable)
+      - run:
+          name: Set up Git identity for version commits
+          command: |
+            git config user.email "ci@kingsrook.com"
+            git config user.name "CircleCI"
+      - run:
+          name: Calculate and set version
+          command: |
+            chmod +x .circleci/calculate-version.sh
+            .circleci/calculate-version.sh
+      - run:
+          name: Commit version change if modified
+          command: |
+            if [[ -n "$(git status --porcelain pom.xml)" ]]; then
+              NEW_VERSION=$(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//')
+              git add pom.xml
+              git commit -m "Bump version to $NEW_VERSION [skip ci]"
+              git push origin "HEAD:${CIRCLE_BRANCH}"
+              echo "Version updated to: $NEW_VERSION and pushed"
+            else
+              echo "No version change needed"
+            fi
+
+  ###############################################################################
+  ## Creates Git tags and GitHub releases for production releases
+  ## - Creates version tag from pom.xml revision
+  ## - Pushes tag to remote repository
+  ## - Creates GitHub release with automated notes
+  ## - Used by: publish_release and publish_hotfix jobs
+  ###############################################################################
+  create_github_release:
+    steps:
+      - run:
+          name: Create and push version tag
+          command: |
+            VERSION=$(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//')
+            echo "Creating tag for version: $VERSION"
+            
+            # Create and push tag (if not already created)
+            if ! git tag --list | grep -q "v$VERSION"; then
+              git tag "v$VERSION"
+              git push origin "v$VERSION"
+              echo "Tag v$VERSION created and pushed"
+            else
+              echo "Tag v$VERSION already exists"
+            fi
+            
+            # Create GitHub release
+            echo "Creating GitHub release for v$VERSION"
+            echo "$GITHUB_TOKEN" | gh auth login --with-token
+            gh release create "v$VERSION" \
+              --title "Release v$VERSION" \
+              --notes "Automated release from CircleCI" \
+              --repo Kingsrook/qqq
+###############################################################################
+## JOBS (Workflow Execution Units)
+## ===============================
+## Jobs define the actual work to be done in each workflow.
+## Each job uses the localstack/default executor for consistent environment.
+###############################################################################
 jobs:
+
+  ###############################################################################
+  ## Basic build job that compiles the project
+  ## Used by: test_only workflow for feature branches
+  ###############################################################################
   build:
     executor: localstack/default
     steps:
       - mvn_build
 
+  ###############################################################################
+  ## Comprehensive testing job that runs all tests and generates reports
+  ## Used by: test_only workflow for feature branches
+  ## Dependencies: Requires build job to complete first
+  ###############################################################################
   test:
     executor: localstack/default
     steps:
       - mvn_verify
 
+  ###############################################################################
+  ## Validates API version compatibility across middleware components
+  ## Used by: test_only workflow for feature branches
+  ## Dependencies: Requires build job to complete first
+  ###############################################################################
   api_version_check:
     executor: localstack/default
     steps:
       - check_middleware_api_versions
 
+  ###############################################################################
+  ## Deploys snapshot versions to Maven Central
+  ## Used by: deploy_snapshot workflow for develop branch
+  ## Publishes: X.Y.Z-SNAPSHOT versions to snapshots repository
+  ###############################################################################
   mvn_deploy:
     executor: localstack/default
     steps:
-      # - mvn_build
-      # - mvn_verify
-      # - check_middleware_api_versions
+      - mvn_build
+      - manage_version
+      - mvn_verify
+      - check_middleware_api_versions
       - mvn_jar_deploy
 
+  ###############################################################################
+  ## Publishes release candidate versions to Maven Central
+  ## Used by: release_candidate workflow for release/* branches
+  ## Publishes: X.Y.0-RC.n versions to releases repository
+  ###############################################################################
+  publish_rc:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
+      - manage_version
+      - mvn_jar_deploy 
+
+  ###############################################################################
+  ## Publishes production releases to Maven Central and creates GitHub releases
+  ## Used by: production_release workflow for main branch
+  ## Publishes: X.Y.Z versions to releases repository
+  ## Creates: Git tags and GitHub releases automatically
+  ###############################################################################
+  publish_release:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - manage_version
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_jar_deploy
+      - create_github_release
+
+  ###############################################################################
+  ## Publishes hotfix releases to Maven Central and creates GitHub releases
+  ## Used by: hotfix_release workflow for hotfix/* branches
+  ## Publishes: X.Y.(Z+1) versions to releases repository
+  ## Creates: Git tags and GitHub releases automatically
+  ###############################################################################
+  publish_hotfix:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - manage_version 
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_jar_deploy
+      - create_github_release
+
+  ###############################################################################
+  ## Generates and publishes HTML documentation
+  ## Used by: deploy_snapshot workflow for develop branch
+  ## Generates: HTML documentation from AsciiDoc source files
+  ###############################################################################
   publish_asciidoc:
     executor: localstack/default
     steps:
       - install_asciidoctor
       - run_asciidoctor
 
+
+
+###############################################################################
+## WORKFLOWS (CI/CD Pipeline Orchestration)
+## =======================================
+## Workflows define when and how jobs are executed based on branch patterns and triggers.
+## Each workflow implements a specific part of the GitFlow branching strategy.
+###############################################################################
 workflows:
+
+  ###############################################################################
+  ## Runs on feature branches and other non-protected branches
+  ## Purpose: Validate code quality and functionality before merging
+  ## Triggers: Any push to branches NOT matching develop, main, release/*, hotfix/*
+  ## Jobs: build → test → api_version_check (sequential execution)
+  ###############################################################################
   test_only:
     jobs:
       - build:
@@ -180,15 +423,86 @@ workflows:
               ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
               ignore: /(version|snapshot)-.*/
+      - publish_asciidoc:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
+            tags:
+              ignore: /(version|snapshot)-.*/
 
+  ###############################################################################
+  ## Runs on develop branch to publish development snapshots
+  ## Purpose: Provide nightly builds for developers and QA testing
+  ## Triggers: Push to develop branch
+  ## Publishes: X.Y.Z-SNAPSHOT versions to Maven Central snapshots repository
+  ## Jobs: mvn_deploy (Maven Central publishing) + publish_asciidoc (documentation)
+  ###############################################################################
   deploy_snapshot:
     jobs:
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: /develop/
+              only: 
+                - develop
       - publish_asciidoc:
           filters:
             branches:
-              only: /develop/
+              only: 
+                - develop
+
+  ###############################################################################
+  ## Runs on release/* branches to publish release candidates
+  ## Purpose: Provide RC builds for QA testing and stakeholder review
+  ## Triggers: Push to any branch matching release/* pattern
+  ## Publishes: X.Y.0-RC.n versions to Maven Central releases repository
+  ## Jobs: publish_rc (build, test, API check, RC artifact creation)
+  ###############################################################################
+  release_candidate:
+    jobs:
+      - publish_rc:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only:
+                - /release\/.*/
+
+  ###############################################################################
+  ## Runs on main branch to publish production releases
+  ## Purpose: Deploy stable versions to production and create GitHub releases
+  ## Triggers: Push to main branch (typically after merging release branches)
+  ## Publishes: X.Y.Z versions to Maven Central releases repository
+  ## Creates: Git tags (vX.Y.Z) and GitHub releases automatically
+  ## Jobs: publish_release (build, test, API check, Maven Central deploy, GitHub release)
+  ###############################################################################
+  production_release:
+    jobs:
+      - publish_release:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: 
+                - main
+            tags:
+              only: 
+                - /v.*/
+
+  ###############################################################################
+  ## Runs on hotfix/* branches to publish urgent production fixes
+  ## Purpose: Deploy critical bug fixes and security patches
+  ## Triggers: Push to any branch matching hotfix/* pattern
+  ## Publishes: X.Y.(Z+1) versions to Maven Central releases repository
+  ## Creates: Git tags (vX.Y.(Z+1)) and GitHub releases automatically
+  ## Jobs: publish_hotfix (build, test, API check, Maven Central deploy, GitHub release)
+  ###############################################################################
+  hotfix_release:
+    jobs:
+      - publish_hotfix:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: 
+                - /hotfix\/.*/
