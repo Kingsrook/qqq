@@ -64,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -279,6 +280,12 @@ class MemoryBackendModuleTest extends BaseTest
    {
       QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+
+      /////////////////////////////////////////////
+      // add a date field, for testing DATE type //
+      /////////////////////////////////////////////
+      table.addField(new QFieldMetaData("date", QFieldType.DATE));
+
       QSession       session   = new QSession();
 
       InsertInput insertInput = new InsertInput();

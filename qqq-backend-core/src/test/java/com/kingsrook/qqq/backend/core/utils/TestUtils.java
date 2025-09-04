@@ -706,6 +706,7 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
          .withField(new QFieldMetaData("orderNo", QFieldType.STRING))
          .withField(new QFieldMetaData("shipToName", QFieldType.STRING).withMaxLength(200).withBehavior(ValueTooLongBehavior.ERROR))
          .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
@@ -788,7 +789,7 @@ public class TestUtils
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("key", QFieldType.STRING))
-         .withField(new QFieldMetaData("value", QFieldType.STRING));
+         .withField(new QFieldMetaData("value", QFieldType.STRING).withMaxLength(100).withBehavior(ValueTooLongBehavior.ERROR));
    }
 
 

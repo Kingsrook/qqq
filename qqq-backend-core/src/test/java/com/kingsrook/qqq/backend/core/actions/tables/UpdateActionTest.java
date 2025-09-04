@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -879,20 +880,20 @@ class UpdateActionTest extends BaseTest
       // ensure default behaviors for user without personalization //
       ///////////////////////////////////////////////////////////////
       QContext.getQSession().getUser().setIdReference(userWithoutPesonalizedTable);
-      new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Simpson")));
+      new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Simpson")).withInputSource(QInputSource.USER));
       assertEquals("Simpson", insertOutput.getRecords().get(0).getValueString("lastName"));
 
       //////////////////////////////////////////////////////////////////////////////
       // now as personalized user - first get an error for missing required value //
       //////////////////////////////////////////////////////////////////////////////
       QContext.getQSession().getUser().setIdReference(userWithPesonalizedTable);
-      UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Jefferson").withValue("noOfShoes", null)));
+      UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Jefferson").withValue("noOfShoes", null)).withInputSource(QInputSource.USER));
       assertThat(updateOutput.getRecords().get(0).getErrorsAsString()).contains("Missing value in required field: No Of Shoes");
 
       ///////////////////////////////////////////////////////
       // try again, and let it work and see name truncated //
       ///////////////////////////////////////////////////////
-      updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Jefferson").withValue("noOfShoes", 3)));
+      updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Jefferson").withValue("noOfShoes", 3)).withInputSource(QInputSource.USER));
       assertThat(updateOutput.getRecords().get(0).getErrors()).isNullOrEmpty();
       assertEquals("Jef...", insertOutput.getRecords().get(0).getValueString("lastName"));
 
@@ -901,7 +902,7 @@ class UpdateActionTest extends BaseTest
       // note, this detail is handled in the backend module.                                                  //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
       ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY, "cost", userWithPesonalizedTable);
-      new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("cost", new BigDecimal("3.50"))));
+      new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("cost", new BigDecimal("3.50"))).withInputSource(QInputSource.USER));
       QRecord updatedRecord = new GetAction().executeForRecord(new GetInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withPrimaryKey(id));
       assertNull(updatedRecord.getValue("cost"));
    }

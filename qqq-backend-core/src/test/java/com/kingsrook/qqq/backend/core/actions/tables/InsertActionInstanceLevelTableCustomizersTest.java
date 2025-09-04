@@ -65,7 +65,7 @@ public class InsertActionInstanceLevelTableCustomizersTest extends BaseTest
       QContext.getQInstance().withTableCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(SetsLastName.class));
       QContext.getQInstance().withTableCustomizer(TableCustomizers.POST_INSERT_RECORD, new QCodeReference(DoesNothing.class));
       DoesNothing.callCount = 0;
-      record = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_SHAPE).withRecord(new QRecord().withValue("name", "octogon"))).getRecords().get(0);
+      record = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("noOfShoes", 3))).getRecords().get(0);
       assertEquals("Jeff", record.getValueString("firstName"));
       assertEquals("Smith", record.getValueString("lastName"));
       assertNotNull(record.getValueInteger("id"));

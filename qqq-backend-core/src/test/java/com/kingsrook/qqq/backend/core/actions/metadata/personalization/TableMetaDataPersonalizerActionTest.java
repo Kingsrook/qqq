@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -117,14 +118,14 @@ class TableMetaDataPersonalizerActionTest extends BaseTest
       // table that the personalizer doesn't handle //
       ////////////////////////////////////////////////
       QContext.getQSession().getUser().setIdReference("bhill");
-      QTableMetaData outputPersonTable = TableMetaDataPersonalizerAction.execute(new AbstractTableActionInput().withTableName(TestUtils.TABLE_NAME_PERSON));
+      QTableMetaData outputPersonTable = TableMetaDataPersonalizerAction.execute(new AbstractTableActionInput().withTableName(TestUtils.TABLE_NAME_PERSON).withInputSource(QInputSource.USER));
       assertThat(outputPersonTable).isSameAs(originalPersonTable);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////
       // table that isn't personalized for current user - but still get cloned, just is the same after. //
       ////////////////////////////////////////////////////////////////////////////////////////////////////
       QContext.getQSession().getUser().setIdReference("bhill");
-      QTableMetaData outputShapeTable = TableMetaDataPersonalizerAction.execute(new AbstractTableActionInput().withTableName(TestUtils.TABLE_NAME_SHAPE));
+      QTableMetaData outputShapeTable = TableMetaDataPersonalizerAction.execute(new AbstractTableActionInput().withTableName(TestUtils.TABLE_NAME_SHAPE).withInputSource(QInputSource.USER));
       assertThat(outputShapeTable).isNotSameAs(originalShapeTable);
       assertTrue(outputShapeTable.getFields().containsKey(noOfSidesFieldName));
 
@@ -132,7 +133,7 @@ class TableMetaDataPersonalizerActionTest extends BaseTest
       // table that IS personalized for current user //
       /////////////////////////////////////////////////
       QContext.getQSession().getUser().setIdReference("jdoe");
-      outputShapeTable = TableMetaDataPersonalizerAction.execute(new AbstractTableActionInput().withTableName(TestUtils.TABLE_NAME_SHAPE));
+      outputShapeTable = TableMetaDataPersonalizerAction.execute(new AbstractTableActionInput().withTableName(TestUtils.TABLE_NAME_SHAPE).withInputSource(QInputSource.USER));
       assertThat(outputShapeTable).isNotSameAs(originalShapeTable);
       assertTrue(originalShapeTable.getFields().containsKey(noOfSidesFieldName));
       assertFalse(outputShapeTable.getFields().containsKey(noOfSidesFieldName));
