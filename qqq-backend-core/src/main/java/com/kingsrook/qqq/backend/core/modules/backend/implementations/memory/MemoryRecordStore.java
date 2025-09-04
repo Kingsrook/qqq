@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,11 +43,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
@@ -68,6 +71,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -207,6 +211,19 @@ public class MemoryRecordStore
          tableData = buildJoinCrossProduct(input);
       }
 
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // in cae table personalization is being used, build a map of all join tables in the query and their //
+      // active/personalized meta data - to be later used in stripping fields that aren't in the tables.   //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      Map<String, QTableMetaData> personalizedTables = new HashMap<>();
+      personalizedTables.put(input.getTableName(), input.getTableMetaData());
+      for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+      {
+         QTableMetaData joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+         joinTable = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(joinTable).withInputSource(input.getInputSource()));
+         personalizedTables.put(joinTable.getName(), joinTable);
+      }
+
       for(QRecord qRecord : tableData)
       {
          if(qRecord.getTableName() == null)
@@ -235,8 +252,10 @@ public class MemoryRecordStore
             {
                //////////////////////////////////////////////////////////////////////////////////
                // make sure we're not giving back records that are all full of associations... //
+               // or fields that the user isn't supposed to get (e.g., from personalization)   //
                //////////////////////////////////////////////////////////////////////////////////
                QRecord recordToReturn = new QRecord(qRecord);
+               stripUnrecognizedFieldsFromRecords(List.of(recordToReturn), personalizedTables, input.getTable());
                recordToReturn.setAssociatedRecords(new HashMap<>());
                records.add(recordToReturn);
             }
@@ -431,6 +450,7 @@ public class MemoryRecordStore
          // differently from other backends, because of having the same record variable in the backend store and in the user-code. //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          QRecord recordToInsert = new QRecord(record);
+         stripUnrecognizedFieldsFromRecords(List.of(recordToInsert), table);
 
          makeValueTypesMatchFieldTypes(table, recordToInsert);
 
@@ -480,6 +500,52 @@ public class MemoryRecordStore
       setNextSerial(table, nextSerial);
 
       return (outputRecords);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static void stripUnrecognizedFieldsFromRecords(List<QRecord> records, QTableMetaData table)
+   {
+      stripUnrecognizedFieldsFromRecords(records, Map.of(table.getName(), table), table);
+   }
+
+
+
+   /***************************************************************************
+    * take map of "personalized" tables - e.g., possibly with fields removed
+    * and then only allow a field if it's in that personalized table.
+    ***************************************************************************/
+   private static void stripUnrecognizedFieldsFromRecords(List<QRecord> records, Map<String, QTableMetaData> tableMap, QTableMetaData mainTable)
+   {
+      if(CollectionUtils.nullSafeHasContents(records))
+      {
+         for(QRecord record : records)
+         {
+            Iterator<Map.Entry<String, Serializable>> iterator = record.getValues().entrySet().iterator();
+            while(iterator.hasNext())
+            {
+               Map.Entry<String, Serializable> entry     = iterator.next();
+               String                          fieldName = entry.getKey();
+
+               try
+               {
+                  FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, fieldName);
+                  QTableMetaData    tableMetaData     = tableMap.get(fieldAndJoinTable.joinTable().getName());
+                  if(!tableMetaData.getFields().containsKey(fieldAndJoinTable.field().getName()))
+                  {
+                     iterator.remove();
+                  }
+               }
+               catch(Exception e) // from the FieldAndJoinTable call
+               {
+                  iterator.remove();
+               }
+            }
+         }
+      }
    }
 
 
@@ -562,6 +628,15 @@ public class MemoryRecordStore
             QRecord recordToUpdate = tableData.get(primaryKeyValue);
             for(Map.Entry<String, Serializable> valueEntry : record.getValues().entrySet())
             {
+               if(!table.getFields().containsKey(valueEntry.getKey()))
+               {
+                  /////////////////////////////////////////////////////////////
+                  // don't update values in fields that aren't in the table  //
+                  // (or that the user doesn't have, due to personalization) //
+                  /////////////////////////////////////////////////////////////
+                  continue;
+               }
+
                String fieldName = valueEntry.getKey();
                try
                {
