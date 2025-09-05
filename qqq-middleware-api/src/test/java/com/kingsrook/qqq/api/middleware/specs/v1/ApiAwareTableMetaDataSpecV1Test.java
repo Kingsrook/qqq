@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.middleware.specs.v1;
 
 
+import java.util.function.Supplier;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.middleware.specs.ApiAwareSpecTestBase;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -75,6 +77,47 @@ class ApiAwareTableMetaDataSpecV1Test extends ApiAwareSpecTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertThat(jsonObject.getJSONObject("fields").getJSONObject("noOfShoes").getString("label")).isEqualTo("No Of Shoes");
       assertFalse(jsonObject.getJSONObject("fields").has("shoeCount"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizedTable()
+   {
+      Supplier<JSONObject> request = () ->
+      {
+         HttpResponse<String> response = Unirest.get(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2023_Q1) + "/metaData/table/person").asString();
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         JSONObject fields     = jsonObject.getJSONObject("fields");
+         return (fields);
+      };
+
+      ///////////////////////////////////////////////////////////
+      // first make sure non-personalized table has createDate //
+      ///////////////////////////////////////////////////////////
+      {
+         JSONObject fields = request.get();
+         assertTrue(fields.has("createDate"));
+      }
+
+      /////////////////////////////////////////////////////////////////////
+      // now repeat with personalizer active, and assert we don't get it //
+      /////////////////////////////////////////////////////////////////////
+      try
+      {
+         TestUtils.TablePersonalizer.register(serverQInstance);
+
+         JSONObject fields = request.get();
+         assertFalse(fields.has("createDate"));
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(serverQInstance);
+      }
    }
 
 

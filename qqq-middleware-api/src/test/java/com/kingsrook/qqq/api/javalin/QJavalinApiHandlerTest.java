@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
@@ -55,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.apibuilder.EndpointGroup;
 import kong.unirest.HttpResponse;
@@ -92,6 +94,8 @@ class QJavalinApiHandlerTest extends BaseTest
 
    protected static QJavalinImplementation qJavalinImplementation;
 
+   protected static QInstance javalinServerQInstance;
+
 
 
    /*******************************************************************************
@@ -100,9 +104,9 @@ class QJavalinApiHandlerTest extends BaseTest
    @BeforeAll
    static void beforeAll() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      javalinServerQInstance = TestUtils.defineInstance();
 
-      qInstance.addTable(new QTableMetaData()
+      javalinServerQInstance.addTable(new QTableMetaData()
          .withName("internalName")
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
@@ -111,9 +115,9 @@ class QJavalinApiHandlerTest extends BaseTest
             .withApiTableName("externalName")
             .withInitialVersion(TestUtils.V2022_Q4))));
 
-      qJavalinImplementation = new QJavalinImplementation(qInstance);
+      qJavalinImplementation = new QJavalinImplementation(javalinServerQInstance);
       qJavalinImplementation.clearJavalinRoutes();
-      EndpointGroup routes = new QJavalinApiHandler(qInstance).getRoutes();
+      EndpointGroup routes = new QJavalinApiHandler(javalinServerQInstance).getRoutes();
       qJavalinImplementation.addJavalinRoutes(routes);
       qJavalinImplementation.startJavalinServer(PORT);
    }
@@ -225,6 +229,7 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals("Homer", jsonObject.getString("firstName"));
       assertEquals("Simpson", jsonObject.getString("lastName"));
       assertEquals("MTIzNDU=", jsonObject.getString("photo")); // base64 of "12345".getBytes()
+      assertFalse(jsonObject.isNull("createDate"));
       assertTrue(jsonObject.isNull("noOfShoes"));
       assertFalse(jsonObject.has("someNonField"));
    }
@@ -1514,6 +1519,162 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testPersonalizedTable() throws Exception
+   {
+      insertPersonRecord(1, "Homer", "Simpson", qRecord -> qRecord.withValue("photo", "12345".getBytes()));
+
+      ///////////////////////////////////////////////////////////////////////
+      // lambda to execute requests and make assertions - with different   //
+      // assertions depending on whether the server is personalized or not //
+      ///////////////////////////////////////////////////////////////////////
+      UnsafeConsumer<Boolean, ?> run = isPersonalized ->
+      {
+         String assertMessagePrefix = isPersonalized ? "for personalized call, " : "for non-personalized call, ";
+
+         //////////////////
+         // get a record //
+         //////////////////
+         HttpResponse<String> getResponse = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
+         assertEquals(HttpStatus.OK_200, getResponse.getStatus());
+         JSONObject getJsonObject = new JSONObject(getResponse.getBody());
+         assertEquals("Homer", getJsonObject.getString("firstName"));
+         if(isPersonalized)
+         {
+            assertTrue(getJsonObject.isNull("createDate"), assertMessagePrefix + "expected createDate to be null");
+         }
+         else
+         {
+            assertFalse(getJsonObject.isNull("createDate"), assertMessagePrefix + "expected createDate to not be null");
+         }
+
+         ///////////
+         // query //
+         ///////////
+         HttpResponse<String> queryResponse = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?orderBy=id").asString();
+         assertEquals(HttpStatus.OK_200, queryResponse.getStatus());
+         JSONObject queryJsonObject = new JSONObject(queryResponse.getBody());
+         assertThat(queryJsonObject.getInt("count")).isGreaterThan(0);
+         assertEquals(1, queryJsonObject.getInt("pageNo"));
+         assertEquals(50, queryJsonObject.getInt("pageSize"));
+         JSONObject queryRecordJsonObject = queryJsonObject.getJSONArray("records").getJSONObject(0);
+         assertEquals("Homer", queryRecordJsonObject.getString("firstName"));
+         if(isPersonalized)
+         {
+            assertTrue(queryRecordJsonObject.isNull("createDate"), assertMessagePrefix + "expected createDate to be null");
+         }
+         else
+         {
+            assertFalse(queryRecordJsonObject.isNull("createDate"), assertMessagePrefix + "expected createDate to not be null");
+         }
+
+         /////////////////////////////////////////////////////////////////////////////////
+         // try an insert w/ just first name                                            //
+         // for personalized case, should fail because personalizer made email required //
+         /////////////////////////////////////////////////////////////////////////////////
+         HttpResponse<String> postResponse = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+            .body("""
+               {"firstName": "%s"}
+               """.formatted(UUID.randomUUID().toString()))
+            .asString();
+         if(isPersonalized)
+         {
+            assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing value in required field: Email", postResponse, assertMessagePrefix);
+         }
+         else
+         {
+            assertEquals(HttpStatus.CREATED_201, postResponse.getStatus(), assertMessagePrefix + "expected insert to succeed");
+         }
+
+         //////////////////////////////////////////////////////////////////////////////////////
+         // try an insert w/ first name, email and birthdate                                 //
+         // for personalized case, should fail because personalizer made birthDate read-only //
+         // note, birthDate is called birthDay in the api!!                                  //
+         //////////////////////////////////////////////////////////////////////////////////////
+         HttpResponse<String> postResponse2 = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+            .body("""
+               {"firstName": "%s", "email": "%s@yahoo.com", "birthDay": "2025-01-01"}
+               """.formatted(UUID.randomUUID().toString(), UUID.randomUUID().toString()))
+            .asString();
+         assertEquals(HttpStatus.CREATED_201, postResponse2.getStatus(), assertMessagePrefix + "expected insert to succeed");
+         JSONObject insertedJsonObject = new JSONObject(postResponse2.getBody());
+         Integer    insertedId         = insertedJsonObject.getInt("id");
+         QRecord    insertedPerson     = GetAction.execute(TestUtils.TABLE_NAME_PERSON, insertedId);
+
+         if(isPersonalized)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            // so api's rules are, if you send a read-only field, you don't get an error, it just doesn't update //
+            // to help deal with case where caller fetches an object, changes a value, and sends it back - they  //
+            // shouldn't have to remove all read-only fields.  Thus, this field that is personalized to be read- //
+            // only just doesn't get written in this case.                                                       //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            assertNull(insertedPerson.getValue("birthDate"), assertMessagePrefix + "expected birthDate to be null");
+         }
+         else
+         {
+            assertNotNull(insertedPerson.getValue("birthDate"), assertMessagePrefix + "expected birthDate to not be null");
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // update that person, with the same 2 cases as above                                                    //
+         // try to set email null - works for non-personalized, fails for personalized (where email was required) //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         HttpResponse<String> patchResponse = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/" + insertedId)
+            .body("""
+               {"email": null}
+               """)
+            .asString();
+         if(isPersonalized)
+         {
+            assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing value in required field: Email", patchResponse, assertMessagePrefix);
+         }
+         else
+         {
+            assertEquals(HttpStatus.NO_CONTENT_204, patchResponse.getStatus(), assertMessagePrefix + "expected insert to succeed");
+         }
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // try to set birthDate - successfull response each time, but only does the update if non-personalized //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////
+         HttpResponse<String> patchResponse2 = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/" + insertedId)
+            .body("""
+               {"birthDay": "1969-07-20"}
+               """)
+            .asString();
+         assertEquals(HttpStatus.NO_CONTENT_204, patchResponse2.getStatus(), assertMessagePrefix + "expected insert to succeed");
+         QRecord updatedPerson = GetAction.execute(TestUtils.TABLE_NAME_PERSON, insertedId);
+
+         if(isPersonalized)
+         {
+            assertNull(updatedPerson.getValue("birthDate"), assertMessagePrefix + "expected birthDate to (still) be null");
+         }
+         else
+         {
+            assertEquals("1969-07-20", updatedPerson.getValueString("birthDate"), assertMessagePrefix + "expected birthDate to be updated");
+         }
+      };
+
+      ///////////////////////////////////////////////
+      // now repeat with personalization turned on //
+      ///////////////////////////////////////////////
+      try
+      {
+         run.run(false);
+         TestUtils.TablePersonalizer.register(javalinServerQInstance);
+         run.run(true);
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(javalinServerQInstance);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static QRecord getRecord(String tableName, Integer id) throws QException
    {
       GetInput getInput = new GetInput();
@@ -1599,16 +1760,26 @@ class QJavalinApiHandlerTest extends BaseTest
     *******************************************************************************/
    static void assertErrorResponse(Integer expectedStatusCode, String expectedErrorMessage, HttpResponse<String> response)
    {
+      assertErrorResponse(expectedStatusCode, expectedErrorMessage, response, "");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void assertErrorResponse(Integer expectedStatusCode, String expectedErrorMessage, HttpResponse<String> response, String assertMessagePrefix)
+   {
       if(expectedStatusCode != null)
       {
-         assertEquals(expectedStatusCode, response.getStatus());
+         assertEquals(expectedStatusCode, response.getStatus(), assertMessagePrefix + "expected status");
       }
 
       if(expectedErrorMessage != null)
       {
          JSONObject jsonObject = new JSONObject(response.getBody());
          String     error      = jsonObject.getString("error");
-         assertThat(error).contains(expectedErrorMessage);
+         assertThat(error).describedAs(assertMessagePrefix + "expected message").contains(expectedErrorMessage);
       }
    }
 

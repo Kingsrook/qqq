@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
+import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
@@ -54,7 +55,7 @@ public class ApiQueryFilterUtils
    /***************************************************************************
     **
     ***************************************************************************/
-   @Deprecated(since = "version was added that took apiVerison")
+   @Deprecated(since = "version was added that took apiVersion")
    public static void manageCriteriaFields(QQueryFilter filter, Map<String, QFieldMetaData> tableApiFields, List<String> badRequestMessages, String apiName, QueryOrCountInputInterface input) throws QException
    {
       manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, null, input);
@@ -88,7 +89,7 @@ public class ApiQueryFilterUtils
                joinTableName = split[0];
                String joinFieldName = split[1];
 
-               Map<String, QFieldMetaData> joinTableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, joinTableName));
+               Map<String, QFieldMetaData> joinTableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsInput().withApiName(apiName).withVersion(apiVersion).withTableName(joinTableName).withInputSource(input.getInputSource()));
                field = joinTableApiFields.get(joinFieldName);
             }
             catch(Exception e)

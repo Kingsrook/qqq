@@ -28,6 +28,7 @@ import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.implementations.savedreports.RenderSavedReportProcessApiMetaDataEnricher;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
@@ -46,8 +47,11 @@ import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCusto
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -761,6 +765,71 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("name", QFieldType.STRING))
       );
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static class TablePersonalizer implements TableMetaDataPersonalizerInterface
+   {
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      public static void register(QInstance qInstance)
+      {
+         qInstance.addSupplementalCustomizer(TableMetaDataPersonalizerInterface.CUSTOMIZER_TYPE, new QCodeReference(TablePersonalizer.class));
+
+         /////////////////////////////////////////////////////////////////////////////////
+         // api fields get cached - so reset that cache if activating this personalizer //
+         /////////////////////////////////////////////////////////////////////////////////
+         GetTableApiFieldsAction.clearCaches();
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      public static void unregister(QInstance qInstance)
+      {
+         qInstance.getSupplementalCustomizers().remove(TableMetaDataPersonalizerInterface.CUSTOMIZER_TYPE);
+
+         ///////////////////////////////////////////////////////////////////////////////////
+         // api fields get cached - so reset that cache if deactivating this personalizer //
+         ///////////////////////////////////////////////////////////////////////////////////
+         GetTableApiFieldsAction.clearCaches();
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      @Override
+      public QTableMetaData execute(TableMetaDataPersonalizerInput input) throws QException
+      {
+         if(QInputSource.USER.equals(input.getInputSource()))
+         {
+            QTableMetaData clone = input.getTable().clone();
+            clone.getFields().remove("createDate");
+
+            if(input.getTableName().equals(TestUtils.TABLE_NAME_PERSON))
+            {
+               clone.getFields().get("email").setIsRequired(true);
+               clone.getFields().get("birthDate").setIsEditable(false);
+            }
+
+            return clone;
+         }
+
+         //////////////////////////////////////////////////
+         // by default, return the input table unchanged //
+         //////////////////////////////////////////////////
+         return (input.getTable());
+      }
    }
 
 }

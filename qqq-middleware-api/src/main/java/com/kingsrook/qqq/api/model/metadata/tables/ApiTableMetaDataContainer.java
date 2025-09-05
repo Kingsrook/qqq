@@ -27,6 +27,7 @@ import java.util.Map;
 import com.kingsrook.qqq.api.ApiSupplementType;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
@@ -215,7 +216,7 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
                // if we have the same field name more than once, which can happen if a field is both in the     //
                // removed-list and the table's normal field list.                                               //
                ///////////////////////////////////////////////////////////////////////////////////////////////////
-               GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, version.toString(), tableMetaData.getName()));
+               GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsInput().withApiName(apiName).withVersion(version.toString()).withTableName(tableMetaData.getName()));
             }
             catch(QNotFoundException qnfe)
             {

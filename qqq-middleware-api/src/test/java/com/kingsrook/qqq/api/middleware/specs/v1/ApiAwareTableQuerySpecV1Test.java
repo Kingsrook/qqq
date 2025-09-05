@@ -24,6 +24,7 @@ package com.kingsrook.qqq.api.middleware.specs.v1;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.middleware.specs.ApiAwareSpecTestBase;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -238,6 +240,63 @@ class ApiAwareTableQuerySpecV1Test extends ApiAwareSpecTestBase
       assertEquals(400, response.getStatus());
       jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals("Unrecognized criteria field name: shoeCount.", jsonObject.getString("error"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizedTable()
+   {
+      Supplier<JSONArray> request = () ->
+      {
+         HttpResponse<String> response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2022_Q4) + "/table/person/query")
+            .contentType(ContentType.APPLICATION_JSON.getMimeType())
+            .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("shoeCount", QCriteriaOperator.EQUALS, 2)))))
+            .asString();
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         JSONArray  records    = jsonObject.getJSONArray("records");
+         return (records);
+      };
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // first make sure that a query (without the personalizer active) DOES include create date //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         JSONArray records = request.get();
+         assertTrue(records.getJSONObject(0).getJSONObject("values").has("createDate"));
+         assertTrue(records.getJSONObject(0).getJSONObject("displayValues").has("createDate"));
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // now repeat the query with the personalizer active - create date should NOT come back //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         TestUtils.TablePersonalizer.register(serverQInstance);
+
+         JSONArray records = request.get();
+         assertFalse(records.getJSONObject(0).getJSONObject("values").has("createDate"));
+         assertFalse(records.getJSONObject(0).getJSONObject("displayValues").has("createDate"));
+
+         ///////////////////////////////////////////////
+         // try to query by create date - should fail //
+         ///////////////////////////////////////////////
+         HttpResponse<String> response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2022_Q4) + "/table/person/query")
+            .contentType(ContentType.APPLICATION_JSON.getMimeType())
+            .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("createDate", QCriteriaOperator.IS_NOT_BLANK)))))
+            .asString();
+         assertEquals(400, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals("Unrecognized criteria field name: createDate.", jsonObject.getString("error"));
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(serverQInstance);
+      }
    }
 
 

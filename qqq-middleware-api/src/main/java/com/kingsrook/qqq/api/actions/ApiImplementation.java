@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
+import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
@@ -159,6 +160,7 @@ public class ApiImplementation
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
+      queryInput.setInputSource(QInputSource.USER);
       queryInput.setIncludeAssociations(true);
       queryInput.setShouldFetchHeavyFields(true);
       queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
@@ -238,7 +240,7 @@ public class ApiImplementation
          badRequestMessages.add("includeCount must be either true or false");
       }
 
-      Map<String, QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, version, tableName));
+      Map<String, QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsInput().withApiName(apiName).withVersion(version).withTableName(table.getName()).withInputSource(QInputSource.USER));
 
       if(StringUtils.hasContent(orderBy))
       {
@@ -435,7 +437,7 @@ public class ApiImplementation
          JSONTokener jsonTokener = new JSONTokener(body.trim());
          JSONObject  jsonObject  = new JSONObject(jsonTokener);
 
-         insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false)));
+         insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false, QInputSource.USER)));
 
          if(jsonTokener.more())
          {
@@ -517,7 +519,7 @@ public class ApiImplementation
          for(int i = 0; i < jsonArray.length(); i++)
          {
             JSONObject jsonObject = jsonArray.getJSONObject(i);
-            recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false));
+            recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false, QInputSource.USER));
          }
 
          if(jsonTokener.more())
@@ -600,6 +602,7 @@ public class ApiImplementation
 
       GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
+      getInput.setInputSource(QInputSource.USER);
       getInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
       PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
@@ -651,7 +654,7 @@ public class ApiImplementation
          JSONTokener jsonTokener = new JSONTokener(body.trim());
          JSONObject  jsonObject  = new JSONObject(jsonTokener);
 
-         QRecord qRecord = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false);
+         QRecord qRecord = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false, QInputSource.USER);
          qRecord.setValue(table.getPrimaryKeyField(), primaryKey);
          updateInput.setRecords(List.of(qRecord));
 
@@ -732,7 +735,7 @@ public class ApiImplementation
          for(int i = 0; i < jsonArray.length(); i++)
          {
             JSONObject jsonObject = jsonArray.getJSONObject(i);
-            recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, true));
+            recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, true, QInputSource.USER));
          }
 
          if(jsonTokener.more())

@@ -30,7 +30,9 @@ import java.util.Map;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -207,6 +209,26 @@ class QRecordApiAdapterTest extends BaseTest
          """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1, true);
       assertTrue(recordWithoutNonEditablePrimaryKeyFields.getValues().containsKey("createDate"));
       assertEquals(256, recordWithoutNonEditablePrimaryKeyFields.getValues().get("id"));
+
+      try
+      {
+         TestUtils.TablePersonalizer.register(QContext.getQInstance());
+
+         ////////////////////////////////////////////////////////////////////
+         // create date is removed by personalizer - so message is special //
+         ////////////////////////////////////////////////////////////////////
+         assertThatThrownBy(() -> QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
+         {"createDate": "2025-01-01T00:00:00Z"}
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1, true, QInputSource.USER))
+            .isInstanceOf(QBadRequestException.class)
+            .hasMessageContaining("unrecognized field name: createDate")
+            .hasMessageContaining("createDate is not allowed for the current user");
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(QContext.getQInstance());
+      }
+
    }
 
 
