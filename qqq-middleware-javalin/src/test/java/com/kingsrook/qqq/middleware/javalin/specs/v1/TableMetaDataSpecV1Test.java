@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1;
 
 
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.javalin.TestUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
 import com.kingsrook.qqq.middleware.javalin.specs.SpecTestBase;
 import kong.unirest.HttpResponse;
@@ -32,6 +34,8 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -75,7 +79,7 @@ class TableMetaDataSpecV1Test extends SpecTestBase
       assertEquals("person", jsonObject.getString("name"));
       assertEquals("Person", jsonObject.getString("label"));
 
-      JSONObject fields = jsonObject.getJSONObject("fields");
+      JSONObject fields         = jsonObject.getJSONObject("fields");
       JSONObject firstNameField = fields.getJSONObject("firstName");
       assertEquals("firstName", firstNameField.getString("name"));
       assertEquals("First Name", firstNameField.getString("label"));
@@ -99,4 +103,44 @@ class TableMetaDataSpecV1Test extends SpecTestBase
       assertThat(error).contains("Table").contains("notAnActualTable").contains("not found");
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizedTable()
+   {
+      Supplier<JSONObject> request = () ->
+      {
+         HttpResponse<String> response = Unirest.get(getBaseUrlAndPath() + "/metaData/table/person").asString();
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         JSONObject fields     = jsonObject.getJSONObject("fields");
+         return (fields);
+      };
+
+      ///////////////////////////////////////////////////////////
+      // first make sure non-personalized table has createDate //
+      ///////////////////////////////////////////////////////////
+      {
+         JSONObject fields = request.get();
+         assertTrue(fields.has("createDate"));
+      }
+
+      /////////////////////////////////////////////////////////////////////
+      // now repeat with personalizer active, and assert we don't get it //
+      /////////////////////////////////////////////////////////////////////
+      try
+      {
+         TestUtils.TablePersonalizer.register(serverQInstance);
+
+         JSONObject fields = request.get();
+         assertFalse(fields.has("createDate"));
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(serverQInstance);
+      }
+   }
 }

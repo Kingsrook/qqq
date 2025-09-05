@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.middleware.javalin.executors.io.TableMetaDataInput;
 import com.kingsrook.qqq.middleware.javalin.executors.io.TableMetaDataOutputInterface;
@@ -56,6 +57,7 @@ public class TableMetaDataExecutor extends AbstractMiddlewareExecutor<TableMetaD
       }
 
       tableMetaDataInput.setTableName(tableName);
+      tableMetaDataInput.setInputSource(QInputSource.USER);
       PermissionsHelper.checkTablePermissionThrowing(tableMetaDataInput, TablePermissionSubType.READ);
 
       TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();

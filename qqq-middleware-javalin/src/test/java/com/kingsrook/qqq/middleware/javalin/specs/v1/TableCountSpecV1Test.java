@@ -24,6 +24,7 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -232,6 +233,54 @@ class TableCountSpecV1Test extends SpecTestBase
       assertEquals(500, response.getStatus());
       jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals("Could not find Backend Variant in table memoryVariantOptions with id '3'", jsonObject.getString("error"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizedTable()
+   {
+      Supplier<HttpResponse<String>> request = () ->
+      {
+         HttpResponse<String> response = Unirest.post(getBaseUrlAndPath() + "/table/person/count")
+            .contentType(ContentType.APPLICATION_JSON.getMimeType())
+            .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("createDate", QCriteriaOperator.IS_NOT_BLANK)))))
+            .asString();
+         return (response);
+      };
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // first make sure that a query (without the personalizer active) can use create date //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      {
+         HttpResponse<String> response = request.get();
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertThat(jsonObject.getInt("count")).isGreaterThan(0);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // now repeat the query with the personalizer active - create date should work //
+      /////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         TestUtils.TablePersonalizer.register(serverQInstance);
+
+         ///////////////////////////////////////////////
+         // try to query by create date - should fail //
+         ///////////////////////////////////////////////
+         HttpResponse<String> response = request.get();
+         assertEquals(500, response.getStatus()); // might be better as 400...
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals("Query Filter contained 1 unrecognized field name: createDate", jsonObject.getString("error"));
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(serverQInstance);
+      }
    }
 
 }

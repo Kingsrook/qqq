@@ -47,6 +47,7 @@ public abstract class SpecTestBase
    protected static int PORT = 6273;
 
    protected static Javalin service;
+   protected QInstance serverQInstance;
 
 
 
@@ -119,11 +120,10 @@ public abstract class SpecTestBase
       {
          service = Javalin.create(config ->
             {
-               QInstance qInstance;
                try
                {
-                  qInstance = defineQInstance();
-                  primeTestData(qInstance);
+                  serverQInstance = defineQInstance();
+                  primeTestData(serverQInstance);
                }
                catch(Exception e)
                {
@@ -131,19 +131,19 @@ public abstract class SpecTestBase
                }
 
                AtomicReference<AbstractMiddlewareVersion> middlewareVersionRef = new AtomicReference<>();
-               QContext.withTemporaryContext(new CapturedContext(qInstance, new QSystemUserSession()), () ->
+               QContext.withTemporaryContext(new CapturedContext(serverQInstance, new QSystemUserSession()), () ->
                   middlewareVersionRef.set(getMiddlewareVersion()));
                AbstractMiddlewareVersion middlewareVersion = middlewareVersionRef.get();
 
                AbstractEndpointSpec<?, ?, ?> spec = getSpec();
-               spec.setQInstance(qInstance);
+               spec.setQInstance(serverQInstance);
 
                String versionBasePath = middlewareVersion.getVersionBasePath();
                config.router.apiBuilder(() -> spec.defineRoute(middlewareVersion, versionBasePath));
 
                for(AbstractEndpointSpec<?, ?, ?> additionalSpec : getAdditionalSpecs())
                {
-                  additionalSpec.setQInstance(qInstance);
+                  additionalSpec.setQInstance(serverQInstance);
                   config.router.apiBuilder(() -> additionalSpec.defineRoute(middlewareVersion, versionBasePath));
                }
             }

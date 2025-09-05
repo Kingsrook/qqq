@@ -34,13 +34,16 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerInterface;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -230,6 +233,19 @@ public class TestUtils
       {
          new SavedViewsMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
          new ScriptsMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
+
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // the test for this was built at a time when script revision table had contents it       //
+         // doesn't have that field anymore.  so, when memory backend module became stricter about //
+         // only storing and returning actual fields, it became "convenient" to-re add this field. //
+         // similarly tests use apiName & apiVersion, but those fields aren't in the table because //
+         // the api module isn't available, so, add them to make tests work.                       //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         QTableMetaData table     = qInstance.getTable("scriptRevision");
+         table.addField(new QFieldMetaData("content", QFieldType.STRING));
+         table.addField(new QFieldMetaData("apiName", QFieldType.STRING));
+         table.addField(new QFieldMetaData("apiVersion", QFieldType.STRING));
+         table.getSections().get(table.getSections().size() - 2).getFieldNames().addAll(List.of("content", "apiName", "apiVersion"));
       }
       catch(Exception e)
       {
@@ -881,4 +897,51 @@ public class TestUtils
       );
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static class TablePersonalizer implements TableMetaDataPersonalizerInterface
+   {
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      public static void register(QInstance qInstance)
+      {
+         qInstance.addSupplementalCustomizer(TableMetaDataPersonalizerInterface.CUSTOMIZER_TYPE, new QCodeReference(TablePersonalizer.class));
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      public static void unregister(QInstance qInstance)
+      {
+         qInstance.getSupplementalCustomizers().remove(TableMetaDataPersonalizerInterface.CUSTOMIZER_TYPE);
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      @Override
+      public QTableMetaData execute(TableMetaDataPersonalizerInput tableMetaDataPersonalizerInput) throws QException
+      {
+         if(QInputSource.USER.equals(tableMetaDataPersonalizerInput.getInputSource()))
+         {
+            QTableMetaData clone = tableMetaDataPersonalizerInput.getTable().clone();
+            clone.getFields().remove("createDate");
+            return clone;
+         }
+
+         //////////////////////////////////////////////////
+         // by default, return the input table unchanged //
+         //////////////////////////////////////////////////
+         return (tableMetaDataPersonalizerInput.getTable());
+      }
+   }
 }

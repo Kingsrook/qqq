@@ -1021,6 +1021,7 @@ public class QJavalinImplementation
          QJavalinAccessLogger.logStart("get", logPair("table", tableName), logPair("primaryKey", primaryKey));
 
          getInput.setTableName(tableName);
+         getInput.setInputSource(QInputSource.USER);
          getInput.setShouldGenerateDisplayValues(true);
          getInput.setShouldTranslatePossibleValues(true);
          getInput.setShouldFetchHeavyFields(true);
@@ -1486,6 +1487,8 @@ public class QJavalinImplementation
          }
 
          tableMetaDataInput.setTableName(tableName);
+         tableMetaDataInput.setInputSource(QInputSource.USER);
+
          TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
          TableMetaDataOutput tableMetaDataOutput = tableMetaDataAction.execute(tableMetaDataInput);
 
@@ -1618,6 +1621,7 @@ public class QJavalinImplementation
          setupSession(context, exportInput);
 
          exportInput.setTableName(tableName);
+         exportInput.setInputSource(QInputSource.USER);
 
          String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
          exportInput.withReportDestination(new ReportDestination()

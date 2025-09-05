@@ -24,6 +24,7 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -48,6 +49,8 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -263,6 +266,65 @@ class TableQuerySpecV1Test extends SpecTestBase
       assertEquals(500, response.getStatus());
       jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals("Could not find Backend Variant in table memoryVariantOptions with id '3'", jsonObject.getString("error"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizedTable()
+   {
+      Supplier<JSONArray> request = () ->
+      {
+         HttpResponse<String> response = Unirest.post(getBaseUrlAndPath() + "/table/person/query")
+            .contentType(ContentType.APPLICATION_JSON.getMimeType())
+            .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, "Darin")))))
+            .asString();
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         JSONArray  records    = jsonObject.getJSONArray("records");
+         return (records);
+      };
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // first make sure that a query (without the personalizer active) DOES include create date //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         JSONArray records = request.get();
+         assertThat(records.length()).isGreaterThan(0);
+         assertTrue(records.getJSONObject(0).getJSONObject("values").has("createDate"));
+         assertTrue(records.getJSONObject(0).getJSONObject("displayValues").has("createDate"));
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // now repeat the query with the personalizer active - create date should NOT come back //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         TestUtils.TablePersonalizer.register(serverQInstance);
+
+         JSONArray records = request.get();
+         assertThat(records.length()).isGreaterThan(0);
+         assertFalse(records.getJSONObject(0).getJSONObject("values").has("createDate"));
+         assertFalse(records.getJSONObject(0).getJSONObject("displayValues").has("createDate"));
+
+         ///////////////////////////////////////////////
+         // try to query by create date - should fail //
+         ///////////////////////////////////////////////
+         HttpResponse<String> response = Unirest.post(getBaseUrlAndPath() + "/table/person/query")
+            .contentType(ContentType.APPLICATION_JSON.getMimeType())
+            .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("createDate", QCriteriaOperator.IS_NOT_BLANK)))))
+            .asString();
+         assertEquals(500, response.getStatus()); // might be better as 400...
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals("Query Filter contained 1 unrecognized field name: createDate", jsonObject.getString("error"));
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(serverQInstance);
+      }
    }
 
 }

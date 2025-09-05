@@ -243,13 +243,14 @@ public class QJavalinScriptsHandler
    {
       try
       {
-         getReferencedRecordToEnsureAccess(context);
-
          String scriptRevisionId = context.pathParam("scriptRevisionId");
          QJavalinAccessLogger.logStart("getAssociatedScriptLogs", logPair("scriptRevisionId", scriptRevisionId));
 
          QueryInput queryInput = new QueryInput();
          QJavalinImplementation.setupSession(context, queryInput);
+
+         getReferencedRecordToEnsureAccess(context);
+
          queryInput.setTableName("scriptLog");
          queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria("scriptRevisionId", QCriteriaOperator.EQUALS, List.of(scriptRevisionId)))
@@ -362,10 +363,10 @@ public class QJavalinScriptsHandler
 
       try
       {
-         getReferencedRecordToEnsureAccess(context);
-
          TestScriptInput input = new TestScriptInput();
          QJavalinImplementation.setupSession(context, input);
+
+         getReferencedRecordToEnsureAccess(context);
 
          // todo delete? input.setRecordPrimaryKey(context.pathParam("primaryKey"));
          Map<String, Serializable> inputValues = new HashMap<>();
