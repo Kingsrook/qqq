@@ -308,7 +308,7 @@ class MemoryBackendModuleTest extends BaseTest
 
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).size());
       assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).get(0).getValue("name"));
-      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))).size());
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))));
 
       assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("notFound"))).size());
       assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("Triangle", "Circle"))).get(0).getValue("name"));

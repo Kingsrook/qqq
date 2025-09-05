@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.FilterValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryActionCacheHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
@@ -110,6 +111,7 @@ public class QueryAction
       queryInput.setTableMetaData(table);
 
       validateFieldNamesToInclude(queryInput);
+      FilterValidationHelper.validateFieldNamesInFilter(queryInput);
 
       QBackendMetaData backend = queryInput.getBackend();
       postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_QUERY_RECORD.getRole());

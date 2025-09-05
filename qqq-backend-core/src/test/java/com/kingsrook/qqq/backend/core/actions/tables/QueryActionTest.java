@@ -638,6 +638,30 @@ class QueryActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testInvalidFieldNamesInFilter() throws QException
+   {
+      assertThatThrownBy(() -> QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.IS_NOT_BLANK))))
+         .hasMessageContaining("1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter()
+         .withSubFilter(new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.IS_NOT_BLANK)))))
+         .hasMessageContaining("1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter()
+         .withOrderBy(new QFilterOrderBy("stillNotAField"))))
+         .hasMessageContaining("1 unrecognized field name: stillNotAField");
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // and we'll assume that the positive (non-throwing cases) are covered in all the other tests in here. //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testTablePersonalization() throws QException
    {
       QContext.getQSession().getUser().setIdReference("jdoe");

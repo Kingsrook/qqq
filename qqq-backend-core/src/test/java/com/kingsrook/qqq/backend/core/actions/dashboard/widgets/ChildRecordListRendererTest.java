@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePe
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChildRecordListData;
@@ -206,7 +208,8 @@ class ChildRecordListRendererTest extends BaseTest
       QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
-         .getWidgetMetaData();
+         .getWidgetMetaData()
+         .withDefaultValue("orderBy", new ArrayList<>(List.of(new QFilterOrderBy("id"))));
       qInstance.addWidget(widget);
 
       insertTwoOrdersAndThreeLines(qInstance);
