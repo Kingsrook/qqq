@@ -27,6 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
@@ -38,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
  *******************************************************************************/
 public interface QueryOrCountInputInterface
 {
+
    /*******************************************************************************
     ** Set in THIS, the "common params" (e.g., common to both Query & Count inputs)
     ** from the parameter SOURCE object.
@@ -114,4 +116,14 @@ public interface QueryOrCountInputInterface
     ** Setter for queryHints
     *******************************************************************************/
    void setQueryHints(EnumSet<QueryHint> queryHints);
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   QTableMetaData getTable();
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   InputSource getInputSource();
 }
