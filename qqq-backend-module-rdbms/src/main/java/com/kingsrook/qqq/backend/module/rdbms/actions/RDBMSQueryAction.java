@@ -37,12 +37,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -372,7 +374,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       QInstance       instance   = QContext.getQInstance();
       String          tableName  = queryInput.getTableName();
       List<QueryJoin> queryJoins = queryInput.getQueryJoins();
-      QTableMetaData  table      = instance.getTable(tableName);
+      QTableMetaData  table      = queryInput.getTable();
 
       Set<String> fieldNamesToInclude = queryInput.getFieldNamesToInclude();
 
@@ -415,6 +417,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             {
                throw new QException("Requested join table [" + queryJoin.getJoinTable() + "] is not a defined table.");
             }
+
+            ///////////////////////////////////////////////////////////////////////////
+            // make sure personalization is applied to the join table, if applicable //
+            ///////////////////////////////////////////////////////////////////////////
+            joinTable = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(joinTable).withInputSource(queryInput.getInputSource()));
 
             ///////////////////////////////////
             // filter by fieldNamesToInclude //
