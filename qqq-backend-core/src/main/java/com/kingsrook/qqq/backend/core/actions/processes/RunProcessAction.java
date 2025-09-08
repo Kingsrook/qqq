@@ -790,7 +790,7 @@ public class RunProcessAction
     ** Load the process state.
     **
     *******************************************************************************/
-   private Optional<ProcessState> loadState(UUIDAndTypeStateKey stateKey)
+   public Optional<ProcessState> loadState(UUIDAndTypeStateKey stateKey)
    {
       return (getStateProvider().get(ProcessState.class, stateKey));
    }

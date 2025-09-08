@@ -91,6 +91,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.PrepareBulkEditStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileMappingStep;
@@ -225,7 +226,7 @@ public class QInstanceEnricher
       ////////////////////////////////////////////////////////////////////////////////////
       Set<QSupplementalInstanceMetaData> toEnrich = new LinkedHashSet<>(qInstance.getSupplementalMetaData().values());
       Set<QSupplementalInstanceMetaData> enriched = new HashSet<>();
-      int count = 0;
+      int                                count    = 0;
       while(!toEnrich.isEmpty())
       {
          Iterator<QSupplementalInstanceMetaData> iterator                     = toEnrich.iterator();
@@ -1114,6 +1115,12 @@ public class QInstanceEnricher
 
       process.withStep(0, editScreen);
       process.getFrontendStep("review").setRecordListFields(editableFields);
+
+      QBackendStepMetaData prepareBulkEditStep = new QBackendStepMetaData()
+         .withName("prepareBulkEdit")
+         .withCode(new QCodeReference(PrepareBulkEditStep.class));
+      process.withStep(0, prepareBulkEditStep);
+
       qInstance.addProcess(process);
    }
 

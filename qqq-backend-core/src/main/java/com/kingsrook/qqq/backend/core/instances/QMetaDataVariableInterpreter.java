@@ -160,6 +160,9 @@ public class QMetaDataVariableInterpreter
     ** be found.  Where "looks like" means, for example, started with "${env." and ended
     ** with "}", but wasn't set in the environment, or, more interestingly, based on the
     ** valueMaps - only if the name to the left of the dot is an actual valueMap name.
+    ** additional valueMaps can be added via @see #addValueMap. also, more than one value
+    ** can be specified in the same string, separated by "??", and the first one found
+    ** in the valueMaps will be used. (e.g. "${input.clientId}??${processValues.possibleValueFilterValueClientId}"
     **
     ** If input is null, output is null.
     ** If input looks like ${env.X}, then the return value is the value of the env variable 'X'
@@ -199,27 +202,51 @@ public class QMetaDataVariableInterpreter
 
       if(valueMaps != null)
       {
-         boolean looksLikeVariable = false;
-         for(Map.Entry<String, Map<String, Serializable>> entry : valueMaps.entrySet())
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // if the value contains "??", split on that value and call recall this method for each part //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         if(value.contains("??"))
          {
-            String                    name     = entry.getKey();
-            Map<String, Serializable> valueMap = entry.getValue();
-
-            String prefix = "${" + name + ".";
-            if(value.startsWith(prefix) && value.endsWith("}"))
+            String[] split = value.split("\\?\\?");
+            for(String part : split)
             {
-               looksLikeVariable = true;
-               String lookupName = value.substring(prefix.length()).replaceFirst("}$", "");
-               if(valueMap != null && valueMap.containsKey(lookupName))
+               Serializable result = interpretForObject(part, defaultIfLooksLikeVariableButNotFound);
+               if(result != null)
                {
-                  return (valueMap.get(lookupName));
+                  /////////////////////////////////////////////////////////////////////////////
+                  // if not a string, always return, but if string, make sure it has content //
+                  /////////////////////////////////////////////////////////////////////////////
+                  if(!(result instanceof String) || StringUtils.hasContent((String) result))
+                  {
+                     return (result);
+                  }
                }
             }
          }
-
-         if(looksLikeVariable)
+         else
          {
-            return (defaultIfLooksLikeVariableButNotFound);
+            boolean looksLikeVariable = false;
+            for(Map.Entry<String, Map<String, Serializable>> entry : valueMaps.entrySet())
+            {
+               String                    name     = entry.getKey();
+               Map<String, Serializable> valueMap = entry.getValue();
+
+               String prefix = "${" + name + ".";
+               if(value.startsWith(prefix) && value.endsWith("}"))
+               {
+                  looksLikeVariable = true;
+                  String lookupName = value.substring(prefix.length()).replaceFirst("}$", "");
+                  if(valueMap != null && valueMap.containsKey(lookupName))
+                  {
+                     return (valueMap.get(lookupName));
+                  }
+               }
+            }
+
+            if(looksLikeVariable)
+            {
+               return (defaultIfLooksLikeVariableButNotFound);
+            }
          }
       }
 

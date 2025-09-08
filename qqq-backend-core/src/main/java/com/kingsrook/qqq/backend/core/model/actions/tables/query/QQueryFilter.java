@@ -563,21 +563,43 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
 
 
    /*******************************************************************************
+    ** Overload of interpretValues
+    ** @see #interpretValues(Map, FilterUseCase, Map)
+    *******************************************************************************/
+   public void interpretValues(Map<String, Serializable> inputValues, FilterUseCase useCase) throws QException
+   {
+      interpretValues(inputValues, useCase, null);
+   }
+
+
+
+   /*******************************************************************************
     ** Replace any criteria values that look like ${input.XXX} with the value of XXX
     ** from the supplied inputValues map - where the handling of missing values
     ** is specified in the inputted FilterUseCase parameter
+    **
+    ** An optional processValues map can be supplied, which will be used to by the interpreter
     **
     ** Note - it may be very important that you call this method on a clone of a
     ** QQueryFilter - e.g., if it's one that defined in metaData, and that we don't
     ** want to be (permanently) changed!!
     **
     *******************************************************************************/
-   public void interpretValues(Map<String, Serializable> inputValues, FilterUseCase useCase) throws QException
+   public void interpretValues(Map<String, Serializable> inputValues, FilterUseCase useCase, Map<String, Serializable> processValues) throws QException
    {
       List<Exception> caughtExceptions = new ArrayList<>();
 
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", inputValues);
+
+      ////////////////////////////////////////////////////////////////////////////
+      // if process values were passed in, add those to the interpreter as well //
+      ////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(processValues))
+      {
+         variableInterpreter.addValueMap("processValues", processValues);
+      }
+
       for(QFilterCriteria criterion : getCriteria())
       {
          if(criterion.getValues() != null)

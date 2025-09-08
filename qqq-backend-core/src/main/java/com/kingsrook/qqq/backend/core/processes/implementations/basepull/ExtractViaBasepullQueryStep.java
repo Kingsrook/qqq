@@ -48,7 +48,7 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep implements 
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected QQueryFilter getQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
+   public QQueryFilter getQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
    {
       //////////////////////////////////////////////////////////////
       // get input query filter or if not found, create a new one //

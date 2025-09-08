@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -41,6 +42,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Supplier;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
@@ -80,6 +82,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInpu
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
@@ -123,6 +126,8 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
+import com.kingsrook.qqq.backend.core.state.StateType;
+import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
@@ -1903,7 +1908,18 @@ public class QJavalinImplementation
          String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
          PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-         defaultQueryFilter.interpretValues(otherValues, useCase);
+         Map<String, Serializable> processValues = new HashMap<>();
+         if(StringUtils.hasContent(context.queryParam("processUUID")))
+         {
+            UUID                   processUUID  = UUID.fromString(context.queryParam("processUUID"));
+            Optional<ProcessState> processState = new RunProcessAction().loadState(new UUIDAndTypeStateKey(processUUID, StateType.PROCESS_STATUS));
+            if(processState.isPresent())
+            {
+               processValues = processState.get().getValues();
+            }
+         }
+
+         defaultQueryFilter.interpretValues(otherValues, useCase, processValues);
       }
 
       finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter, otherValues);
