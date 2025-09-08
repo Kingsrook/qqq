@@ -28,11 +28,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessMetaDataAdjustment;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -42,6 +45,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
@@ -83,6 +89,8 @@ public class BulkEditTransformStep extends AbstractTransformStep
       // capture the table label - for the process summary //
       ///////////////////////////////////////////////////////
       table = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
+      table = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(table).withInputSource(QInputSource.USER));
+
       if(table != null)
       {
          tableLabel = table.getLabel();
@@ -106,6 +114,11 @@ public class BulkEditTransformStep extends AbstractTransformStep
    @Override
    public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_PREVIEW))
+      {
+         adjustFields(runBackendStepInput, runBackendStepOutput);
+      }
+
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // on the validate step, we haven't read the full file, so we don't know how many rows there are - thus        //
       // record count is null, and the ValidateStep won't be setting status counters - so - do it here in that case. //
@@ -202,6 +215,51 @@ public class BulkEditTransformStep extends AbstractTransformStep
          }
       }
       runBackendStepOutput.setRecords(outputRecords);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void adjustFields(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      QProcessMetaData process = QContext.getQInstance().getProcess(runBackendStepInput.getProcessName());
+      List<QFrontendStepMetaData> frontendSteps = new ArrayList<>();
+
+      boolean foundEditScreen = false;
+      boolean foundReviewScreen = false;
+
+      for(QStepMetaData step : process.getStepList())
+      {
+         if(step instanceof QFrontendStepMetaData frontendStepMetaData)
+         {
+            QFrontendStepMetaData cloneStep = frontendStepMetaData.clone();
+            frontendSteps.add(cloneStep);
+
+            if(cloneStep.getName().equals("edit"))
+            {
+               foundEditScreen = true;
+               cloneStep.setFormFields(null);
+               for(QFieldMetaData tableField : table.getFields().values())
+               {
+                  cloneStep.addFormField(tableField.clone());
+               }
+            }
+            else if(cloneStep.getName().equals("review"))
+            {
+               foundReviewScreen = true;
+               cloneStep.getRecordListFields().removeIf(formField -> !table.getFields().containsKey(formField.getName()));
+            }
+         }
+      }
+
+      if(!foundEditScreen || !foundReviewScreen)
+      {
+         throw (new QException("Did not find either the edit screen or review screen (or both) in bulk edit process (for adjusting personalized form fields)"));
+      }
+
+      runBackendStepOutput.setProcessMetaDataAdjustment(new ProcessMetaDataAdjustment().withUpdatedFrontendStepList(frontendSteps));
    }
 
 

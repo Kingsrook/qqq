@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.map
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -47,7 +48,7 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSimpleFlat()
+   void testSimpleFlat() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_PERSON_MEMORY);
       List<String>           headerRow      = List.of("Id", "First Name", "lastname", "email", "homestate");
@@ -68,7 +69,7 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSimpleTall()
+   void testSimpleTall() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
       List<String>           headerRow      = List.of("orderNo", "shipto name", "sku", "quantity");
@@ -88,7 +89,7 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testTallWithTableNamesOnAssociations()
+   void testTallWithTableNamesOnAssociations() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
       List<String>           headerRow      = List.of("Order No", "Ship To Name", "Order Line: SKU", "Order Line: Quantity");
@@ -160,6 +161,10 @@ class BulkLoadMappingSuggesterTest extends BaseTest
             reInitInstanceInContext(TestUtils.defineInstance());
          }
       }
+      catch(QException e)
+      {
+         throw new RuntimeException(e);
+      }
       finally
       {
          reInitInstanceInContext(TestUtils.defineInstance());
@@ -172,7 +177,7 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSimpleWide()
+   void testSimpleWide() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
       List<String>           headerRow      = List.of("orderNo", "ship to name", "sku", "quantity1", "sku 2", "quantity 2");
@@ -200,7 +205,7 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testIdMatchedChildrenForBulkEditOriginally()
+   void testIdMatchedChildrenForBulkEditOriginally() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER, true);
       List<String>           headerRow      = List.of("id", "ship to name");
