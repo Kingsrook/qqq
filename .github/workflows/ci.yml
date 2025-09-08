@@ -15,7 +15,7 @@ jobs:
       github.ref_name == 'develop' ||
       startsWith(github.ref_name, 'release/') ||
       startsWith(github.ref_name, 'hotfix/')
-    uses: Kingsrook/github-actions-library/.github/workflows/reusable-gitflow-publish@develop
+    uses: Kingsrook/github-actions-library/.github/workflows/reusable-gitflow-publish.yml@develop
     with:
       project-type: 'maven'
       java-version: '17'
@@ -38,7 +38,7 @@ jobs:
         startsWith(github.ref_name, 'release/') ||
         startsWith(github.ref_name, 'hotfix/')
       )
-    uses: Kingsrook/github-actions-library/.github/workflows/reusable-gitflow-test@develop
+    uses: Kingsrook/github-actions-library/.github/workflows/reusable-gitflow-test.yml@develop
     with:
       project-type: 'maven'
       java-version: '17'
