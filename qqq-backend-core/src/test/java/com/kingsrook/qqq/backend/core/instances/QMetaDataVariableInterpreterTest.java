@@ -186,6 +186,27 @@ class QMetaDataVariableInterpreterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testMultipleValueMapsNullish()
+   {
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", Map.of("amount", new BigDecimal("3.50"), "x", "y"));
+      variableInterpreter.addValueMap("others", Map.of("foo", "fu", "amount", new BigDecimal("1.75")));
+
+      assertNull(variableInterpreter.interpretForObject("${input.foo}"));
+      assertEquals("fu", variableInterpreter.interpretForObject("${input.foo}??${others.foo}"));
+      assertEquals("fu", variableInterpreter.interpretForObject("${others.foo}??${input.foo}"));
+      assertEquals("fu", variableInterpreter.interpretForObject("${output.foo}??${others.foo}"));
+      assertNull(variableInterpreter.interpretForObject("${input.bar}??${others.bar}"));
+      assertNull(variableInterpreter.interpretForObject("${output.bar}??${smothers.bar}"));
+      assertNull(variableInterpreter.interpretForObject("${output.bar}??${smothers.bar}"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testMultipleValueMaps()
    {
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();

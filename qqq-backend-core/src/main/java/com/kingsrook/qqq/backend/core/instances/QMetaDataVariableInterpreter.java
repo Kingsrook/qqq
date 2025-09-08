@@ -215,13 +215,26 @@ public class QMetaDataVariableInterpreter
                {
                   /////////////////////////////////////////////////////////////////////////////
                   // if not a string, always return, but if string, make sure it has content //
+                  // and is not the same thing we passed in to interpret                     //
                   /////////////////////////////////////////////////////////////////////////////
-                  if(!(result instanceof String) || StringUtils.hasContent((String) result))
+                  if(result instanceof String s)
+                  {
+                     if(StringUtils.hasContent(s) && !s.equals(part))
+                     {
+                        return (result);
+                     }
+                  }
+                  else
                   {
                      return (result);
                   }
                }
             }
+
+            /////////////////////////////////////////////////////////
+            // if we make it here and haven't returned, return nul //
+            /////////////////////////////////////////////////////////
+            return (null);
          }
          else
          {
