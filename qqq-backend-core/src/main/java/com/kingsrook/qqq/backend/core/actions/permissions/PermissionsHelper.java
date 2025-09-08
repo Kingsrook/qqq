@@ -428,6 +428,21 @@ public class PermissionsHelper
     *******************************************************************************/
    private static void addEffectiveAvailablePermission(QPermissionRules rules, PermissionSubType permissionSubType, Collection<AvailablePermission> rs, String baseName, MetaDataWithName metaDataWithName, String objectType)
    {
+      if(rules.getCustomPermissionChecker() != null)
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // if there's a custom permission checker for this object, and it says that it               //
+         // handlesBuildAvailablePermission, then call that method, and add its result to our result. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, rules.getCustomPermissionChecker());
+         if(customPermissionChecker.handlesBuildAvailablePermission())
+         {
+            AvailablePermission availablePermission = customPermissionChecker.buildAvailablePermission(rules, permissionSubType, baseName, metaDataWithName, objectType);
+            CollectionUtils.addIfNotNull(rs, availablePermission);
+            return;
+         }
+      }
+
       PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
       if(effectivePermissionSubType != null)
       {

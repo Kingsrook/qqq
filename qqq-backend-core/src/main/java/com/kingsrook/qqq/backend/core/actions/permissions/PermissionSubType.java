@@ -25,7 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.permissions;
 /*******************************************************************************
  **
  *******************************************************************************/
-sealed interface PermissionSubType permits PrivatePermissionSubType, TablePermissionSubType
+public sealed interface PermissionSubType permits PrivatePermissionSubType, TablePermissionSubType
 {
 
    /*******************************************************************************
