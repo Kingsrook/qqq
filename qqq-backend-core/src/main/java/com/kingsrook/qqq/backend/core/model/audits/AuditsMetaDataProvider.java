@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.processes.implementations.audits.GetAuditsForRecordProcess;
 
 
 /*******************************************************************************
@@ -61,6 +62,12 @@ public class AuditsMetaDataProvider
       defineStandardAuditTables(instance, backendName, backendDetailEnricher);
       defineStandardAuditPossibleValueSources(instance);
       defineStandardAuditJoins(instance);
+
+      GetAuditsForRecordProcess getAuditsForRecordProcess = new GetAuditsForRecordProcess();
+      if(getAuditsForRecordProcess.isEnabled())
+      {
+         instance.addProcess(getAuditsForRecordProcess.produce(instance));
+      }
    }
 
 
