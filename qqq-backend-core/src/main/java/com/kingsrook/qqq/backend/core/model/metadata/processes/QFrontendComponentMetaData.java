@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 /*******************************************************************************
  ** Definition of a UI component in a frontend process steps.
  *******************************************************************************/
-public class QFrontendComponentMetaData implements QMetaDataObject
+public class QFrontendComponentMetaData implements QMetaDataObject, Cloneable
 {
    private QComponentType type;
 
@@ -121,4 +121,29 @@ public class QFrontendComponentMetaData implements QMetaDataObject
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QFrontendComponentMetaData clone()
+   {
+      try
+      {
+         QFrontendComponentMetaData clone = (QFrontendComponentMetaData) super.clone();
+
+         if(values != null)
+         {
+            clone.values = new HashMap<>();
+            clone.values.putAll(values);
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

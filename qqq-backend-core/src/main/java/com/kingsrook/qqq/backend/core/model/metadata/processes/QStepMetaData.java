@@ -38,7 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.serialization.QStepMetaData
  **
  *******************************************************************************/
 @JsonDeserialize(using = QStepMetaDataDeserializer.class)
-public abstract class QStepMetaData implements QMetaDataObject
+public abstract class QStepMetaData implements QMetaDataObject, Cloneable
 {
    private String name;
    private String label;
@@ -154,5 +154,24 @@ public abstract class QStepMetaData implements QMetaDataObject
    public void setStepType(String stepType)
    {
       this.stepType = stepType;
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QStepMetaData clone()
+   {
+      try
+      {
+         QStepMetaData clone = (QStepMetaData) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 }
