@@ -497,7 +497,12 @@ public class ValidateRecordSecurityLockHelper
             else
             {
                QFieldMetaData field = table.getField(recordSecurityLock.getFieldName());
-               return (List.of(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " a record with a value of " + recordSecurityValue + " in the field: " + field.getLabel())));
+               String valueDescription = "with a value of " + recordSecurityValue;
+               if(recordSecurityValue == null || "".equals(recordSecurityValue))
+               {
+                  valueDescription = "with an empty value";
+               }
+               return (List.of(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " a record " + valueDescription + " in the field: " + field.getLabel())));
             }
          }
       }
