@@ -391,7 +391,7 @@ public class QSession implements Serializable, Cloneable
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          }
 
-         if(valueAsType.equals(keyValueAsType))
+         if(valueAsType != null && valueAsType.equals(keyValueAsType))
          {
             return (true);
          }
