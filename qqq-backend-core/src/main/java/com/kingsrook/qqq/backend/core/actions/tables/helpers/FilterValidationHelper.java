@@ -41,13 +41,14 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- **
+ * Utility to help query action validate the fieldNames in a filter.
  *******************************************************************************/
 public class FilterValidationHelper
 {
 
    /***************************************************************************
-    *
+    * throw an exception if a filter contains any field names (in its criteria
+    * or orderBys) that aren't in the input table (which may be user-personalized).
     ***************************************************************************/
    public static void validateFieldNamesInFilter(QueryOrCountInputInterface input) throws QException
    {
