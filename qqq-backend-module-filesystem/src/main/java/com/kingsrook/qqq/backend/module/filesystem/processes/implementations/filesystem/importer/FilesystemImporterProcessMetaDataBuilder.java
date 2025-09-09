@@ -64,6 +64,7 @@ public class FilesystemImporterProcessMetaDataBuilder extends AbstractProcessMet
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_ARCHIVE_PATH, QFieldType.STRING))
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME, QFieldType.STRING))
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_VALUE, QFieldType.STRING))
+               .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_MOVE_UNSTRUCTURED_FIELDS_TO_VALUES_JSON, QFieldType.BOOLEAN).withDefaultValue(false))
 
                //////////////////////////////////////////////////////////////////////////////////////
                // define a QCodeReference - expected to be of type Function<QRecord, Serializable> //

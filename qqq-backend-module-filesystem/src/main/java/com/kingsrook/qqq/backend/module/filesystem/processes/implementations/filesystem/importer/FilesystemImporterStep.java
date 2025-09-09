@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -60,9 +61,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import org.apache.commons.lang3.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -95,7 +98,8 @@ public class FilesystemImporterStep implements BackendStep
    public static final String FIELD_ARCHIVE_PATH             = "archivePath";
    public static final String FIELD_REMOVE_FILE_AFTER_IMPORT = "removeFileAfterImport";
 
-   public static final String FIELD_UPDATE_FILE_IF_NAME_EXISTS = "updateFileIfNameExists";
+   public static final String FIELD_UPDATE_FILE_IF_NAME_EXISTS              = "updateFileIfNameExists";
+   public static final String FIELD_MOVE_UNSTRUCTURED_FIELDS_TO_VALUES_JSON = "moveUnstructuredFieldsToValuesJson";
 
    private Function<QRecord, Serializable> securitySupplier = null;
 
@@ -375,6 +379,8 @@ public class FilesystemImporterStep implements BackendStep
     *******************************************************************************/
    List<QRecord> parseFileIntoRecords(RunBackendStepInput runBackendStepInput, String content) throws QException
    {
+      Boolean moveUnstructuredFieldsToValuesJson = runBackendStepInput.getValueBoolean(FIELD_MOVE_UNSTRUCTURED_FIELDS_TO_VALUES_JSON);
+
       /////////////////////////////////////////////////////////////////////////////////////////////////////////
       // first, parse the content into records, w/ unknown field names - just whatever is in the CSV or JSON //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -401,17 +407,46 @@ public class FilesystemImporterStep implements BackendStep
       /////////////////////////////////////////////////////////////////////////////
       // now, add some fields that we know about to those records, for returning //
       /////////////////////////////////////////////////////////////////////////////
-      List<QRecord> importRecordList = new ArrayList<>();
-      int           recordNo         = 1;
+      QTableMetaData importRecordTable = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FIELD_IMPORT_RECORD_TABLE));
+      List<QRecord>  importRecordList  = new ArrayList<>();
+      int            recordNo          = 1;
       for(QRecord record : contentRecords)
       {
          record.setValue("recordNo", recordNo++);
          addSecurityValue(runBackendStepInput, record);
 
+         if(BooleanUtils.isTrue(moveUnstructuredFieldsToValuesJson))
+         {
+            moveUnstrucutredFieldsToValuesJsonBlob(importRecordTable, record);
+         }
+
          importRecordList.add(record);
       }
 
       return (importRecordList);
+   }
+
+
+
+   /***************************************************************************
+    * combine all unstructured fields of the record into a JSON blob in the "values" field
+    ***************************************************************************/
+   private void moveUnstrucutredFieldsToValuesJsonBlob(QTableMetaData table, QRecord record)
+   {
+      Map<String, Serializable> unstructuredValues = new HashMap<>();
+      for(Map.Entry<String, Serializable> entry : record.getValues().entrySet())
+      {
+         String fieldName = entry.getKey();
+         if(!table.getFields().containsKey(fieldName))
+         {
+            unstructuredValues.put(fieldName, entry.getValue());
+         }
+      }
+
+      record.getValues().entrySet().removeIf(e -> unstructuredValues.containsKey(e.getKey()));
+
+      String unstructuredValuesJson = JsonUtils.toJson(unstructuredValues);
+      record.setValue("values", unstructuredValuesJson);
    }
 
 
