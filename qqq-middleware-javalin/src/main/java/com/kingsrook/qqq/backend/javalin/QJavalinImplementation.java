@@ -1907,11 +1907,10 @@ public class QJavalinImplementation
          String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
          PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-         Map<String, Serializable> processValues     = new HashMap<>();
-         String                    processUUIDString = context.pathParam("processUUID");
-         if(StringUtils.hasContent(processUUIDString))
+         Map<String, Serializable> processValues = new HashMap<>();
+         if(context.pathParamMap().containsKey("processUUID") && StringUtils.hasContent(context.pathParam("processUUID")))
          {
-            UUID                   processUUID  = UUID.fromString(processUUIDString);
+            UUID                   processUUID  = UUID.fromString(context.pathParam("processUUID"));
             Optional<ProcessState> processState = new RunProcessAction().loadState(new UUIDAndTypeStateKey(processUUID, StateType.PROCESS_STATUS));
             if(processState.isPresent())
             {
