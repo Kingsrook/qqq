@@ -106,6 +106,7 @@ commands:
   ###############################################################################
   mvn_verify:
     steps:
+      - checkout
       - run:
           name: Run Maven Verify
           command: |
