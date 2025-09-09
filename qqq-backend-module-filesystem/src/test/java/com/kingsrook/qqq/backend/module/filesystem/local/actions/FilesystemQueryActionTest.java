@@ -113,6 +113,11 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
          .withGlob("*.txt");
       reInitInstanceInContext(instance);
 
+      /////////////////////////////////////////////////////
+      // make sure to reset the table in the query input //
+      /////////////////////////////////////////////////////
+      queryInput.setTableName(TestUtils.TABLE_NAME_BLOB_LOCAL_FS);
+
       queryInput.setFilter(new QQueryFilter());
       queryOutput = filesystemQueryAction.execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Query should use glob and find 2 rows");

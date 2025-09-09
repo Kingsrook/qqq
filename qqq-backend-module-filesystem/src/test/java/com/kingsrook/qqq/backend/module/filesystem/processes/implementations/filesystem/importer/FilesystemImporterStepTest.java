@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 import java.io.File;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
@@ -37,7 +38,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemActionTest;
@@ -60,7 +64,6 @@ class FilesystemImporterStepTest extends FilesystemActionTest
    // note - we take advantage of the @BeforeEach and @AfterEach to set up //
    // and clean up files on disk for this test.                            //
    //////////////////////////////////////////////////////////////////////////
-
 
 
    /*******************************************************************************
@@ -243,12 +246,20 @@ class FilesystemImporterStepTest extends FilesystemActionTest
    @Test
    void testSecurityKey() throws QException
    {
-      //////////////////////////////////////////////
-      // Add a security name/value to our process //
-      //////////////////////////////////////////////
+      /////////////////////////////////////////////////////////
+      // Add a security name/value to our process and tables //
+      /////////////////////////////////////////////////////////
       QProcessMetaData process = QContext.getQInstance().getProcess(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
       process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME)).findFirst().get().setDefaultValue("customerId");
       process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_VALUE)).findFirst().get().setDefaultValue(47);
+
+      String importBaseName = "personImporter";
+      for(String suffix : List.of(FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX, FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX))
+      {
+         QTableMetaData table = QContext.getQInstance().getTable(importBaseName + suffix);
+         table.addField(new QFieldMetaData("customerId", QFieldType.INTEGER));
+         table.getSections().get(0).getFieldNames().add("customerId");
+      }
 
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
@@ -257,8 +268,7 @@ class FilesystemImporterStepTest extends FilesystemActionTest
       ////////////////////////////////////////////////////////////////////////////////////////////
       // assert the security field gets its value on both the importFile & importRecord records //
       ////////////////////////////////////////////////////////////////////////////////////////////
-      String  importBaseName = "personImporter";
-      QRecord fileRecord     = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX).withPrimaryKey(1));
+      QRecord fileRecord = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX).withPrimaryKey(1));
       assertEquals(47, fileRecord.getValue("customerId"));
 
       QRecord recordRecord = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX).withPrimaryKey(1));
@@ -273,12 +283,20 @@ class FilesystemImporterStepTest extends FilesystemActionTest
    @Test
    void testSecuritySupplier() throws QException
    {
-      //////////////////////////////////////////////
-      // Add a security name/value to our process //
-      //////////////////////////////////////////////
+      /////////////////////////////////////////////////////////
+      // Add a security name/value to our process and tables //
+      /////////////////////////////////////////////////////////
       QProcessMetaData process = QContext.getQInstance().getProcess(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
       process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME)).findFirst().get().setDefaultValue("customerId");
       process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_VALUE_SUPPLIER)).findFirst().get().setDefaultValue(new QCodeReference(SecuritySupplier.class));
+
+      String importBaseName = "personImporter";
+      for(String importFileTableSuffix : List.of(FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX, FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX))
+      {
+         QTableMetaData table = QContext.getQInstance().getTable(importBaseName + importFileTableSuffix);
+         table.addField(new QFieldMetaData("customerId", QFieldType.INTEGER));
+         table.getSections().get(0).getFieldNames().add("customerId");
+      }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       // re-validate our instance now that we have that code-reference in place for the security supplier //
@@ -293,8 +311,7 @@ class FilesystemImporterStepTest extends FilesystemActionTest
       ////////////////////////////////////////////////////////////////////////////////////////////
       // assert the security field gets its value on both the importFile & importRecord records //
       ////////////////////////////////////////////////////////////////////////////////////////////
-      String  importBaseName = "personImporter";
-      QRecord fileRecord     = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX).withPrimaryKey(1));
+      QRecord fileRecord = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX).withPrimaryKey(1));
       assertEquals(1701, fileRecord.getValue("customerId"));
 
       QRecord recordRecord = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX).withPrimaryKey(1));
