@@ -111,6 +111,9 @@ public class AggregateAction
 
 
 
+   /***************************************************************************
+    * make sure field names in the aggregate and group by sections are valid.
+    ***************************************************************************/
    private static void validateFieldNames(AggregateInput aggregateInput) throws QException
    {
       Set<String> inputFieldNames = new LinkedHashSet<>();
