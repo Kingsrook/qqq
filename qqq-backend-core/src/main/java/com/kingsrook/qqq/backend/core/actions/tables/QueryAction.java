@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -194,9 +195,24 @@ public class QueryAction
          throw (new QException("An empty set of fieldNamesToInclude was given as queryInput, which is not allowed."));
       }
 
+      List<String> unrecognizedFieldNames = getUnrecognizedFieldNames(queryInput, fieldNamesToInclude);
+
+      if(!unrecognizedFieldNames.isEmpty())
+      {
+         throw (new QException("QueryInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));
+      }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   static List<String> getUnrecognizedFieldNames(QueryOrCountInputInterface queryInput, Set<String> fieldNames) throws QException
+   {
       List<String>                unrecognizedFieldNames = new ArrayList<>();
       Map<String, QTableMetaData> selectedQueryJoins     = null;
-      for(String fieldName : fieldNamesToInclude)
+      for(String fieldName : fieldNames)
       {
          if(fieldName.contains("."))
          {
@@ -270,11 +286,7 @@ public class QueryAction
             }
          }
       }
-
-      if(!unrecognizedFieldNames.isEmpty())
-      {
-         throw (new QException("QueryInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));
-      }
+      return unrecognizedFieldNames;
    }
 
 
