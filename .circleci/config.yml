@@ -106,6 +106,7 @@ commands:
   ###############################################################################
   mvn_verify:
     steps:
+      - checkout
       - run:
           name: Run Maven Verify
           command: |
@@ -144,6 +145,7 @@ commands:
   ###############################################################################
   check_middleware_api_versions:
       steps:
+        - checkout
         - run:
             name: Build and Run ValidateApiVersions
             command: |
@@ -377,6 +379,7 @@ jobs:
   publish_asciidoc:
     executor: localstack/default
     steps:
+      - checkout
       - install_asciidoctor
       - run_asciidoctor
 

@@ -30,7 +30,6 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.ActionFlag;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -44,7 +43,6 @@ public class InsertInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
    private List<QRecord>       records;
-   private InputSource         inputSource = QInputSource.SYSTEM;
 
    private boolean skipUniqueKeyCheck = false;
 
@@ -261,32 +259,13 @@ public class InsertInput extends AbstractTableActionInput
 
 
 
-   /*******************************************************************************
-    ** Getter for inputSource
-    *******************************************************************************/
-   public InputSource getInputSource()
-   {
-      return (this.inputSource);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inputSource
-    *******************************************************************************/
-   public void setInputSource(InputSource inputSource)
-   {
-      this.inputSource = inputSource;
-   }
-
-
 
    /*******************************************************************************
     ** Fluent setter for inputSource
     *******************************************************************************/
    public InsertInput withInputSource(InputSource inputSource)
    {
-      this.inputSource = inputSource;
+      setInputSource(inputSource);
       return (this);
    }
 

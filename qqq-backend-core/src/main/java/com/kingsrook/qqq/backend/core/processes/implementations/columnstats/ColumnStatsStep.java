@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
@@ -46,8 +47,10 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
@@ -137,6 +140,11 @@ public class ColumnStatsStep implements BackendStep
          }
 
          QTableMetaData table = QContext.getQInstance().getTable(tableName);
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure user personalization is applied to the table - e.g., so user can't request a column they aren't allowed to see //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         table = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableName(tableName).withInputSource(QInputSource.USER));
 
          FieldAndQueryJoin fieldAndQueryJoin = getFieldAndQueryJoin(table, fieldName);
          QFieldMetaData    field             = fieldAndQueryJoin.field();

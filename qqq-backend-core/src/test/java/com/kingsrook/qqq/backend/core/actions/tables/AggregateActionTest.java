@@ -23,9 +23,22 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
@@ -46,6 +59,58 @@ class AggregateActionTest extends BaseTest
       AggregateInput request = new AggregateInput();
       request.setTableName("person");
       assertThrows(IllegalStateException.class, () -> new AggregateAction().execute(request));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInvalidFieldNames() throws QException
+   {
+      assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_SHAPE)
+         .withFilter(new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.IS_NOT_BLANK)))))
+         .hasMessageContaining("1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_SHAPE)
+         .withFilter(new QQueryFilter().withSubFilter(new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.IS_NOT_BLANK))))))
+         .hasMessageContaining("1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_SHAPE)
+         .withFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("notAField")))))
+         .hasMessageContaining("Query Filter contained 1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_SHAPE)
+         .withAggregate(new Aggregate("noWay", AggregateOperator.MAX))))
+         .hasMessageContaining("AggregateInput contained 1 unrecognized field name: noWay");
+
+      assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_SHAPE)
+         .withGroupBy(new GroupBy(QFieldType.INTEGER, "nope"))))
+         .hasMessageContaining("AggregateInput contained 1 unrecognized field name: nope");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTablePersonalization() throws QException
+   {
+      QContext.getQSession().getUser().setIdReference("jdoe");
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY, "noOfShoes", QContext.getQSession().getUser().getIdReference());
+
+      ///////////////////////////////////////////////////////////////////////////
+      // make sure not allowed to filter by a field we don't have in the table //
+      ///////////////////////////////////////////////////////////////////////////
+      AggregateInput aggregateInput = new AggregateInput(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withFilter(new QQueryFilter(new QFilterCriteria("noOfShoes", QCriteriaOperator.EQUALS, 2)))
+         .withInputSource(QInputSource.USER);
+      assertThatThrownBy(() -> new AggregateAction().execute(aggregateInput))
+         .hasMessageContaining("Query Filter contained 1 unrecognized field name: noOfShoes");
    }
 
 }

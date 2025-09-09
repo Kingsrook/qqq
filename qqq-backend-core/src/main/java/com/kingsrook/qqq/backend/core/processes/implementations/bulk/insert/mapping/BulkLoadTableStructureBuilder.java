@@ -28,9 +28,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.bulk.TableKeyFieldsPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -58,7 +61,7 @@ public class BulkLoadTableStructureBuilder
    /***************************************************************************
     **
     ***************************************************************************/
-   public static BulkLoadTableStructure buildTableStructure(String tableName)
+   public static BulkLoadTableStructure buildTableStructure(String tableName) throws QException
    {
       return (buildTableStructure(tableName, null, null, false));
    }
@@ -68,7 +71,7 @@ public class BulkLoadTableStructureBuilder
    /***************************************************************************
     **
     ***************************************************************************/
-   public static BulkLoadTableStructure buildTableStructure(String tableName, Boolean isBulkEdit)
+   public static BulkLoadTableStructure buildTableStructure(String tableName, Boolean isBulkEdit) throws QException
    {
       return (buildTableStructure(tableName, null, null, isBulkEdit));
    }
@@ -78,9 +81,10 @@ public class BulkLoadTableStructureBuilder
    /***************************************************************************
     **
     ***************************************************************************/
-   private static BulkLoadTableStructure buildTableStructure(String tableName, Association association, String parentAssociationPath, Boolean isBulkEdit)
+   private static BulkLoadTableStructure buildTableStructure(String tableName, Association association, String parentAssociationPath, Boolean isBulkEdit) throws QException
    {
       QTableMetaData table = QContext.getQInstance().getTable(tableName);
+      table = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(table).withInputSource(QInputSource.USER));
 
       BulkLoadTableStructure tableStructure = new BulkLoadTableStructure();
       tableStructure.setTableName(tableName);

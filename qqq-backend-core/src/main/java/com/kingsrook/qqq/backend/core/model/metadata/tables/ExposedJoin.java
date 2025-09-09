@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -35,7 +36,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ExposedJoin
+public class ExposedJoin implements Cloneable
 {
    private static final QLogger LOG = QLogger.getLogger(ExposedJoin.class);
 
@@ -214,5 +215,30 @@ public class ExposedJoin
    {
       this.joinPath = joinPath;
       return (this);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public ExposedJoin clone()
+   {
+      try
+      {
+         ExposedJoin clone = (ExposedJoin) super.clone();
+
+         if(joinPath != null)
+         {
+            clone.joinPath = new ArrayList<>(joinPath);
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 }

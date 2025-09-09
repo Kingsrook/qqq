@@ -29,7 +29,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class AssociatedScript implements Serializable
+public class AssociatedScript implements Serializable, Cloneable
 {
    private String         fieldName;
    private Serializable   scriptTypeId;
@@ -137,4 +137,26 @@ public class AssociatedScript implements Serializable
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public AssociatedScript clone()
+   {
+      try
+      {
+         AssociatedScript clone = (AssociatedScript) super.clone();
+         if(scriptTester != null)
+         {
+            scriptTester = scriptTester.clone();
+         }
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

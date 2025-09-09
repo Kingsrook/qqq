@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -62,6 +63,7 @@ public class TableCountExecutor extends AbstractMiddlewareExecutor<TableCountInp
 
          CountInput countInput = new CountInput();
          countInput.setTableName(input.getTableName());
+         countInput.setInputSource(QInputSource.USER);
 
          PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
 

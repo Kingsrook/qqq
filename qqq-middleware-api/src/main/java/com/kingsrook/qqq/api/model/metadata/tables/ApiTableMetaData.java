@@ -44,7 +44,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
+public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider, Cloneable
 {
    private String initialVersion;
    private String finalVersion;
@@ -463,4 +463,51 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public ApiTableMetaData clone()
+   {
+      try
+      {
+         ApiTableMetaData clone = (ApiTableMetaData) super.clone();
+
+         if(removedApiFields != null)
+         {
+            clone.removedApiFields = new ArrayList<>();
+            for(QFieldMetaData removedApiField : removedApiFields)
+            {
+               clone.removedApiFields.add(removedApiField.clone());
+            }
+         }
+
+         if(enabledOperations != null)
+         {
+            clone.enabledOperations = new HashSet<>(enabledOperations);
+         }
+
+         if(disabledOperations != null)
+         {
+            clone.disabledOperations = new HashSet<>(disabledOperations);
+         }
+
+         if(apiAssociationMetaData != null)
+         {
+            clone.apiAssociationMetaData = new HashMap<>();
+            for(Map.Entry<String, ApiAssociationMetaData> entry : apiAssociationMetaData.entrySet())
+            {
+               clone.apiAssociationMetaData.put(entry.getKey(), entry.getValue().clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

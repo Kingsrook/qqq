@@ -28,7 +28,7 @@ import com.kingsrook.qqq.api.model.APIVersionRange;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiAssociationMetaData
+public class ApiAssociationMetaData implements Cloneable
 {
    private String  initialVersion;
    private String  finalVersion;
@@ -144,4 +144,22 @@ public class ApiAssociationMetaData
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public ApiAssociationMetaData clone()
+   {
+      try
+      {
+         ApiAssociationMetaData clone = (ApiAssociationMetaData) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

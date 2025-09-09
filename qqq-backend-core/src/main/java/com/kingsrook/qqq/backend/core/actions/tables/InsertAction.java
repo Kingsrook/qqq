@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
@@ -63,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.DuplicateKeyBadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -118,11 +120,12 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       }
 
       QTableMetaData table = insertInput.getTable();
-
       if(table == null)
       {
          throw (new QException("Error:  Undefined table: " + insertInput.getTableName()));
       }
+      table = TableMetaDataPersonalizerAction.execute(insertInput);
+      insertInput.setTableMetaData(table);
 
       setAutomationStatusField(insertInput);
 
@@ -424,6 +427,142 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             nextLevelInsertInput.setTableName(association.getAssociatedTableName());
             nextLevelInsertInput.setRecords(nextLevelInserts);
             InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);
+
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // copy inserted primary keys over from the output records to the input records also //
+            // any errors or warnings that were generated and placed on the input records - make //
+            // sure they are on the output records (in case they are new object instances)       //
+            ///////////////////////////////////////////////////////////////////////////////////////
+            List<QRecord> outputRecords = CollectionUtils.nonNullList(nextLevelInsertOutput.getRecords());
+            copyGeneratedKeysWarningsAndErrorsToInsertedAssociatedRecords(outputRecords, nextLevelInserts, association.getAssociatedTableName());
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   static void copyGeneratedKeysWarningsAndErrorsToInsertedAssociatedRecords(List<QRecord> outputRecords, List<QRecord> inputRecords, String tableName)
+   {
+      QTableMetaData associatedTable      = QContext.getQInstance().getTable(tableName);
+      String         associatedPrimaryKey = associatedTable.getPrimaryKeyField();
+
+      if(inputRecords.size() != outputRecords.size())
+      {
+         LOG.warn("Different size input and output record lists while managing association", logPair("tableName", tableName), logPair("inputRecords", inputRecords.size()), logPair("outputRecords", outputRecords.size()));
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // we expect the lists to be the same size, but in case they're different, iterate only to the min length //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(int i = 0; i < Math.min(outputRecords.size(), inputRecords.size()); i++)
+      {
+         try
+         {
+            QRecord outputRecord = outputRecords.get(i);
+            QRecord inputRecord  = inputRecords.get(i);
+
+            /////////////////////////////////////////////////////////////////////////////////////
+            // if the output & input records are the same object, then we can continue w/ noop //
+            /////////////////////////////////////////////////////////////////////////////////////
+            if(outputRecord == inputRecord)
+            {
+               continue;
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the input record didn't have a primary key value, but the output record does, then copy it over //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(inputRecord.getValue(associatedPrimaryKey) == null && outputRecord.getValue(associatedPrimaryKey) != null)
+            {
+               inputRecord.setValue(associatedPrimaryKey, outputRecord.getValue(associatedPrimaryKey));
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // if the output record has errors, copy them to the input record //
+            ////////////////////////////////////////////////////////////////////
+            if(CollectionUtils.nullSafeHasContents(outputRecord.getErrors()))
+            {
+               if(CollectionUtils.nullSafeIsEmpty(inputRecord.getErrors()))
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if there weren't any errors in the input record, replace its list with a copy of the ones from the output record //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  inputRecord.setErrors(new ArrayList<>(outputRecord.getErrors()));
+               }
+               else
+               {
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // else there are errors in the input record - so copy ones from the output record that weren't already in the input. //
+                  // also, yes, this is potentially bad n^2 stuff, but, we're assuming very small lists, so we're okay with it.         //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  for(QErrorMessage error : outputRecord.getErrors())
+                  {
+                     if(!inputRecord.getErrors().contains(error))
+                     {
+                        try
+                        {
+                           inputRecord.getErrors().add(error);
+                        }
+                        catch(Exception e)
+                        {
+                           //////////////////////////////////////////////////////
+                           // looking for immutable list here (e.g., List.of)  //
+                           // replace list with mutable one (array) and re-add //
+                           //////////////////////////////////////////////////////
+                           inputRecord.setErrors(new ArrayList<>(inputRecord.getErrors()));
+                           inputRecord.getErrors().add(error);
+                        }
+                     }
+                  }
+               }
+            }
+
+            //////////////////////////////////////////////////////////////////////
+            // if the output record has warnings, copy them to the input record //
+            //////////////////////////////////////////////////////////////////////
+            if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
+            {
+               if(CollectionUtils.nullSafeIsEmpty(inputRecord.getWarnings()))
+               {
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if there weren't any warnings in the input record, replace its list with a copy of the ones from the output record //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  inputRecord.setWarnings(new ArrayList<>(outputRecord.getWarnings()));
+               }
+               else
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // else there are warnings in the input record - so copy ones from the output record that weren't already in the input. //
+                  // also, yes, this is potentially bad n^2 stuff, but, we're assuming very small lists, so we're okay with it.           //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  for(QWarningMessage warning : outputRecord.getWarnings())
+                  {
+                     if(!inputRecord.getWarnings().contains(warning))
+                     {
+                        try
+                        {
+                           inputRecord.getWarnings().add(warning);
+                        }
+                        catch(Exception e)
+                        {
+                           /////////////////////////////////////////////////////
+                           // looking for immutable list here (e.g., List.of) //
+                           // replace list with mutable one (array) and re-add //
+                           /////////////////////////////////////////////////////
+                           inputRecord.setWarnings(new ArrayList<>(inputRecord.getWarnings()));
+                           inputRecord.getWarnings().add(warning);
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Exception copying values to output associated record", e, logPair("tableName", tableName));
          }
       }
    }

@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** same moment.
  **
  *******************************************************************************/
-public class QScheduleMetaData implements QMetaDataObject
+public class QScheduleMetaData implements QMetaDataObject, Cloneable
 {
    private String schedulerName;
    private String description;
@@ -289,6 +289,7 @@ public class QScheduleMetaData implements QMetaDataObject
    }
 
 
+
    /*******************************************************************************
     ** Getter for description
     *******************************************************************************/
@@ -319,4 +320,21 @@ public class QScheduleMetaData implements QMetaDataObject
    }
 
 
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QScheduleMetaData clone()
+   {
+      try
+      {
+         QScheduleMetaData clone = (QScheduleMetaData) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

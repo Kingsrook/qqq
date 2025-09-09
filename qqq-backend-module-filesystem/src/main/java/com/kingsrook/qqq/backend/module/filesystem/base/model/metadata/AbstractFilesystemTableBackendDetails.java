@@ -286,6 +286,8 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
 
    }
 
+
+
    /*******************************************************************************
     ** Getter for sizeFieldName
     *******************************************************************************/
@@ -408,5 +410,40 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
       return (this);
    }
 
+
+
+   /***************************************************************************
+    * finish the cloning operation started in the base class. copy all state
+    * from the subclass into the input clone (which can be safely casted to
+    * the subclass's type, as it was obtained by super.clone())
+    ***************************************************************************/
+   @Override
+   protected QTableBackendDetails finishClone(QTableBackendDetails abstractClone)
+   {
+      AbstractFilesystemTableBackendDetails clone = (AbstractFilesystemTableBackendDetails) abstractClone;
+
+      clone.basePath = basePath;
+      clone.glob = glob;
+      clone.recordFormat = recordFormat;
+      clone.cardinality = cardinality;
+      clone.contentsFieldName = contentsFieldName;
+      clone.fileNameFieldName = fileNameFieldName;
+      clone.baseNameFieldName = baseNameFieldName;
+      clone.sizeFieldName = sizeFieldName;
+      clone.createDateFieldName = createDateFieldName;
+      clone.modifyDateFieldName = modifyDateFieldName;
+
+      return (clone);
+   }
+
+
+
+   /***************************************************************************
+    * finish the cloning process in a subclass of AbstractFilesystemTableBackendDetails
+    ***************************************************************************/
+   protected QTableBackendDetails finishFilesystemSubclassClone(QTableBackendDetails abstractClone)
+   {
+      return (abstractClone);
+   }
 
 }

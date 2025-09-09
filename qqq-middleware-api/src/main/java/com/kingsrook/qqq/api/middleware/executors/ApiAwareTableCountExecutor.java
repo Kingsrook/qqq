@@ -28,12 +28,14 @@ import java.util.Map;
 import java.util.Objects;
 import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
+import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.utils.ApiQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -68,9 +70,11 @@ public class ApiAwareTableCountExecutor extends TableCountExecutor implements Ap
 
       CountInput countInput = new CountInput();
       countInput.setTableName(input.getTableName());
+      countInput.setInputSource(QInputSource.USER);
 
       PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
-      Map<String, QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, table.getName()));
+      Map<String, QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(
+         new GetTableApiFieldsInput().withApiName(apiName).withVersion(apiVersion).withTableName(table.getName()).withInputSource(QInputSource.USER));
 
       countInput.setTimeoutSeconds(DEFAULT_QUERY_TIMEOUT_SECONDS); // todo param
       countInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);

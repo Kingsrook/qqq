@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
@@ -37,8 +38,9 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
 public class S3TableBackendDetails extends AbstractFilesystemTableBackendDetails
 {
    private ContentTypeStrategy contentTypeStrategy = ContentTypeStrategy.NONE;
-   private String contentTypeFieldName;
-   private String hardcodedContentType;
+   private String              contentTypeFieldName;
+   private String              hardcodedContentType;
+
 
 
    /***************************************************************************
@@ -74,7 +76,7 @@ public class S3TableBackendDetails extends AbstractFilesystemTableBackendDetails
       super.validate(qInstance, table, qInstanceValidator);
 
       String prefix = "Table " + (table == null ? "null" : table.getName()) + " backend details - ";
-      switch (Objects.requireNonNullElse(contentTypeStrategy, ContentTypeStrategy.NONE))
+      switch(Objects.requireNonNullElse(contentTypeStrategy, ContentTypeStrategy.NONE))
       {
          case FROM_FIELD ->
          {
@@ -101,6 +103,8 @@ public class S3TableBackendDetails extends AbstractFilesystemTableBackendDetails
          }
       }
    }
+
+
 
    /*******************************************************************************
     ** Getter for contentTypeStrategy
@@ -193,5 +197,19 @@ public class S3TableBackendDetails extends AbstractFilesystemTableBackendDetails
       return (this);
    }
 
+
+
+   /***************************************************************************
+    * finish the cloning process in a subclass of AbstractFilesystemTableBackendDetails
+    ***************************************************************************/
+   @Override
+   protected S3TableBackendDetails finishFilesystemSubclassClone(QTableBackendDetails abstractClone)
+   {
+      S3TableBackendDetails clone = (S3TableBackendDetails) abstractClone;
+      clone.contentTypeStrategy = contentTypeStrategy;
+      clone.contentTypeFieldName = contentTypeFieldName;
+      clone.hardcodedContentType = hardcodedContentType;
+      return (clone);
+   }
 
 }

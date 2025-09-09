@@ -37,11 +37,15 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType.DATE_TIME;
 import static com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType.STRING;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -72,7 +76,17 @@ class GetTableApiFieldsActionTest extends BaseTest
     *******************************************************************************/
    private List<? extends QFieldMetaData> getFields(String apiName, String tableName, String version) throws QException
    {
-      return new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withApiName(apiName).withTableName(tableName).withVersion(version)).getFields();
+      return (getFields(apiName, tableName, version, QInputSource.SYSTEM));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<? extends QFieldMetaData> getFields(String apiName, String tableName, String version, InputSource inputSource) throws QException
+   {
+      return new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withApiName(apiName).withTableName(tableName).withVersion(version).withInputSource(inputSource)).getFields();
    }
 
 
@@ -174,6 +188,48 @@ class GetTableApiFieldsActionTest extends BaseTest
       GetTableApiFieldsInput input = new GetTableApiFieldsInput().withApiName(TestUtils.API_NAME).withTableName(tableNameVersion2through4).withVersion("1");
       assertThatThrownBy(() -> new GetTableApiFieldsAction().execute(input));
       new GetTableApiFieldsAction().execute(input.withDoCheckTableApiVersion(false));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTablePersonalization() throws QException
+   {
+      ///////////////////////////////////////////////////
+      // set up our table with just a createDate field //
+      ///////////////////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+      String version = "1";
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME)
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(version)))
+         .withField(new QFieldMetaData("createDate", DATE_TIME)));
+      new QInstanceEnricher(qInstance).enrich();
+
+      //////////////////////////////////////////////////////////////
+      // make sure we get it (since no personalization is active) //
+      //////////////////////////////////////////////////////////////
+      assertThat(fieldListToNameSet.apply(getFields(TestUtils.API_NAME, TABLE_NAME, version, QInputSource.SYSTEM))).contains("createDate");
+      assertThat(fieldListToNameSet.apply(getFields(TestUtils.API_NAME, TABLE_NAME, version, QInputSource.USER))).contains("createDate");
+
+      try
+      {
+         TestUtils.TablePersonalizer.register(QContext.getQInstance());
+
+         //////////////////////////////////////////////////////////////////////////
+         // with personalization active, a user-request shouldn't get it (though //
+         // system still should, based on rules inside the personalizer)         //
+         //////////////////////////////////////////////////////////////////////////
+         assertThat(fieldListToNameSet.apply(getFields(TestUtils.API_NAME, TABLE_NAME, version, QInputSource.SYSTEM))).contains("createDate");
+         assertThat(fieldListToNameSet.apply(getFields(TestUtils.API_NAME, TABLE_NAME, version, QInputSource.USER))).doesNotContain("createDate");
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(QContext.getQInstance());
+      }
    }
 
 }

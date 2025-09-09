@@ -64,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -279,6 +280,12 @@ class MemoryBackendModuleTest extends BaseTest
    {
       QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+
+      /////////////////////////////////////////////
+      // add a date field, for testing DATE type //
+      /////////////////////////////////////////////
+      table.addField(new QFieldMetaData("date", QFieldType.DATE));
+
       QSession       session   = new QSession();
 
       InsertInput insertInput = new InsertInput();
@@ -301,7 +308,7 @@ class MemoryBackendModuleTest extends BaseTest
 
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).size());
       assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).get(0).getValue("name"));
-      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))).size());
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))));
 
       assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("notFound"))).size());
       assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("Triangle", "Circle"))).get(0).getValue("name"));

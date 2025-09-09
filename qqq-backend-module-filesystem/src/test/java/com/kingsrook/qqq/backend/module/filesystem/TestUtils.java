@@ -52,6 +52,7 @@ import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.Filesyst
 import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.etl.streamed.StreamedETLFilesystemBackendStep;
 import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.filesystem.importer.FilesystemImporterMetaDataTemplate;
 import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.filesystem.importer.FilesystemImporterProcessMetaDataBuilder;
+import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.filesystem.importer.FilesystemImporterStep;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
@@ -215,6 +216,7 @@ public class TestUtils
          .withName(LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
 
       FilesystemImporterMetaDataTemplate filesystemImporterMetaDataTemplate = new FilesystemImporterMetaDataTemplate(qInstance, importBaseName, BACKEND_NAME_MEMORY, filesystemImporterProcessMetaDataBuilder, table -> table.withAuditRules(QAuditRules.defaultInstanceLevelNone()));
+      filesystemImporterMetaDataTemplate.getImporterProcessMetaDataBuilder().withInputFieldDefaultValue(FilesystemImporterStep.FIELD_MOVE_UNSTRUCTURED_FIELDS_TO_VALUES_JSON, true);
       filesystemImporterMetaDataTemplate.addToInstance(qInstance);
    }
 

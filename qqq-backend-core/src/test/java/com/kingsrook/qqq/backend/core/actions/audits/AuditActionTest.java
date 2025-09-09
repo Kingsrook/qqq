@@ -38,6 +38,8 @@ import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -182,6 +184,11 @@ class AuditActionTest extends BaseTest
       QInstance qInstance = TestUtils.defineInstance();
       new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
 
+      /////////////////////////////////////////////////////
+      // add a 'store' security field to the audit table //
+      /////////////////////////////////////////////////////
+      qInstance.getTable("audit").addField(new QFieldMetaData(TestUtils.SECURITY_KEY_TYPE_STORE, QFieldType.INTEGER));
+
       String userName = "John Doe";
       QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));
 
@@ -215,6 +222,11 @@ class AuditActionTest extends BaseTest
    {
       QInstance qInstance = TestUtils.defineInstance();
       new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      /////////////////////////////////////////////////////
+      // add a 'store' security field to the audit table //
+      /////////////////////////////////////////////////////
+      qInstance.getTable("audit").addField(new QFieldMetaData(TestUtils.SECURITY_KEY_TYPE_STORE, QFieldType.INTEGER));
 
       String userName = "John Doe";
       QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));

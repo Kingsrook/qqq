@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -126,6 +127,12 @@ public class UpdateAction
       }
 
       QTableMetaData table = updateInput.getTable();
+      if(table == null)
+      {
+         throw (new QException("Error:  Undefined table: " + updateInput.getTableName()));
+      }
+      table = TableMetaDataPersonalizerAction.execute(updateInput);
+      updateInput.setTableMetaData(table);
 
       //////////////////////////////////////////////////////
       // load the backend module and its update interface //

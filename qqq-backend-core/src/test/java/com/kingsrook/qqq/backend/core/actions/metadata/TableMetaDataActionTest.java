@@ -23,14 +23,20 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -59,7 +65,7 @@ class TableMetaDataActionTest extends BaseTest
 
 
    /*******************************************************************************
-    ** Test exeption is thrown for the "not-found" case.
+    ** Test exception is thrown for the "not-found" case.
     **
     *******************************************************************************/
    @Test
@@ -71,6 +77,42 @@ class TableMetaDataActionTest extends BaseTest
          request.setTableName("willNotBeFound");
          new TableMetaDataAction().execute(request);
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalization() throws QException
+   {
+      ////////////////////////////////////////////////
+      // establish baseline without personalization //
+      ////////////////////////////////////////////////
+      TableMetaDataInput request = new TableMetaDataInput();
+      request.setTableName(TestUtils.TABLE_NAME_ORDER);
+      request.setInputSource(QInputSource.USER);
+      TableMetaDataOutput result = new TableMetaDataAction().execute(request);
+      assertTrue(result.getTable().getFields().containsKey("orderNo"));
+      assertTrue(result.getTable().getFields().containsKey("total"));
+      assertEquals("orderLine", result.getTable().getExposedJoins().get(0).getJoinTable().getName());
+      assertTrue(result.getTable().getExposedJoins().get(0).getJoinTable().getFields().containsKey("lineNumber"));
+
+      //////////////////////////////////////////////////
+      // now make total and lineNumber fields go away //
+      //////////////////////////////////////////////////
+      QContext.getQSession().getUser().setIdReference("jdoe");
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_ORDER);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_ORDER, "total", "jdoe");
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_LINE_ITEM, "lineNumber", "jdoe");
+      result = new TableMetaDataAction().execute(request);
+      assertTrue(result.getTable().getFields().containsKey("orderNo"));
+      assertFalse(result.getTable().getFields().containsKey("total"));
+      assertEquals("orderLine", result.getTable().getExposedJoins().get(0).getJoinTable().getName());
+      assertFalse(result.getTable().getExposedJoins().get(0).getJoinTable().getFields().containsKey("lineNumber"));
    }
 
 }

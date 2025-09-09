@@ -71,7 +71,10 @@ class QuartzJobsProcessTest extends BaseTest
          .withName("quartzJobDetails")
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
-         .withField(new QFieldMetaData("id", QFieldType.LONG)));
+         .withField(new QFieldMetaData("id", QFieldType.LONG))
+         .withField(new QFieldMetaData("jobName", QFieldType.STRING))
+         .withField(new QFieldMetaData("jobGroup", QFieldType.STRING))
+      );
       MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance, QuartzScheduler.class.getPackageName());
 
       QuartzTestUtils.setupInstanceForQuartzTests();

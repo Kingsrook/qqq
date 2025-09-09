@@ -23,13 +23,19 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -66,6 +72,49 @@ class CountActionTest extends BaseTest
       TestUtils.insertDefaultShapes(QContext.getQInstance());
       assertEquals(3, CountAction.execute(TestUtils.TABLE_NAME_SHAPE, null));
       assertEquals(3, CountAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInvalidFieldNamesInFilter() throws QException
+   {
+      assertThatThrownBy(() -> CountAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.IS_NOT_BLANK))))
+         .hasMessageContaining("1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> CountAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter()
+         .withSubFilter(new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.IS_NOT_BLANK)))))
+         .hasMessageContaining("1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> CountAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter()
+         .withOrderBy(new QFilterOrderBy("stillNotAField"))))
+         .hasMessageContaining("1 unrecognized field name: stillNotAField");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTablePersonalization() throws QException
+   {
+      QContext.getQSession().getUser().setIdReference("jdoe");
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY, "noOfShoes", QContext.getQSession().getUser().getIdReference());
+
+      ///////////////////////////////////////////////////////////////////////////
+      // make sure not allowed to filter by a field we don't have in the table //
+      ///////////////////////////////////////////////////////////////////////////
+      CountInput countInput = new CountInput(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withFilter(new QQueryFilter(new QFilterCriteria("noOfShoes", QCriteriaOperator.EQUALS, 2)))
+         .withInputSource(QInputSource.USER);
+      assertThatThrownBy(() -> new CountAction().execute(countInput))
+         .hasMessageContaining("Query Filter contained 1 unrecognized field name: noOfShoes");
    }
 
 }

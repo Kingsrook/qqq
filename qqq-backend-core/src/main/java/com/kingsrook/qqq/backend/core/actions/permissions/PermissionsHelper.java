@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -85,7 +86,7 @@ public class PermissionsHelper
          throw (new QPermissionDeniedException("Permission denied."));
       }
 
-      commonCheckPermissionThrowing(getEffectivePermissionRules(table, QContext.getQInstance()), permissionSubType, table.getName());
+      commonCheckPermissionThrowing(actionInput, table, permissionSubType, table.getName());
    }
 
 
@@ -199,19 +200,7 @@ public class PermissionsHelper
          throw (new QPermissionDeniedException("Permission denied."));
       }
 
-      QPermissionRules effectivePermissionRules = getEffectivePermissionRules(process, QContext.getQInstance());
-
-      if(effectivePermissionRules.getCustomPermissionChecker() != null)
-      {
-         /////////////////////////////////////
-         // todo - avoid stack overflows... //
-         /////////////////////////////////////
-         CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, effectivePermissionRules.getCustomPermissionChecker());
-         customPermissionChecker.checkPermissionsThrowing(actionInput, process);
-         return;
-      }
-
-      commonCheckPermissionThrowing(effectivePermissionRules, PrivatePermissionSubType.HAS_ACCESS, process.getName());
+      commonCheckPermissionThrowing(actionInput, process, PrivatePermissionSubType.HAS_ACCESS, process.getName());
    }
 
 
@@ -247,7 +236,7 @@ public class PermissionsHelper
          throw (new QPermissionDeniedException("Permission denied."));
       }
 
-      commonCheckPermissionThrowing(getEffectivePermissionRules(app, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, app.getName());
+      commonCheckPermissionThrowing(actionInput, app, PrivatePermissionSubType.HAS_ACCESS, app.getName());
    }
 
 
@@ -283,7 +272,7 @@ public class PermissionsHelper
          throw (new QPermissionDeniedException("Permission denied."));
       }
 
-      commonCheckPermissionThrowing(getEffectivePermissionRules(report, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, report.getName());
+      commonCheckPermissionThrowing(actionInput, report, PrivatePermissionSubType.HAS_ACCESS, report.getName());
    }
 
 
@@ -319,7 +308,7 @@ public class PermissionsHelper
          throw (new QPermissionDeniedException("Permission denied."));
       }
 
-      commonCheckPermissionThrowing(getEffectivePermissionRules(widget, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, widget.getName());
+      commonCheckPermissionThrowing(actionInput, widget, PrivatePermissionSubType.HAS_ACCESS, widget.getName());
    }
 
 
@@ -439,6 +428,21 @@ public class PermissionsHelper
     *******************************************************************************/
    private static void addEffectiveAvailablePermission(QPermissionRules rules, PermissionSubType permissionSubType, Collection<AvailablePermission> rs, String baseName, MetaDataWithName metaDataWithName, String objectType)
    {
+      if(rules.getCustomPermissionChecker() != null)
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // if there's a custom permission checker for this object, and it says that it               //
+         // handlesBuildAvailablePermission, then call that method, and add its result to our result. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, rules.getCustomPermissionChecker());
+         if(customPermissionChecker.handlesBuildAvailablePermission())
+         {
+            AvailablePermission availablePermission = customPermissionChecker.buildAvailablePermission(rules, permissionSubType, baseName, metaDataWithName, objectType);
+            CollectionUtils.addIfNotNull(rs, availablePermission);
+            return;
+         }
+      }
+
       PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
       if(effectivePermissionSubType != null)
       {
@@ -590,13 +594,28 @@ public class PermissionsHelper
 
 
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void commonCheckPermissionThrowing(QPermissionRules rules, PermissionSubType permissionSubType, String name) throws QPermissionDeniedException
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static void commonCheckPermissionThrowing(AbstractActionInput actionInput, MetaDataWithPermissionRules metaDataWithPermissionRules, PermissionSubType permissionSubType, String name) throws QPermissionDeniedException
    {
-      PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
-      String            permissionBaseName         = getEffectivePermissionBaseName(rules, name);
+      QPermissionRules effectivePermissionRules = getEffectivePermissionRules(metaDataWithPermissionRules, QContext.getQInstance());
+
+      ////////////////////////////////////////////////////////////////////
+      // use the result of a custom permission checker, if there is one //
+      ////////////////////////////////////////////////////////////////////
+      if(effectivePermissionRules.getCustomPermissionChecker() != null)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // todo - avoid stack overflows if this custom checker comes back through here somehow... //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, effectivePermissionRules.getCustomPermissionChecker());
+         customPermissionChecker.checkPermissionsThrowing(actionInput, metaDataWithPermissionRules);
+         return;
+      }
+
+      PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(effectivePermissionRules, permissionSubType);
+      String            permissionBaseName         = getEffectivePermissionBaseName(effectivePermissionRules, name);
 
       if(effectivePermissionSubType == null)
       {

@@ -39,7 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
  ** a screen presented to a user).
  **
  *******************************************************************************/
-public class QFrontendStepMetaData extends QStepMetaData
+public class QFrontendStepMetaData extends QStepMetaData implements Cloneable
 {
    private List<QFrontendComponentMetaData> components;
    private List<QFieldMetaData>             formFields;
@@ -171,7 +171,12 @@ public class QFrontendStepMetaData extends QStepMetaData
     *******************************************************************************/
    public void setFormFields(List<QFieldMetaData> formFields)
    {
-      if(formFields != null)
+      if(formFields == null)
+      {
+         this.formFields = null;
+         this.formFieldMap = null;
+      }
+      else
       {
          for(QFieldMetaData fieldMetaData : formFields)
          {
@@ -407,6 +412,7 @@ public class QFrontendStepMetaData extends QStepMetaData
    }
 
 
+
    /*******************************************************************************
     ** Getter for format
     *******************************************************************************/
@@ -467,5 +473,71 @@ public class QFrontendStepMetaData extends QStepMetaData
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QFrontendStepMetaData clone()
+   {
+      QFrontendStepMetaData clone = (QFrontendStepMetaData) super.clone();
+
+      if(components != null)
+      {
+         clone.components = new ArrayList<>();
+         for(QFrontendComponentMetaData component : components)
+         {
+            clone.components.add(component.clone());
+         }
+      }
+
+      if(formFields != null)
+      {
+         clone.formFields = new ArrayList<>();
+         for(QFieldMetaData formField : formFields)
+         {
+            clone.formFields.add(formField.clone());
+         }
+      }
+
+      if(viewFields != null)
+      {
+         clone.viewFields = new ArrayList<>();
+         for(QFieldMetaData viewField : viewFields)
+         {
+            clone.viewFields.add(viewField.clone());
+         }
+      }
+
+      if(recordListFields != null)
+      {
+         clone.recordListFields = new ArrayList<>();
+         for(QFieldMetaData formField : recordListFields)
+         {
+            clone.recordListFields.add(formField.clone());
+         }
+      }
+
+      if(formFieldMap != null)
+      {
+         clone.formFieldMap = new HashMap<>();
+         for(Map.Entry<String, QFieldMetaData> entry : formFieldMap.entrySet())
+         {
+            clone.formFieldMap.put(entry.getKey(), entry.getValue().clone());
+         }
+      }
+
+      if(helpContents != null)
+      {
+         clone.helpContents = new ArrayList<>();
+         for(QHelpContent helpContent : helpContents)
+         {
+            clone.helpContents.add(helpContent.clone());
+         }
+      }
+
+      return clone;
+   }
 
 }

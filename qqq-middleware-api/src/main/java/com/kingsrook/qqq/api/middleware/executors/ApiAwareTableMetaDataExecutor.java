@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendExposedJoin;
@@ -66,6 +67,12 @@ public class ApiAwareTableMetaDataExecutor extends TableMetaDataExecutor impleme
 
       Map<String, QFieldMetaData> fieldMap = getFieldsForApiVersion(input.getTableName());
 
+      ///////////////////////////////////////////////////////////////////////////////////
+      // we don't call TableMetaDataAction here, because, well, it doesn't do much,    //
+      // but we need to do things differently anyway, as in, we need to sue a fieldMap //
+      // that takes api versions into account.  Note that table-personalization will   //
+      // also have been applied, via GetTableApiFieldsAction                           //
+      ///////////////////////////////////////////////////////////////////////////////////
       com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput tableMetaDataInput = new com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput();
       tableMetaDataInput.setTableName(input.getTableName());
       PermissionsHelper.checkTablePermissionThrowing(tableMetaDataInput, TablePermissionSubType.READ);
@@ -140,7 +147,8 @@ public class ApiAwareTableMetaDataExecutor extends TableMetaDataExecutor impleme
       GetTableApiFieldsInput getTableApiFieldsInput = new GetTableApiFieldsInput()
          .withApiName(getApiName())
          .withVersion(getApiVersion())
-         .withTableName(tableName);
+         .withTableName(tableName)
+         .withInputSource(QInputSource.USER);
 
       GetTableApiFieldsOutput     tableApiFieldsOutput = new GetTableApiFieldsAction().execute(getTableApiFieldsInput);
       List<QFieldMetaData>        fields               = tableApiFieldsOutput.getFields();

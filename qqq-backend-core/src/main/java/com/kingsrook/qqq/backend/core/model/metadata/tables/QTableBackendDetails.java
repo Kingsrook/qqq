@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import java.io.Serializable;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.serialization.QTableBackendDetailsDeserializer;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
@@ -34,7 +34,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  ** Base class where backends can specify additional per-table meta-data.
  *******************************************************************************/
 @JsonDeserialize(using = QTableBackendDetailsDeserializer.class)
-public abstract class QTableBackendDetails
+public abstract class QTableBackendDetails implements Cloneable, Serializable
 {
    private String backendType;
 
@@ -114,5 +114,32 @@ public abstract class QTableBackendDetails
       // noop in base class //
       ////////////////////////
    }
+
+
+   /***************************************************************************
+    * adding cloneable to this type hierarchy - subclasses need to implement
+    * finishClone to copy ther specific state.
+    ***************************************************************************/
+   public final QTableBackendDetails clone()
+   {
+      try
+      {
+         QTableBackendDetails clone = (QTableBackendDetails) super.clone();
+         finishClone(clone);
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
+
+
+   /***************************************************************************
+    * finish the cloning operation started in the base class. copy all state
+    * from the subclass into the input clone (which can be safely casted to
+    * the subclass's type, as it was obtained by super.clone())
+    ***************************************************************************/
+   protected abstract QTableBackendDetails finishClone(QTableBackendDetails cloned);
 
 }

@@ -35,6 +35,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -59,6 +61,13 @@ class MergeDuplicatesProcessTest extends BaseTest
    void test() throws Exception
    {
       QInstance qInstance = QContext.getQInstance();
+
+      //////////////////////////////////////////////////
+      // add a field to the shape table for this test //
+      //////////////////////////////////////////////////
+      qInstance.getTable(TestUtils.TABLE_NAME_SHAPE)
+         .addField(new QFieldMetaData("favoredByNoOfPeople", QFieldType.INTEGER));
+
       addProcessToInstance();
 
       TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(

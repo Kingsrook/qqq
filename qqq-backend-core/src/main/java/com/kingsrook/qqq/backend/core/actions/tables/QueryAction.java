@@ -37,8 +37,10 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.FilterValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryActionCacheHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
@@ -47,6 +49,8 @@ import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -104,8 +108,11 @@ public class QueryAction
       {
          throw (new QException("A table named [" + queryInput.getTableName() + "] was not found in the active QInstance"));
       }
+      table = TableMetaDataPersonalizerAction.execute(queryInput);
+      queryInput.setTableMetaData(table);
 
       validateFieldNamesToInclude(queryInput);
+      FilterValidationHelper.validateFieldNamesInFilter(queryInput);
 
       QBackendMetaData backend = queryInput.getBackend();
       postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_QUERY_RECORD.getRole());
@@ -188,9 +195,24 @@ public class QueryAction
          throw (new QException("An empty set of fieldNamesToInclude was given as queryInput, which is not allowed."));
       }
 
+      List<String> unrecognizedFieldNames = getUnrecognizedFieldNames(queryInput, fieldNamesToInclude);
+
+      if(!unrecognizedFieldNames.isEmpty())
+      {
+         throw (new QException("QueryInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));
+      }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   static List<String> getUnrecognizedFieldNames(QueryOrCountInputInterface queryInput, Set<String> fieldNames) throws QException
+   {
       List<String>                unrecognizedFieldNames = new ArrayList<>();
       Map<String, QTableMetaData> selectedQueryJoins     = null;
-      for(String fieldName : fieldNamesToInclude)
+      for(String fieldName : fieldNames)
       {
          if(fieldName.contains("."))
          {
@@ -219,6 +241,12 @@ public class QueryAction
                      {
                         String         joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
                         QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+
+                        /////////////////////////////////
+                        // personalize the join table! //
+                        /////////////////////////////////
+                        joinTable = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(joinTable).withInputSource(queryInput.getInputSource()));
+
                         if(joinTable != null)
                         {
                            selectedQueryJoins.put(joinTableOrAlias, joinTable);
@@ -258,11 +286,7 @@ public class QueryAction
             }
          }
       }
-
-      if(!unrecognizedFieldNames.isEmpty())
-      {
-         throw (new QException("QueryInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));
-      }
+      return unrecognizedFieldNames;
    }
 
 
@@ -448,7 +472,7 @@ public class QueryAction
          //////////////////////////////////////////////////
          // build up sets of passwords and hidden fields //
          //////////////////////////////////////////////////
-         Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(queryInput.getTableName()).getFields();
+         Map<String, QFieldMetaData> fields = queryInput.getTable().getFields();
          for(String fieldName : fields.keySet())
          {
             QFieldMetaData field = fields.get(fieldName);

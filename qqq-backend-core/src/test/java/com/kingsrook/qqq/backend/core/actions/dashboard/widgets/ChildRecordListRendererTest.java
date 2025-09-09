@@ -22,14 +22,17 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChildRecordListData;
@@ -131,16 +134,7 @@ class ChildRecordListRendererTest extends BaseTest
          .getWidgetMetaData();
       qInstance.addWidget(widget);
 
-      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
-         new QRecord().withValue("id", 1),
-         new QRecord().withValue("id", 2)
-      ));
-
-      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM), List.of(
-         new QRecord().withValue("orderId", 1).withValue("sku", "ABC").withValue("lineNumber", 2),
-         new QRecord().withValue("orderId", 1).withValue("sku", "BCD").withValue("lineNumber", 1),
-         new QRecord().withValue("orderId", 2).withValue("sku", "XYZ") // should not be found.
-      ));
+      insertTwoOrdersAndThreeLines(qInstance);
 
       RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
@@ -177,16 +171,7 @@ class ChildRecordListRendererTest extends BaseTest
          .getWidgetMetaData();
       qInstance.addWidget(widget);
 
-      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
-         new QRecord().withValue("id", 1),
-         new QRecord().withValue("id", 2)
-      ));
-
-      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM), List.of(
-         new QRecord().withValue("orderId", 1).withValue("sku", "ABC").withValue("lineNumber", 2),
-         new QRecord().withValue("orderId", 1).withValue("sku", "BCD").withValue("lineNumber", 1),
-         new QRecord().withValue("orderId", 2).withValue("sku", "XYZ") // should not be found.
-      ));
+      insertTwoOrdersAndThreeLines(qInstance);
 
       RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
@@ -209,6 +194,77 @@ class ChildRecordListRendererTest extends BaseTest
       ////////////////////////////////////////////////////////////////////////////////////////////////////
       assertTrue(childRecordListData.getOmitFieldNames().contains("orderId"));
       assertTrue(childRecordListData.getOmitFieldNames().contains("lineNumber"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalization() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+      QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
+         .withLabel("Line Items")
+         .getWidgetMetaData()
+         .withDefaultValue("orderBy", new ArrayList<>(List.of(new QFilterOrderBy("id"))));
+      qInstance.addWidget(widget);
+
+      insertTwoOrdersAndThreeLines(qInstance);
+
+      RenderWidgetInput input = new RenderWidgetInput();
+      input.setWidgetMetaData(widget);
+      input.setQueryParams(new HashMap<>(Map.of("id", "1")));
+
+      RenderWidgetAction  renderWidgetAction  = new RenderWidgetAction();
+      RenderWidgetOutput  output              = renderWidgetAction.execute(input);
+      ChildRecordListData childRecordListData = (ChildRecordListData) output.getWidgetData();
+
+      //////////////////////////////////////////////////////
+      // by default make sure we get the lineNumber field //
+      //////////////////////////////////////////////////////
+      assertThat(childRecordListData.getQueryOutput().getRecords()).hasSize(2);
+      assertThat(childRecordListData.getQueryOutput().getRecords()).allMatch(record -> record.getValue("lineNumber") != null);
+
+      ////////////////////////////////////////////////////
+      // now personalize the table to remove that field //
+      ////////////////////////////////////////////////////
+      String userId = "jdoe";
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_LINE_ITEM, "lineNumber", userId);
+      QContext.getQSession().getUser().setIdReference(userId);
+
+      //////////////////////////////////////
+      // re-run and assert no lineNumbers //
+      //////////////////////////////////////
+      renderWidgetAction = new RenderWidgetAction();
+      output = renderWidgetAction.execute(input);
+      childRecordListData = (ChildRecordListData) output.getWidgetData();
+
+      assertThat(childRecordListData.getQueryOutput().getRecords()).hasSize(2);
+      assertThat(childRecordListData.getQueryOutput().getRecords()).allMatch(record -> !record.getValues().containsKey("lineNumber"));
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static void insertTwoOrdersAndThreeLines(QInstance qInstance) throws QException
+   {
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
+         new QRecord().withValue("id", 1),
+         new QRecord().withValue("id", 2)
+      ));
+
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM), List.of(
+         new QRecord().withValue("orderId", 1).withValue("sku", "ABC").withValue("lineNumber", 2),
+         new QRecord().withValue("orderId", 1).withValue("sku", "BCD").withValue("lineNumber", 1),
+         new QRecord().withValue("orderId", 2).withValue("sku", "XYZ")
+      ));
    }
 
 }

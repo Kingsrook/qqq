@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
 /*******************************************************************************
  ** Details about how this table's record automations are set up.
  *******************************************************************************/
-public class QTableAutomationDetails implements QMetaDataObject
+public class QTableAutomationDetails implements QMetaDataObject, Cloneable
 {
    private AutomationStatusTracking    statusTracking;
    private String                      providerName;
@@ -352,4 +352,41 @@ public class QTableAutomationDetails implements QMetaDataObject
    }
 
 
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QTableAutomationDetails clone()
+   {
+      try
+      {
+         QTableAutomationDetails clone = (QTableAutomationDetails) super.clone();
+
+         if(statusTracking != null)
+         {
+            clone.statusTracking = statusTracking.clone();
+         }
+
+         if(actions != null)
+         {
+            clone.actions = new ArrayList<>();
+            for(TableAutomationAction action : actions)
+            {
+               clone.actions.add(action.clone());
+            }
+         }
+
+         if(schedule != null)
+         {
+            clone.schedule = schedule.clone();
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

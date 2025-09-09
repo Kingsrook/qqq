@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import java.util.Collections;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.FilterValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -59,7 +61,22 @@ public class CountAction
    {
       ActionHelper.validateSession(countInput);
 
-      QTableMetaData   table   = countInput.getTable();
+      if(countInput.getTableName() == null)
+      {
+         throw (new QException("Table name was not specified in count input"));
+      }
+
+      QTableMetaData table = countInput.getTable();
+      if(table == null)
+      {
+         throw (new QException("A table named [" + countInput.getTableName() + "] was not found in the active QInstance"));
+      }
+
+      table = TableMetaDataPersonalizerAction.execute(countInput);
+      countInput.setTableMetaData(table);
+
+      FilterValidationHelper.validateFieldNamesInFilter(countInput);
+
       QBackendMetaData backend = countInput.getBackend();
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

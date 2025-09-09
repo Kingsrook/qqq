@@ -28,7 +28,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QAuditRules implements QMetaDataObject
+public class QAuditRules implements QMetaDataObject, Cloneable
 {
    private AuditLevel auditLevel;
 
@@ -74,4 +74,22 @@ public class QAuditRules implements QMetaDataObject
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QAuditRules clone()
+   {
+      try
+      {
+         QAuditRules clone = (QAuditRules) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

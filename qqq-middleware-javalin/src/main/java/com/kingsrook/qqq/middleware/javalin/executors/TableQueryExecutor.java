@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -63,6 +64,7 @@ public class TableQueryExecutor extends AbstractMiddlewareExecutor<TableQueryInp
 
          QueryInput queryInput = new QueryInput();
          queryInput.setTableName(input.getTableName());
+         queryInput.setInputSource(QInputSource.USER);
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 

@@ -30,6 +30,7 @@ import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
+import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
@@ -41,6 +42,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -81,9 +83,11 @@ public class ApiAwareTableQueryExecutor extends TableQueryExecutor implements Ap
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(input.getTableName());
+      queryInput.setInputSource(QInputSource.USER);
 
       PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
-      Map<String, QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, table.getName()));
+      Map<String, QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(
+         new GetTableApiFieldsInput().withApiName(apiName).withVersion(apiVersion).withTableName(table.getName()).withInputSource(QInputSource.USER));
 
       queryInput.setIncludeAssociations(true);
       // queryInput.setShouldFetchHeavyFields(true); // diffs from raw api

@@ -29,7 +29,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
  ** definition of a qqq table that is "associated" with another table, e.g.,
  ** managed along with it - such as child-records under a parent record.
  *******************************************************************************/
-public class Association implements QMetaDataObject
+public class Association implements QMetaDataObject, Cloneable
 {
    private String name;
    private String associatedTableName;
@@ -128,4 +128,22 @@ public class Association implements QMetaDataObject
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public Association clone()
+   {
+      try
+      {
+         Association clone = (Association) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

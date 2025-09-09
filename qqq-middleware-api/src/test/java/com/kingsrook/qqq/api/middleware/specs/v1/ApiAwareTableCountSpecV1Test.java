@@ -23,6 +23,7 @@ package com.kingsrook.qqq.api.middleware.specs.v1;
 
 
 import java.util.Map;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.middleware.specs.ApiAwareSpecTestBase;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -113,6 +114,48 @@ class ApiAwareTableCountSpecV1Test extends ApiAwareSpecTestBase
       assertEquals(400, response.getStatus());
       jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals("Unrecognized criteria field name: shoeCount.", jsonObject.getString("error"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizedTable()
+   {
+      Supplier<HttpResponse<String>> makeResponse = () ->
+         Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2022_Q4) + "/table/person/count")
+            .contentType(ContentType.APPLICATION_JSON.getMimeType())
+            .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("createDate", QCriteriaOperator.IS_NOT_BLANK)))))
+            .asString();
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // first make sure that a query (without the personalizer active) DOES include create date //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         HttpResponse<String> response = makeResponse.get();
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertThat(jsonObject.getInt("count")).isGreaterThan(0);
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // now repeat the query with the personalizer active - create date should NOT be allowed //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         TestUtils.TablePersonalizer.register(serverQInstance);
+
+         HttpResponse<String> response = makeResponse.get();
+         assertEquals(400, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals("Unrecognized criteria field name: createDate.", jsonObject.getString("error"));
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(serverQInstance);
+      }
    }
 
 }
