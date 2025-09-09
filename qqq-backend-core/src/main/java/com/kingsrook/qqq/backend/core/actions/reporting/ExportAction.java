@@ -386,7 +386,7 @@ public class ExportAction
    private List<QFieldMetaData> getFields(ExportInput exportInput) throws QException
    {
       QTableMetaData              table        = exportInput.getTable();
-      Map<String, QTableMetaData> joinTableMap = getJoinTableMap(exportInput,table);
+      Map<String, QTableMetaData> joinTableMap = getJoinTableMap(exportInput, table);
 
       List<QFieldMetaData> fieldList;
       if(exportInput.getFieldNames() != null)
