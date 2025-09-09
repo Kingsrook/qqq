@@ -84,7 +84,7 @@ public interface QCustomPossibleValueProvider<T extends Serializable>
    {
       List<QPossibleValue<T>> rs = filterPossibleValuesForSearch(input, possibleValues);
 
-      rs.sort(Comparator.nullsLast(Comparator.comparing((QPossibleValue<T> pv) -> pv.getLabel())));
+      rs.sort(Comparator.nullsLast(Comparator.comparing((QPossibleValue<T> pv) -> pv.getLabel() != null ? pv.getLabel() : String.valueOf(pv.getId()))));
 
       return (rs);
    }
