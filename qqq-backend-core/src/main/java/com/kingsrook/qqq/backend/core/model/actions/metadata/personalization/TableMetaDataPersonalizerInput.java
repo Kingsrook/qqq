@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.actions.metadata.personalization;
 
 
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
@@ -40,4 +42,38 @@ public class TableMetaDataPersonalizerInput extends AbstractTableActionInput
    }
 
 
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public TableMetaDataPersonalizerInput withTableName(String tableName)
+   {
+      super.withTableName(tableName);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public TableMetaDataPersonalizerInput withTableMetaData(QTableMetaData tableMetaData)
+   {
+      super.withTableMetaData(tableMetaData);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public TableMetaDataPersonalizerInput withInputSource(InputSource inputSource)
+   {
+      super.withInputSource(inputSource);
+      return (this);
+   }
 }
