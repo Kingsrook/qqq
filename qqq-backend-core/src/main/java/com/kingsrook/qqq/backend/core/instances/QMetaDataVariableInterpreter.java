@@ -178,6 +178,38 @@ public class QMetaDataVariableInterpreter
          return (null);
       }
 
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Support global coalescing with "??" (e.g., ${env.X}??${prop.X}??${input.X}), returning the first resolved //
+      // non-null value (and for Strings, the first non-empty that is not the same literal variable token).        //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(value.contains("??"))
+      {
+         String[] split = value.split("\\?\\?");
+         for(String part : split)
+         {
+            Serializable result = interpretForObject(part, defaultIfLooksLikeVariableButNotFound);
+            if(result != null)
+            {
+               // If result is a String, ensure it has content and is not the same literal we passed in.
+               if(result instanceof String s)
+               {
+                  if(StringUtils.hasContent(s) && !s.equals(part))
+                  {
+                     return (result);
+                  }
+               }
+               else
+               {
+                  return (result);
+               }
+            }
+         }
+         /////////////////////////////////////////////////////////
+         // if we make it here and haven't returned, return nul //
+         /////////////////////////////////////////////////////////
+         return (null);
+      }
+
       String envPrefix = "${env.";
       if(value.startsWith(envPrefix) && value.endsWith("}"))
       {
@@ -202,64 +234,27 @@ public class QMetaDataVariableInterpreter
 
       if(valueMaps != null)
       {
-         ///////////////////////////////////////////////////////////////////////////////////////////////
-         // if the value contains "??", split on that value and call recall this method for each part //
-         ///////////////////////////////////////////////////////////////////////////////////////////////
-         if(value.contains("??"))
+         boolean looksLikeVariable = false;
+         for(Map.Entry<String, Map<String, Serializable>> entry : valueMaps.entrySet())
          {
-            String[] split = value.split("\\?\\?");
-            for(String part : split)
+            String                    name     = entry.getKey();
+            Map<String, Serializable> valueMap = entry.getValue();
+
+            String prefix = "${" + name + ".";
+            if(value.startsWith(prefix) && value.endsWith("}"))
             {
-               Serializable result = interpretForObject(part, defaultIfLooksLikeVariableButNotFound);
-               if(result != null)
+               looksLikeVariable = true;
+               String lookupName = value.substring(prefix.length()).replaceFirst("}$", "");
+               if(valueMap != null && valueMap.containsKey(lookupName))
                {
-                  /////////////////////////////////////////////////////////////////////////////
-                  // if not a string, always return, but if string, make sure it has content //
-                  // and is not the same thing we passed in to interpret                     //
-                  /////////////////////////////////////////////////////////////////////////////
-                  if(result instanceof String s)
-                  {
-                     if(StringUtils.hasContent(s) && !s.equals(part))
-                     {
-                        return (result);
-                     }
-                  }
-                  else
-                  {
-                     return (result);
-                  }
+                  return (valueMap.get(lookupName));
                }
             }
-
-            /////////////////////////////////////////////////////////
-            // if we make it here and haven't returned, return nul //
-            /////////////////////////////////////////////////////////
-            return (null);
          }
-         else
+
+         if(looksLikeVariable)
          {
-            boolean looksLikeVariable = false;
-            for(Map.Entry<String, Map<String, Serializable>> entry : valueMaps.entrySet())
-            {
-               String                    name     = entry.getKey();
-               Map<String, Serializable> valueMap = entry.getValue();
-
-               String prefix = "${" + name + ".";
-               if(value.startsWith(prefix) && value.endsWith("}"))
-               {
-                  looksLikeVariable = true;
-                  String lookupName = value.substring(prefix.length()).replaceFirst("}$", "");
-                  if(valueMap != null && valueMap.containsKey(lookupName))
-                  {
-                     return (valueMap.get(lookupName));
-                  }
-               }
-            }
-
-            if(looksLikeVariable)
-            {
-               return (defaultIfLooksLikeVariableButNotFound);
-            }
+            return (defaultIfLooksLikeVariableButNotFound);
          }
       }
 

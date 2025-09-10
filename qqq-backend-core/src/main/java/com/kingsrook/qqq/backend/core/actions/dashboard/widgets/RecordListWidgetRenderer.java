@@ -166,7 +166,7 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
          }
 
          QQueryFilter filter = ((QQueryFilter) input.getWidgetMetaData().getDefaultValues().get("filter")).clone();
-         filter.interpretValues(new HashMap<>(input.getQueryParams()), FilterUseCase.DEFAULT);
+         filter.interpretValues(FilterUseCase.DEFAULT, new HashMap<>(input.getQueryParams()));
          filter.setLimit(maxRows);
 
          String         tableName = ValueUtils.getValueAsString(input.getWidgetMetaData().getDefaultValues().get("tableName"));
@@ -194,7 +194,7 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
             totalRows = new CountAction().execute(countInput).getCount();
          }
 
-         String tablePath   = QContext.getQInstance().getTablePath(tableName);
+         String tablePath = QContext.getQInstance().getTablePath(tableName);
          if(!AbstractHTMLWidgetRenderer.doesHaveTablePermission(tableName))
          {
             tablePath = null;
@@ -231,8 +231,8 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
          //////////////////////////////////////////////
          // make sure table name is given and exists //
          //////////////////////////////////////////////
-         QTableMetaData table = null;
-         String tableName = ValueUtils.getValueAsString(CollectionUtils.nonNullMap(widgetMetaData.getDefaultValues()).get("tableName"));
+         QTableMetaData table     = null;
+         String         tableName = ValueUtils.getValueAsString(CollectionUtils.nonNullMap(widgetMetaData.getDefaultValues()).get("tableName"));
          if(qInstanceValidator.assertCondition(StringUtils.hasContent(tableName), prefix + "defaultValue for tableName must be given"))
          {
             ////////////////////////////

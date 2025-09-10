@@ -41,7 +41,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Supplier;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
@@ -125,8 +124,6 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
-import com.kingsrook.qqq.backend.core.state.StateType;
-import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
@@ -1879,7 +1876,7 @@ public class QJavalinImplementation
             String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
             PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-            defaultQueryFilter.interpretValues(otherValues, useCase);
+            defaultQueryFilter.interpretValues(useCase, otherValues);
          }
 
          finishPossibleValuesRequest(context, possibleValueSourceName, defaultQueryFilter, otherValues);
@@ -1910,15 +1907,14 @@ public class QJavalinImplementation
          Map<String, Serializable> processValues = new HashMap<>();
          if(context.pathParamMap().containsKey("processUUID") && StringUtils.hasContent(context.pathParam("processUUID")))
          {
-            UUID                   processUUID  = UUID.fromString(context.pathParam("processUUID"));
-            Optional<ProcessState> processState = new RunProcessAction().loadState(new UUIDAndTypeStateKey(processUUID, StateType.PROCESS_STATUS));
+            Optional<ProcessState> processState = RunProcessAction.getState(context.pathParam("processUUID"));
             if(processState.isPresent())
             {
                processValues = processState.get().getValues();
             }
          }
 
-         defaultQueryFilter.interpretValues(otherValues, useCase, processValues);
+         defaultQueryFilter.interpretValues(MapBuilder.of("input", otherValues, "processValues", processValues), useCase);
       }
 
       finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter, otherValues);

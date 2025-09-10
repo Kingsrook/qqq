@@ -204,6 +204,96 @@ class QMetaDataVariableInterpreterTest extends BaseTest
 
 
    /*******************************************************************************
+    ** Global coalescing: ${env.X}??${prop.x}??${input.x} (env wins)
+    *******************************************************************************/
+   @Test
+   void testGlobalCoalescing_envPropInput_envWins()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      interpreter.setEnvironmentOverrides(Map.of("MY_VAR", "ENVV"));
+      System.setProperty("my.var", "PROP");
+      interpreter.addValueMap("input", Map.of("myVar", "INPUT"));
+
+      assertEquals("ENVV", interpreter.interpretForObject("${env.MY_VAR}??${prop.my.var}??${input.myVar}"));
+      assertEquals("PROP", interpreter.interpretForObject("${prop.my.var}??${input.myVar}"));
+      assertEquals("INPUT", interpreter.interpretForObject("${input.myVar}"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Global coalescing: ${env.X}??${prop.x}??${input.x} (prop wins when env missing)
+    *******************************************************************************/
+   @Test
+   void testGlobalCoalescing_envPropInput_propWinsWhenEnvMissing()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      // no env override for MY_OTHER
+      System.setProperty("my.other", "PROP_ONLY");
+      interpreter.addValueMap("input", Map.of("myOther", "INPUT_ONLY"));
+
+      assertEquals("PROP_ONLY", interpreter.interpretForObject("${env.MY_OTHER}??${prop.my.other}??${input.myOther}"));
+      assertEquals("INPUT_ONLY", interpreter.interpretForObject("${env.MY_OTHER}??${input.myOther}"));
+      assertNull(interpreter.interpretForObject("${env.MY_OTHER}??${prop.NOT_SET}??${input.notSet}"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Global coalescing respects "looks-like-variable" rule: unknown prefix returns literal, which is skipped
+    *******************************************************************************/
+   @Test
+   void testGlobalCoalescing_skipsUnknownPrefixLiteral()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      interpreter.addValueMap("others", Map.of("foo", "fu"));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // ${output.foo} is not a known value map; interpretForObject returns the literal string "${output.foo}". //
+      // Global coalescer skips it (since it's exactly the same token), and falls back to the next resolvable.  //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals("fu", interpreter.interpretForObject("${output.foo}??${others.foo}"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Global coalescing skips empty/blank strings and uses next value
+    *******************************************************************************/
+   @Test
+   void testGlobalCoalescing_skipsEmptyAndBlankStrings()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      interpreter.setEnvironmentOverrides(Map.of("EMPTY_ENV", ""));
+      System.setProperty("blank.prop", "   ");
+      interpreter.addValueMap("input", Map.of("nonEmpty", "ok"));
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // empty env -> skipped; blank prop -> skipped; falls to non-empty value map //
+      ///////////////////////////////////////////////////////////////////////////////
+      assertEquals("ok", interpreter.interpretForObject("${env.EMPTY_ENV}??${prop.blank.prop}??${input.nonEmpty}"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Global coalescing selects first non-null non-string value (e.g., BigDecimal)
+    *******************************************************************************/
+   @Test
+   void testGlobalCoalescing_nonStringTypes()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      interpreter.addValueMap("input", Map.of("amount", new BigDecimal("3.50")));
+
+      ///////////////////////////////////////////////////////////////
+      // prop/env not set -> resolves to BigDecimal from value map //
+      ///////////////////////////////////////////////////////////////
+      assertEquals(new BigDecimal("3.50"), interpreter.interpretForObject("${prop.amount}??${env.AMOUNT}??${input.amount}"));
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Test

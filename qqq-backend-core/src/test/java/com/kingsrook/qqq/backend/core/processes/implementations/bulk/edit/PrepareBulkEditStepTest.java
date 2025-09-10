@@ -33,6 +33,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -71,7 +74,7 @@ class PrepareBulkEditStepTest extends BaseTest
    {
       QInstance qInstance = QContext.getQInstance();
       QContext.getQSession().setSecurityKeyValues(Map.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, List.of(true)));
-      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("storeId").withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("storeId", EQUALS, "${input.storeId}??${processValues.possibleValueFilterValueStoreId}")));
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("storeId").withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("storeId", EQUALS, "${input.storeId}")));
 
       //////////////////////////////
       // insert some test records //
@@ -103,7 +106,7 @@ class PrepareBulkEditStepTest extends BaseTest
    {
       QInstance qInstance = QContext.getQInstance();
       QContext.getQSession().setSecurityKeyValues(Map.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, List.of(true)));
-      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("storeId").withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("storeId", EQUALS, "${input.storeId}??${processValues.possibleValueFilterValueStoreId}")));
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("storeId").withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("storeId", EQUALS, "${input.storeId}")));
 
       //////////////////////////////
       // insert some test records //
@@ -124,4 +127,69 @@ class PrepareBulkEditStepTest extends BaseTest
       assertNotNull(output.getValue("possibleValueFilterValueStoreId"));
       assertThat(output.getValueInteger("possibleValueFilterValueStoreId")).isEqualTo(3);
    }
+
+
+
+   /*******************************************************************************
+    ** multiple PVS fields sharing the same filter field (storeId)
+    *******************************************************************************/
+   @Test
+   void testMultiplePvsFieldsUsingSameFilterField_storeId() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      QContext.getQSession().setSecurityKeyValues(Map.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, List.of(true)));
+
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // Base table filter on the built-in storeId field (already exists on the Order table) //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("storeId")
+         .withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("storeId", EQUALS, "${input.storeId}")));
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("storeId").withIsEditable(true);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Add 2 NEW PVS-backed fields inline on the table that both depend on the SAME filter field (storeId) //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).addField(
+         new QFieldMetaData("regionId", QFieldType.INTEGER)
+            .withLabel("Region Id")
+            .withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("storeId", EQUALS, "${input.storeId}")))
+      );
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).addField(
+         new QFieldMetaData("storeGroupId", QFieldType.INTEGER)
+            .withLabel("Store Group Id")
+            .withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("storeId", EQUALS, "${input.storeId}")))
+      );
+
+      //////////////////////////////
+      // insert some test records //
+      //////////////////////////////
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
+         new QRecord().withValue("id", 1).withValue("storeId", 1),
+         new QRecord().withValue("id", 2).withValue("storeId", 2),
+         new QRecord().withValue("id", 3).withValue("storeId", 3)
+      ));
+
+      RunBackendStepInput input = new RunBackendStepInput();
+      input.setTableName(TestUtils.TABLE_NAME_ORDER);
+      input.addValue("recordIds", "1,2,3");
+
+      RunBackendStepOutput output = new RunBackendStepOutput();
+      assertThatNoException().isThrownBy(() -> new PrepareBulkEditStep().run(input, output));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // When multiple selected records have different values for the filter field (storeId),               //
+      // PrepareBulkEditStep should mark the dependent fields as non-distinct under the filter's label key. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      @SuppressWarnings("unchecked")
+      ListingHash<String, String> nonDistinctFields = (ListingHash<String, String>) output.getValue("nonDistinctPVSFields");
+      assertNotNull(nonDistinctFields);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // Keyed by the FILTER field's label "Store Id", should include BOTH dependent fields we added //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      List<String> dependentsForStore = nonDistinctFields.get("Store Id");
+      assertNotNull(dependentsForStore);
+      assertThat(dependentsForStore).contains("Region Id", "Store Group Id");
+   }
+
 }

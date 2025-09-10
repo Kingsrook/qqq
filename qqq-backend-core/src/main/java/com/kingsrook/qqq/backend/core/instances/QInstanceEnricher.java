@@ -48,6 +48,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnricherPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.bulk.TableKeyFieldsPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -1098,6 +1101,8 @@ public class QInstanceEnricher
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
          .filter(f -> !f.getType().equals(QFieldType.BLOB))
+         .map(QInstanceEnricher::cloneFieldForBulkProcess)
+         .map(QInstanceEnricher::addProcessFallbacksToPvsFilter)
          .toList();
 
       QFrontendStepMetaData editScreen = new QFrontendStepMetaData()
@@ -1841,4 +1846,112 @@ public class QInstanceEnricher
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Create a lightweight clone of a field for use in bulk-edit processes, preserving
+    ** name, type, label, PVS name, required/max length, and adornments that affect UX.
+    ** We intentionally do not carry over backendName or supplemental meta that does
+    ** not impact the edit form.
+    *******************************************************************************/
+   private static QFieldMetaData cloneFieldForBulkProcess(QFieldMetaData original)
+   {
+      QFieldMetaData copy = new QFieldMetaData(original.getName(), original.getType())
+         .withLabel(original.getLabel())
+         .withPossibleValueSourceName(original.getPossibleValueSourceName())
+         .withIsRequired(original.getIsRequired());
+
+      if(original.getMaxLength() != null)
+      {
+         copy.withMaxLength(original.getMaxLength());
+      }
+
+      ////////////////////////////////////////////////////////////////////////
+      // Preserve adornments that might render chips/dropdowns consistently //
+      ////////////////////////////////////////////////////////////////////////
+      if(original.getAdornments() != null && !original.getAdornments().isEmpty())
+      {
+         copy.setAdornments(new ArrayList<>(original.getAdornments()));
+      }
+
+      /////////////////////////////////////////////////////////////////////////
+      // Note: filter will be handled by addProcessFallbacksToPvsFilter(...) //
+      /////////////////////////////////////////////////////////////////////////
+      if(original.getPossibleValueSourceFilter() != null)
+      {
+         /////////////////////////////////////////////////////////////////
+         // shallow copy now; we will transform tokens in the next step //
+         /////////////////////////////////////////////////////////////////
+         copy.withPossibleValueSourceFilter(original.getPossibleValueSourceFilter());
+      }
+
+      return copy;
+   }
+
+
+
+   /*******************************************************************************
+    ** For any QFieldMetaData that has a PVS filter referencing ${input.someVar},
+    ** add a process-level fallback so it becomes:
+    **   ${input.someVar}??${processValues.possibleValueFilterValueSomeVar}
+    **
+    ** This keeps table definitions clean (${input.x} only) and pushes knowledge
+    ** of process fallbacks into the enricher-generated processes.
+    *******************************************************************************/
+   private static QFieldMetaData addProcessFallbacksToPvsFilter(QFieldMetaData field)
+   {
+      QQueryFilter filter = field.getPossibleValueSourceFilter();
+      if(filter == null)
+      {
+         return field;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // Transform each criterion value that is a String containing ${input.<name>} //
+      ////////////////////////////////////////////////////////////////////////////////
+      List<QFilterCriteria> newCriteria = new ArrayList<>();
+      for(QFilterCriteria c : CollectionUtils.nonNullList(filter.getCriteria()))
+      {
+         Serializable[]     newValues = null;
+         List<Serializable> vals      = new ArrayList<>();
+         for(Serializable v : CollectionUtils.nonNullList(c.getValues()))
+         {
+            if(v instanceof String s)
+            {
+               String transformed = java.util.regex.Pattern
+                  .compile("\\$\\{input\\.([A-Za-z0-9_]+)}")
+                  .matcher(s)
+                  .replaceAll(mr ->
+                  {
+                     String var = mr.group(1);
+                     String cap = var.substring(0, 1).toUpperCase(Locale.ROOT) + (var.length() > 1 ? var.substring(1) : "");
+                     return java.util.regex.Matcher.quoteReplacement("${input." + var + "}??${processValues.possibleValueFilterValue" + cap + "}");
+                  });
+               vals.add(transformed);
+            }
+            else
+            {
+               vals.add(v);
+            }
+         }
+         newValues = vals.toArray(new Serializable[0]);
+         newCriteria.add(new QFilterCriteria(c.getFieldName(), c.getOperator(), newValues));
+      }
+
+      QQueryFilter newFilter = new QQueryFilter();
+      for(QFilterCriteria nc : newCriteria)
+      {
+         newFilter.addCriteria(nc);
+      }
+      ///////////////////////////////
+      // copy order-bys if present //
+      ///////////////////////////////
+      for(QFilterOrderBy ob : CollectionUtils.nonNullList(filter.getOrderBys()))
+      {
+         newFilter.withOrderBy(new QFilterOrderBy(ob.getFieldName(), ob.getIsAscending()));
+      }
+
+      field.withPossibleValueSourceFilter(newFilter);
+      return field;
+   }
 }

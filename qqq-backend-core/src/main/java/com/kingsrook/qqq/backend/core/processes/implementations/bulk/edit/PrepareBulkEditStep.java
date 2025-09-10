@@ -104,7 +104,7 @@ public class PrepareBulkEditStep implements BackendStep
                if(matcher.find())
                {
                   String         dependentFieldName = matcher.group(1);
-                  QFieldMetaData dependentField     = table.getField(dependentFieldName);
+                  QFieldMetaData dependentField     = table.getFields().get(dependentFieldName);
 
                   //////////////////////////////////////////////////////////////
                   // if the dependent field isn't editable, ignore it as well //
@@ -144,9 +144,9 @@ public class PrepareBulkEditStep implements BackendStep
          return (true);
       };
 
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // consume records from the intermediary pipe, then manipulate them, for passing into the report's pipe //
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////
+      // consume records from the pipe, and build up a dependency map //
+      //////////////////////////////////////////////////////////////////
       Map<String, Set<Serializable>> valuesMap = new HashMap<>();
       UnsafeSupplier<Integer, QException> consumer = () ->
       {
@@ -179,7 +179,7 @@ public class PrepareBulkEditStep implements BackendStep
          {
             for(QRecord qRecord : availableRecords)
             {
-               if(qRecord.getValues().containsKey(pvsFilterFieldName) && qRecord.getValue(pvsFilterFieldName) != null)
+               if(qRecord.getValues().containsKey(pvsFilterFieldName))
                {
                   Set<Serializable> values = valuesMap.getOrDefault(pvsFilterFieldName, new HashSet<>());
                   values.add(qRecord.getValue(pvsFilterFieldName));

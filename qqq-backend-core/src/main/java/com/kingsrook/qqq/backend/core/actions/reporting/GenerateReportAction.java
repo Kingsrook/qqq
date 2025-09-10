@@ -618,7 +618,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          filterUseCase = new ReportNotFromMetaDataFilterUseCase();
       }
 
-      queryFilter.interpretValues(reportInput.getInputValues(), filterUseCase);
+      queryFilter.interpretValues(filterUseCase, reportInput.getInputValues());
    }
 
 

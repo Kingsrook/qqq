@@ -200,7 +200,7 @@ class QQueryFilterTest extends BaseTest
       ////////////////////////////////////////////////////////////////////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
-         filter.interpretValues(inputValues, new RemoveFromFilterUseCase());
+         filter.interpretValues(new RemoveFromFilterUseCase(), inputValues);
          assertEquals(0, filter.getCriteria().get(0).getValues().size());
          assertEquals(TRUE, filter.getCriteria().get(0).getOperator());
       }
@@ -210,7 +210,7 @@ class QQueryFilterTest extends BaseTest
       //////////////////////////////////////////////////////////////////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
-         filter.interpretValues(inputValues, new MakeNoMatchesUseCase());
+         filter.interpretValues(new MakeNoMatchesUseCase(), inputValues);
          assertEquals(0, filter.getCriteria().get(0).getValues().size());
          assertEquals(FALSE, filter.getCriteria().get(0).getOperator());
       }
@@ -220,7 +220,7 @@ class QQueryFilterTest extends BaseTest
       ///////////////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
-         filter.interpretValues(inputValues, new InterpretAsNullValueUseCase());
+         filter.interpretValues(new InterpretAsNullValueUseCase(), inputValues);
          assertNull(filter.getCriteria().get(0).getValues().get(0));
          assertEquals(EQUALS, filter.getCriteria().get(0).getOperator());
       }
@@ -230,7 +230,7 @@ class QQueryFilterTest extends BaseTest
       ///////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
-         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+         assertThatThrownBy(() -> filter.interpretValues(new ThrowExceptionUseCase(), inputValues))
             .isInstanceOf(QUserFacingException.class)
             .hasMessageContaining("Missing value for variable: clientId");
       }
@@ -241,7 +241,7 @@ class QQueryFilterTest extends BaseTest
       inputValues.put("clientId", "");
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
-         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+         assertThatThrownBy(() -> filter.interpretValues(new ThrowExceptionUseCase(), inputValues))
             .isInstanceOf(QUserFacingException.class)
             .hasMessageContaining("Missing value for variable: clientId");
       }
@@ -278,7 +278,7 @@ class QQueryFilterTest extends BaseTest
       ////////////////////////////////////////////////////////////////////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
-         filter.interpretValues(inputValues, new RemoveFromFilterUseCase());
+         filter.interpretValues(new RemoveFromFilterUseCase(), inputValues);
          assertEquals(0, filter.getCriteria().get(0).getValues().size());
          assertEquals(TRUE, filter.getCriteria().get(0).getOperator());
       }
@@ -288,7 +288,7 @@ class QQueryFilterTest extends BaseTest
       //////////////////////////////////////////////////////////////////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
-         filter.interpretValues(inputValues, new MakeNoMatchesUseCase());
+         filter.interpretValues(new MakeNoMatchesUseCase(), inputValues);
          assertEquals(0, filter.getCriteria().get(0).getValues().size());
          assertEquals(FALSE, filter.getCriteria().get(0).getOperator());
       }
@@ -298,7 +298,7 @@ class QQueryFilterTest extends BaseTest
       ///////////////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
-         filter.interpretValues(inputValues, new InterpretAsNullValueUseCase());
+         filter.interpretValues(new InterpretAsNullValueUseCase(), inputValues);
          assertNull(filter.getCriteria().get(0).getValues().get(0));
          assertEquals(EQUALS, filter.getCriteria().get(0).getOperator());
       }
@@ -308,7 +308,7 @@ class QQueryFilterTest extends BaseTest
       ///////////////////////////////////
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
-         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+         assertThatThrownBy(() -> filter.interpretValues(new ThrowExceptionUseCase(), inputValues))
             .isInstanceOf(QUserFacingException.class)
             .hasMessageContaining("Missing value for criteria on field: id");
       }
@@ -319,7 +319,7 @@ class QQueryFilterTest extends BaseTest
       inputValues.put("clientId", "");
       {
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
-         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+         assertThatThrownBy(() -> filter.interpretValues(new ThrowExceptionUseCase(), inputValues))
             .isInstanceOf(QUserFacingException.class)
             .hasMessageContaining("Missing value for criteria on field: id");
       }
