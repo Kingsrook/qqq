@@ -1909,9 +1909,9 @@ public class QJavalinImplementation
          PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
          Map<String, Serializable> processValues = new HashMap<>();
-         if(context.pathParamMap().containsKey("processUUID") && StringUtils.hasContent(context.pathParam("processUUID")))
+         if(context.queryParamMap().containsKey("processUUID") && StringUtils.hasContent(context.queryParam("processUUID")))
          {
-            Optional<ProcessState> processState = RunProcessAction.getState(context.pathParam("processUUID"));
+            Optional<ProcessState> processState = RunProcessAction.getState(context.queryParam("processUUID"));
             if(processState.isPresent())
             {
                processValues = processState.get().getValues();
