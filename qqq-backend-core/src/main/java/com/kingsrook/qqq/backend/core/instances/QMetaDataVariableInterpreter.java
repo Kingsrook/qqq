@@ -160,6 +160,9 @@ public class QMetaDataVariableInterpreter
     ** be found.  Where "looks like" means, for example, started with "${env." and ended
     ** with "}", but wasn't set in the environment, or, more interestingly, based on the
     ** valueMaps - only if the name to the left of the dot is an actual valueMap name.
+    ** additional valueMaps can be added via @see #addValueMap. also, more than one value
+    ** can be specified in the same string, separated by "??", and the first one found
+    ** in the valueMaps will be used. (e.g. "${input.clientId}??${processValues.possibleValueFilterValueClientId}"
     **
     ** If input is null, output is null.
     ** If input looks like ${env.X}, then the return value is the value of the env variable 'X'
@@ -172,6 +175,40 @@ public class QMetaDataVariableInterpreter
    {
       if(value == null)
       {
+         return (null);
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Support global coalescing with "??" (e.g., ${env.X}??${prop.X}??${input.X}), returning the first resolved //
+      // non-null value (and for Strings, the first non-empty that is not the same literal variable token).        //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(value.contains("??"))
+      {
+         String[] split = value.split("\\?\\?");
+         for(String part : split)
+         {
+            Serializable result = interpretForObject(part, defaultIfLooksLikeVariableButNotFound);
+            if(result != null)
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////
+               // If result is a String, ensure it has content and is not the same literal we passed in. //
+               ////////////////////////////////////////////////////////////////////////////////////////////
+               if(result instanceof String s)
+               {
+                  if(StringUtils.hasContent(s) && !s.equals(part))
+                  {
+                     return (result);
+                  }
+               }
+               else
+               {
+                  return (result);
+               }
+            }
+         }
+         /////////////////////////////////////////////////////////
+         // if we make it here and haven't returned, return nul //
+         /////////////////////////////////////////////////////////
          return (null);
       }
 

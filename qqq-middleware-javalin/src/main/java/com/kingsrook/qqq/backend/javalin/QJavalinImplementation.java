@@ -80,6 +80,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInpu
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
@@ -1879,7 +1880,7 @@ public class QJavalinImplementation
             String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
             PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-            defaultQueryFilter.interpretValues(otherValues, useCase);
+            defaultQueryFilter.interpretValues(useCase, otherValues);
          }
 
          finishPossibleValuesRequest(context, possibleValueSourceName, defaultQueryFilter, otherValues);
@@ -1907,7 +1908,17 @@ public class QJavalinImplementation
          String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
          PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-         defaultQueryFilter.interpretValues(otherValues, useCase);
+         Map<String, Serializable> processValues = new HashMap<>();
+         if(context.pathParamMap().containsKey("processUUID") && StringUtils.hasContent(context.pathParam("processUUID")))
+         {
+            Optional<ProcessState> processState = RunProcessAction.getState(context.pathParam("processUUID"));
+            if(processState.isPresent())
+            {
+               processValues = processState.get().getValues();
+            }
+         }
+
+         defaultQueryFilter.interpretValues(MapBuilder.of("input", otherValues, "processValues", processValues), useCase);
       }
 
       finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter, otherValues);
