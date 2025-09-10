@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
 /*******************************************************************************
@@ -573,7 +574,7 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
     ******************************************************************************/
    public void interpretValues(FilterUseCase useCase, Map<String, Serializable> inputValues) throws QException
    {
-      interpretValues(Map.of("input", inputValues), useCase);
+      interpretValues(MapBuilder.of("input", inputValues), useCase);
    }
 
 
