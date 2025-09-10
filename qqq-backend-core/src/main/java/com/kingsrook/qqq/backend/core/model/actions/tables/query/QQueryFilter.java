@@ -572,6 +572,7 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
     ** want to be (permanently) changed!!
     **
     ******************************************************************************/
+   @Deprecated(since = "0.27 when overload that takes multiple value maps was introduced")
    public void interpretValues(FilterUseCase useCase, Map<String, Serializable> inputValues) throws QException
    {
       interpretValues(MapBuilder.of("input", inputValues), useCase);

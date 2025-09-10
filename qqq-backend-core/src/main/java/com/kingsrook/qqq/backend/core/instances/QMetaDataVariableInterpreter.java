@@ -190,7 +190,9 @@ public class QMetaDataVariableInterpreter
             Serializable result = interpretForObject(part, defaultIfLooksLikeVariableButNotFound);
             if(result != null)
             {
-               // If result is a String, ensure it has content and is not the same literal we passed in.
+               ////////////////////////////////////////////////////////////////////////////////////////////
+               // If result is a String, ensure it has content and is not the same literal we passed in. //
+               ////////////////////////////////////////////////////////////////////////////////////////////
                if(result instanceof String s)
                {
                   if(StringUtils.hasContent(s) && !s.equals(part))

@@ -1101,7 +1101,7 @@ public class QInstanceEnricher
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
          .filter(f -> !f.getType().equals(QFieldType.BLOB))
-         .map(QInstanceEnricher::cloneFieldForBulkProcess)
+         .map(QFieldMetaData::clone)
          .map(QInstanceEnricher::addProcessFallbacksToPvsFilter)
          .toList();
 
@@ -1844,48 +1844,6 @@ public class QInstanceEnricher
    {
       this.configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate = configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate;
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Create a lightweight clone of a field for use in bulk-edit processes, preserving
-    ** name, type, label, PVS name, required/max length, and adornments that affect UX.
-    ** We intentionally do not carry over backendName or supplemental meta that does
-    ** not impact the edit form.
-    *******************************************************************************/
-   private static QFieldMetaData cloneFieldForBulkProcess(QFieldMetaData original)
-   {
-      QFieldMetaData copy = new QFieldMetaData(original.getName(), original.getType())
-         .withLabel(original.getLabel())
-         .withPossibleValueSourceName(original.getPossibleValueSourceName())
-         .withIsRequired(original.getIsRequired());
-
-      if(original.getMaxLength() != null)
-      {
-         copy.withMaxLength(original.getMaxLength());
-      }
-
-      ////////////////////////////////////////////////////////////////////////
-      // Preserve adornments that might render chips/dropdowns consistently //
-      ////////////////////////////////////////////////////////////////////////
-      if(original.getAdornments() != null && !original.getAdornments().isEmpty())
-      {
-         copy.setAdornments(new ArrayList<>(original.getAdornments()));
-      }
-
-      /////////////////////////////////////////////////////////////////////////
-      // Note: filter will be handled by addProcessFallbacksToPvsFilter(...) //
-      /////////////////////////////////////////////////////////////////////////
-      if(original.getPossibleValueSourceFilter() != null)
-      {
-         /////////////////////////////////////////////////////////////////
-         // shallow copy now; we will transform tokens in the next step //
-         /////////////////////////////////////////////////////////////////
-         copy.withPossibleValueSourceFilter(original.getPossibleValueSourceFilter());
-      }
-
-      return copy;
    }
 
 
