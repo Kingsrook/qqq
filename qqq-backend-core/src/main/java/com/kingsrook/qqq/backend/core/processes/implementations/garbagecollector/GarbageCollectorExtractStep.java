@@ -43,7 +43,7 @@ public class GarbageCollectorExtractStep extends ExtractViaQueryStep
     **
     *******************************************************************************/
    @Override
-   public QQueryFilter getQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
+   protected QQueryFilter getQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
    {
       //////////////////////////////////////////////////////////////////////////////////////////
       // in case the process was executed via a frontend, and the user specified a limitDate, //
