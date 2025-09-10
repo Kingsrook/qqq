@@ -137,7 +137,7 @@ public class PrepareBulkEditStep implements BackendStep
          /////////////////////////////////////////////////////////////////////////
          // use an extract via query step to get proper query filter from input //
          /////////////////////////////////////////////////////////////////////////
-         QQueryFilter queryFilter = new ExtractViaQueryStep().getQueryFilter(runBackendStepInput);
+         QQueryFilter queryFilter = new QueryFilterExtractor().extractQueryFilter(runBackendStepInput);
          QueryInput   queryInput  = new QueryInput(table.getName()).withFilter(queryFilter);
          queryInput.setRecordPipe(pipe);
          new QueryAction().execute(queryInput);
@@ -220,6 +220,24 @@ public class PrepareBulkEditStep implements BackendStep
       if(CollectionUtils.nullSafeHasContents(nonDistinctPVSFields))
       {
          runBackendStepOutput.addValue("nonDistinctPVSFields", nonDistinctPVSFields);
+      }
+   }
+
+
+
+   /***************************************************************************
+    * we need to call ExtractViaQueryStep.getQueryFilter, but, it is protected...
+    * rather than change the class hierarchy, let's just expose it for ourselves
+    * and if others need this in the future, consider other options?
+    ***************************************************************************/
+   private static class QueryFilterExtractor extends ExtractViaQueryStep
+   {
+      /***************************************************************************
+       * call getQueryFilter from the base class, returning its output.
+       ***************************************************************************/
+      public QQueryFilter extractQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
+      {
+         return getQueryFilter(runBackendStepInput);
       }
    }
 }

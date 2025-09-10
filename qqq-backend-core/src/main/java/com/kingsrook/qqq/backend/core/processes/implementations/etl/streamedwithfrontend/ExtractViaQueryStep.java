@@ -236,7 +236,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QQueryFilter getQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
+   protected QQueryFilter getQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
    {
       String       queryFilterJson    = runBackendStepInput.getValueString("queryFilterJson");
       Serializable defaultQueryFilter = runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER);
