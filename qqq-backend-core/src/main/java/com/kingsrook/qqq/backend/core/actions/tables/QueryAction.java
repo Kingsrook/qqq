@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,19 +42,17 @@ import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrappe
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.FilterValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryActionCacheHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.SelectionValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
@@ -195,7 +192,7 @@ public class QueryAction
          throw (new QException("An empty set of fieldNamesToInclude was given as queryInput, which is not allowed."));
       }
 
-      List<String> unrecognizedFieldNames = getUnrecognizedFieldNames(queryInput, fieldNamesToInclude);
+      List<String> unrecognizedFieldNames = SelectionValidationHelper.getUnrecognizedFieldNames(queryInput, fieldNamesToInclude);
 
       if(!unrecognizedFieldNames.isEmpty())
       {
@@ -203,91 +200,6 @@ public class QueryAction
       }
    }
 
-
-
-   /***************************************************************************
-    *
-    ***************************************************************************/
-   static List<String> getUnrecognizedFieldNames(QueryOrCountInputInterface queryInput, Set<String> fieldNames) throws QException
-   {
-      List<String>                unrecognizedFieldNames = new ArrayList<>();
-      Map<String, QTableMetaData> selectedQueryJoins     = null;
-      for(String fieldName : fieldNames)
-      {
-         if(fieldName.contains("."))
-         {
-            ////////////////////////////////////////////////
-            // handle names with dots - fields from joins //
-            ////////////////////////////////////////////////
-            String[] parts = fieldName.split("\\.");
-            if(parts.length != 2)
-            {
-               unrecognizedFieldNames.add(fieldName);
-            }
-            else
-            {
-               String tableOrAlias  = parts[0];
-               String fieldNamePart = parts[1];
-
-               ////////////////////////////////////////////
-               // build map of queryJoins being selected //
-               ////////////////////////////////////////////
-               if(selectedQueryJoins == null)
-               {
-                  selectedQueryJoins = new HashMap<>();
-                  for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryInput.getQueryJoins()))
-                  {
-                     if(queryJoin.getSelect())
-                     {
-                        String         joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
-                        QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
-
-                        /////////////////////////////////
-                        // personalize the join table! //
-                        /////////////////////////////////
-                        joinTable = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(joinTable).withInputSource(queryInput.getInputSource()));
-
-                        if(joinTable != null)
-                        {
-                           selectedQueryJoins.put(joinTableOrAlias, joinTable);
-                        }
-                     }
-                  }
-               }
-
-               if(!selectedQueryJoins.containsKey(tableOrAlias))
-               {
-                  ///////////////////////////////////////////
-                  // unrecognized tableOrAlias is an error //
-                  ///////////////////////////////////////////
-                  unrecognizedFieldNames.add(fieldName);
-               }
-               else
-               {
-                  QTableMetaData joinTable = selectedQueryJoins.get(tableOrAlias);
-                  if(!joinTable.getFields().containsKey(fieldNamePart))
-                  {
-                     //////////////////////////////////////////////////////////
-                     // unrecognized field within the join table is an error //
-                     //////////////////////////////////////////////////////////
-                     unrecognizedFieldNames.add(fieldName);
-                  }
-               }
-            }
-         }
-         else
-         {
-            ///////////////////////////////////////////////////////////////////////
-            // non-join fields - just ensure field name is in table's fields map //
-            ///////////////////////////////////////////////////////////////////////
-            if(!queryInput.getTable().getFields().containsKey(fieldName))
-            {
-               unrecognizedFieldNames.add(fieldName);
-            }
-         }
-      }
-      return unrecognizedFieldNames;
-   }
 
 
 
