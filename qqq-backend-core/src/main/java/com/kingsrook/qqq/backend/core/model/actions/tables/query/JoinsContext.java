@@ -918,8 +918,13 @@ public class JoinsContext
     *******************************************************************************/
    private void processQueryJoin(QueryJoin queryJoin) throws QException
    {
-      QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
-      String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
+      QTableMetaData joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+      if(joinTable == null)
+      {
+         throw (new QException("Unrecognized name for join table: " + queryJoin.getJoinTable()));
+      }
+
+      String tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
       if(aliasToTableNameMap.containsKey(tableNameOrAlias))
       {
          dumpDebug(false, true);
