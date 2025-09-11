@@ -22,8 +22,12 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import java.util.HashSet;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -32,6 +36,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
  *******************************************************************************/
 public abstract class QSupplementalTableMetaData implements Cloneable
 {
+   private static final QLogger LOG = QLogger.getLogger(QSupplementalTableMetaData.class);
+
+   private static Set<Class<?>> warnedAboutMissingFinishClones = new HashSet<>();
+
 
 
    /*******************************************************************************
@@ -110,7 +118,20 @@ public abstract class QSupplementalTableMetaData implements Cloneable
     * finish the cloning operation started in the base class. copy all state
     * from the subclass into the input clone (which can be safely casted to
     * the subclass's type, as it was obtained by super.clone())
+    *
+    * Rather than making this public and breaking all existing implementations
+    * that don't have it - we're making it protected, with a one-time warning
+    * if it isn't implemented in a subclass.
     ***************************************************************************/
-   protected abstract QSupplementalTableMetaData finishClone(QSupplementalTableMetaData abstractClone);
+   protected QSupplementalTableMetaData finishClone(QSupplementalTableMetaData abstractClone)
+   {
+      if(!warnedAboutMissingFinishClones.contains(abstractClone.getClass()))
+      {
+         LOG.warn("Missing finishClone method in a subclass of QSupplementalTableMetaData.", logPair("className", abstractClone.getClass().getName()));
+         warnedAboutMissingFinishClones.add(abstractClone.getClass());
+      }
+
+      return (abstractClone);
+   }
 
 }

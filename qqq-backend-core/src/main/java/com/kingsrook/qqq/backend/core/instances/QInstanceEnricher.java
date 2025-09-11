@@ -996,10 +996,6 @@ public class QInstanceEnricher
          }
       }
 
-      String fieldsForHelpText = editableFields.stream()
-         .map(QFieldMetaData::getLabel)
-         .collect(Collectors.joining(", "));
-
       QBackendStepMetaData prepareFileUploadStep = new QBackendStepMetaData()
          .withName("prepareFileUpload")
          .withCode(new QCodeReference(BulkInsertPrepareFileUploadStep.class));

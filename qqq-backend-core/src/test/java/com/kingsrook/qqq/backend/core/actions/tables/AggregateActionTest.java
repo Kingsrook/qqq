@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -88,6 +89,48 @@ class AggregateActionTest extends BaseTest
       assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_SHAPE)
          .withGroupBy(new GroupBy(QFieldType.INTEGER, "nope"))))
          .hasMessageContaining("AggregateInput contained 1 unrecognized field name: nope");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoins() throws QException
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // first 2 cases - supply a filter that allows us, through the JoinContext, to figure out that the Order table is joined in. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_LINE_ITEM)
+         .withFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_ORDER + ".storeId", QCriteriaOperator.IS_NOT_BLANK)))
+         .withAggregate(new Aggregate(TestUtils.TABLE_NAME_ORDER + ".orderNo", AggregateOperator.COUNT_DISTINCT)));
+
+      new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_LINE_ITEM)
+         .withFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_ORDER + ".storeId", QCriteriaOperator.IS_NOT_BLANK)))
+         .withGroupBy(new GroupBy(QFieldType.INTEGER, TestUtils.TABLE_NAME_ORDER + ".storeId")));
+
+      ///////////////////////////////////////////////////////////
+      // next 2 cases - explicitly state order table as a join //
+      ///////////////////////////////////////////////////////////
+      new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_LINE_ITEM)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER))
+         .withAggregate(new Aggregate(TestUtils.TABLE_NAME_ORDER + ".orderNo", AggregateOperator.COUNT_DISTINCT)));
+
+      new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_LINE_ITEM)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER))
+         .withGroupBy(new GroupBy(QFieldType.INTEGER, TestUtils.TABLE_NAME_ORDER + ".storeId")));
+
+      ////////////////////////////////////////////////////////////////
+      // now 2 fail cases, where join table can't be known, so fail //
+      ////////////////////////////////////////////////////////////////
+      assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_LINE_ITEM)
+         .withAggregate(new Aggregate(TestUtils.TABLE_NAME_ORDER + ".orderNo", AggregateOperator.COUNT_DISTINCT))))
+         .hasMessageContaining("AggregateInput contained 1 unrecognized field name: order.orderNo");
+
+      assertThatThrownBy(() -> new AggregateAction().execute(new AggregateInput(TestUtils.TABLE_NAME_LINE_ITEM)
+         .withGroupBy(new GroupBy(QFieldType.INTEGER, TestUtils.TABLE_NAME_ORDER + ".storeId"))))
+         .hasMessageContaining("AggregateInput contained 1 unrecognized field name: order.storeId");
    }
 
 

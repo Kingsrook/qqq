@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.FilterValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.SelectionValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -129,7 +130,7 @@ public class AggregateAction
 
       if(CollectionUtils.nullSafeHasContents(inputFieldNames))
       {
-         List<String> unrecognizedFieldNames = QueryAction.getUnrecognizedFieldNames(aggregateInput, inputFieldNames);
+         List<String> unrecognizedFieldNames = SelectionValidationHelper.getUnrecognizedFieldNames(aggregateInput, inputFieldNames);
          if(CollectionUtils.nullSafeHasContents(unrecognizedFieldNames))
          {
             throw (new QException("AggregateInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));

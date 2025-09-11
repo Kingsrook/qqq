@@ -621,7 +621,7 @@ class QueryActionTest extends BaseTest
       assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
          .withQueryJoin(new QueryJoin("noJoinTable").withSelect(true))
          .withFieldNamesToInclude(Set.of("noJoinTable.id"))))
-         .hasMessageContaining("1 unrecognized field name: noJoinTable.id");
+         .hasMessageContaining("Unrecognized name for join table: noJoinTable");
 
       assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
          .withFieldNamesToInclude(Set.of("noJoin.id"))))
