@@ -99,12 +99,18 @@ public class SelectionValidationHelper
                {
                   queryJoinsByNameOrAlias = new HashMap<>();
 
-                  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  // build a joinsContext, since it knows how to infer join tables that the user may not have specified in their input.  //
-                  // but, since it can manipulate the query filter (e.g., adding security clauses), pass it a clone (or a new blank one) //
-                  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  QQueryFilter    filterForJoinsContext = ObjectUtils.tryElse(() -> input.getFilter().clone(), new QQueryFilter());
-                  JoinsContext    joinsContext = new JoinsContext(QContext.getQInstance(), input.getTableName(), input.getQueryJoins(), filterForJoinsContext);
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // build a joinsContext, since it knows how to infer join tables that the user may not have specified in their input. //
+                  // but, since it can manipulate the query filter (e.g., adding security clauses) and queryJoins, pass it a clones     //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  QQueryFilter    filterForJoinsContext     = ObjectUtils.tryElse(() -> input.getFilter().clone(), new QQueryFilter());
+                  List<QueryJoin> queryJoinsForJoinsContext = new ArrayList<>();
+                  for(QueryJoin queryJoin : CollectionUtils.nonNullList(input.getQueryJoins()))
+                  {
+                     queryJoinsForJoinsContext.add(queryJoin.clone());
+                  }
+
+                  JoinsContext    joinsContext = new JoinsContext(QContext.getQInstance(), input.getTableName(), queryJoinsForJoinsContext, filterForJoinsContext);
                   List<QueryJoin> queryJoins   = joinsContext.getQueryJoins();
 
                   for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
