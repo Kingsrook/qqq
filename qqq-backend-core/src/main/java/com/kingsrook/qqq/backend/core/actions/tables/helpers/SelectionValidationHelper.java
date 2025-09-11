@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.Tab
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -108,8 +109,24 @@ public class SelectionValidationHelper
 
                   for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
                   {
+                     if(input instanceof QueryInput)
+                     {
+                        //////////////////////////////////////////////////////////////////////
+                        // for queries - only allow a join if it's marked as being selected //
+                        // for aggregates, joins don't have to be marked as such.           //
+                        //////////////////////////////////////////////////////////////////////
+                        if(!queryJoin.getSelect())
+                        {
+                           continue;
+                        }
+                     }
+
                      String         joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
                      QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+                     if(joinTable == null)
+                     {
+                        continue;
+                     }
 
                      /////////////////////////////////
                      // personalize the join table! //
