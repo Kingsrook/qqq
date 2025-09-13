@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.audits;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 
 
@@ -35,6 +36,8 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 public class AuditInput extends AbstractActionInput implements Serializable
 {
    private List<AuditSingleInput> auditSingleInputList = new ArrayList<>();
+
+   private QBackendTransaction transaction;
 
 
 
@@ -91,5 +94,43 @@ public class AuditInput extends AbstractActionInput implements Serializable
       addAuditSingleInput(auditSingleInput);
       return (this);
    }
+
+
+   /*******************************************************************************
+    * Getter for transaction
+    * @see #withTransaction(QBackendTransaction)
+    *******************************************************************************/
+   public QBackendTransaction getTransaction()
+   {
+      return (this.transaction);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for transaction
+    * @see #withTransaction(QBackendTransaction)
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for transaction
+    *
+    * @param transaction
+    * transaction upon which the audits will be inserted.
+    *
+    * @return this
+    *******************************************************************************/
+   public AuditInput withTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+      return (this);
+   }
+
 
 }

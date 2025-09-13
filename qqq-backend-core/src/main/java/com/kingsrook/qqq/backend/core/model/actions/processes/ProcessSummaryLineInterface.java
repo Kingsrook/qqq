@@ -23,7 +23,11 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -31,6 +35,45 @@ import com.kingsrook.qqq.backend.core.logging.LogPair;
  *******************************************************************************/
 public interface ProcessSummaryLineInterface extends Serializable
 {
+   QLogger LOG = QLogger.getLogger(ProcessSummaryLineInterface.class);
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   static void log(String message, Serializable summaryLines, List<LogPair> additionalLogPairs)
+   {
+      try
+      {
+         if(summaryLines instanceof List)
+         {
+            List<ProcessSummaryLineInterface> list = (List<ProcessSummaryLineInterface>) summaryLines;
+
+            List<LogPair> logPairs = new ArrayList<>();
+            for(ProcessSummaryLineInterface processSummaryLineInterface : list)
+            {
+               LogPair logPair = processSummaryLineInterface.toLogPair();
+               logPair.setKey(logPair.getKey() + logPairs.size());
+               logPairs.add(logPair);
+            }
+
+            if(additionalLogPairs != null)
+            {
+               logPairs.addAll(0, additionalLogPairs);
+            }
+            logPairs.add(0, logPair("message", message));
+
+            LOG.info(logPairs);
+         }
+         else
+         {
+            LOG.info("Unrecognized type for summaryLines (expected List)", logPair("processSummary", summaryLines));
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error logging a process summary", e, logPair("processSummary", summaryLines));
+      }
+   }
 
    /*******************************************************************************
     ** Getter for status

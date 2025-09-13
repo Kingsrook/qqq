@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.actions;
 
 
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
@@ -33,8 +35,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  *******************************************************************************/
 public class AbstractTableActionInput extends AbstractActionInput
 {
-   private String tableName;
+   private String      tableName;
+   private InputSource inputSource = QInputSource.SYSTEM;
 
+   private QTableMetaData tableMetaData;
 
 
    /*******************************************************************************
@@ -72,7 +76,24 @@ public class AbstractTableActionInput extends AbstractActionInput
     *******************************************************************************/
    public QTableMetaData getTable()
    {
-      return (QContext.getQInstance().getTable(getTableName()));
+      if(tableMetaData == null)
+      {
+         tableMetaData = QContext.getQInstance().getTable(getTableName());
+      }
+
+      return (tableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableMetaData
+    **
+    *******************************************************************************/
+   public void setTableMetaData(QTableMetaData tableMetaData)
+   {
+      this.tableMetaData = tableMetaData;
+      this.tableName = tableMetaData == null ? null : tableMetaData.getName();
    }
 
 
@@ -95,6 +116,7 @@ public class AbstractTableActionInput extends AbstractActionInput
    public void setTableName(String tableName)
    {
       this.tableName = tableName;
+      this.tableMetaData = QContext.getQInstance().getTable(getTableName());
    }
 
 
@@ -104,8 +126,76 @@ public class AbstractTableActionInput extends AbstractActionInput
     *******************************************************************************/
    public AbstractTableActionInput withTableName(String tableName)
    {
-      this.tableName = tableName;
+      setTableName(tableName);
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for inputSource
+    *******************************************************************************/
+   public InputSource getInputSource()
+   {
+      return (this.inputSource);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputSource
+    *******************************************************************************/
+   public void setInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
+   }
+
+
+   /*******************************************************************************
+    * Fluent setter for inputSource
+    *
+    * @param inputSource
+    * Indicator of what the source of the action is.  Default values from QQQ are
+    * USER or SYSTEM (where it can be the case that an action that originated from
+    * a USER leads to SYSTEM actions (e.g., running a process - the RunProcessAction
+    * is USER initiated, but if that process then runs a query, by default, it would
+    * be SYSTEM initiated).
+    * @return this
+    *******************************************************************************/
+   public AbstractTableActionInput withInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for tableMetaData
+    * @see #withTableMetaData(QTableMetaData)
+    *******************************************************************************/
+   public QTableMetaData getTableMetaData()
+   {
+      return (this.tableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for tableMetaData
+    *
+    * @param tableMetaData
+    * The table (possibly personalized!) that the action is running against.
+    * This property and @see {@link #withTableName(String)} are kept in-sync by all
+    * 4 setters & fluent setters for either of them.  e.g., setting tableName sets
+    * tableMetaData (to the active QInstance's version of the table).
+    * @return this
+    *******************************************************************************/
+   public AbstractTableActionInput withTableMetaData(QTableMetaData tableMetaData)
+   {
+      setTableMetaData(tableMetaData);
+      return (this);
+   }
+
 
 }

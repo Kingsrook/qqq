@@ -86,7 +86,7 @@ public class MetaDataProducerMultiOutput implements MetaDataProducerOutput, Sour
    {
       List<T> rs = new ArrayList<>();
 
-      for(MetaDataProducerOutput content : contents)
+      for(MetaDataProducerOutput content : CollectionUtils.nonNullList(contents))
       {
          if(content instanceof MetaDataProducerMultiOutput multiOutput)
          {
@@ -144,5 +144,37 @@ public class MetaDataProducerMultiOutput implements MetaDataProducerOutput, Sour
    {
       setSourceQBitName(sourceQBitName);
       return this;
+   }
+
+
+
+   /***************************************************************************
+    * get a typed and named meta-data object out of this output container.
+    *
+    * @param <C> the type of the object to return, e.g., QTableMetaData
+    * @param outputClass the class for the type to return
+    * @param name the name of the object, e.g., a table or process name.
+    * @return the requested TopLevelMetaDataInterface object (in the requested
+    * type), or null if not found.
+    ***************************************************************************/
+   public <C extends TopLevelMetaDataInterface> C get(Class<C> outputClass, String name)
+   {
+      for(MetaDataProducerOutput content : CollectionUtils.nonNullList(contents))
+      {
+         if(content instanceof MetaDataProducerMultiOutput multiOutput)
+         {
+            C c = multiOutput.get(outputClass, name);
+            if(c != null)
+            {
+               return (c);
+            }
+         }
+         else if(outputClass.isInstance(content) && name.equals(((TopLevelMetaDataInterface)content).getName()))
+         {
+            return (C) content;
+         }
+      }
+
+      return null;
    }
 }

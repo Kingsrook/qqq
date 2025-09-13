@@ -22,10 +22,13 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -36,6 +39,7 @@ import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -176,6 +180,15 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
                .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.2").withValue("value", "LINE-VAL-3")))
       ));
       new InsertAction().execute(insertInput);
+
+      ////////////////////////////////////////////////////////////////////////
+      // make sure ids got put on the inserted records in the output object //
+      ////////////////////////////////////////////////////////////////////////
+      Set<Serializable> outputOrderLineIds = insertInput.getRecords().stream()
+         .flatMap(r -> r.getAssociatedRecords().get("orderLine").stream())
+         .map(r -> r.getValue("id"))
+         .collect(Collectors.toSet());
+      assertThat(outputOrderLineIds).allMatch(id -> id != null);
 
       List<QRecord> orders = TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER);
       assertEquals(originalNoOfOrders + 1, orders.size());

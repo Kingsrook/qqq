@@ -27,8 +27,9 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
@@ -114,9 +115,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAuto
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryModuleBackendVariantSetting;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
@@ -152,6 +155,10 @@ public class TestUtils
    public static final String TABLE_NAME_LINE_ITEM           = "orderLine";
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
+
+   public static final String MEMORY_BACKEND_WITH_VARIANTS_NAME = "memoryWithVariants";
+   public static final String TABLE_NAME_MEMORY_VARIANT_OPTIONS = "memoryVariantOptions";
+   public static final String TABLE_NAME_MEMORY_VARIANT_DATA    = "memoryVariantData";
 
    public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
@@ -255,12 +262,48 @@ public class TestUtils
       qInstance.addMessagingProvider(defineEmailMessagingProvider());
       qInstance.addMessagingProvider(defineSESMessagingProvider());
 
+      defineMemoryBackendVariantUseCases(qInstance);
+
       defineWidgets(qInstance);
       defineApps(qInstance);
 
       qInstance.addScheduler(defineSimpleScheduler());
 
       return (qInstance);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void defineMemoryBackendVariantUseCases(QInstance qInstance)
+   {
+      qInstance.addBackend(new QBackendMetaData()
+         .withName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withBackendType(MemoryBackendModule.class)
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withOptionsTableName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withBackendSettingSourceFieldNameMap(Map.of(MemoryModuleBackendVariantSetting.PRIMARY_KEY, "id"))
+         ));
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_DATA)
+         .withBackendName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+         .withBackendName(MEMORY_BACKEND_NAME) // note, the version without variants!
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
    }
 
 
@@ -327,11 +370,11 @@ public class TestUtils
          .withName(PROCESS_NAME_INCREASE_BIRTHDATE)
          .withTableName(TABLE_NAME_PERSON_MEMORY)
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("preview")
          )
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("doWork")
             .withCode(new QCodeReference(IncreaseBirthdateStep.class))
             .withInputData(new QFunctionInputMetaData()
@@ -340,7 +383,7 @@ public class TestUtils
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING).withDefaultValue("Success!"))))
          )
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
@@ -663,6 +706,7 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
          .withField(new QFieldMetaData("orderNo", QFieldType.STRING))
          .withField(new QFieldMetaData("shipToName", QFieldType.STRING).withMaxLength(200).withBehavior(ValueTooLongBehavior.ERROR))
          .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
@@ -745,7 +789,7 @@ public class TestUtils
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("key", QFieldType.STRING))
-         .withField(new QFieldMetaData("value", QFieldType.STRING));
+         .withField(new QFieldMetaData("value", QFieldType.STRING).withMaxLength(100).withBehavior(ValueTooLongBehavior.ERROR));
    }
 
 
@@ -1027,7 +1071,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class CheckAge extends RecordAutomationHandler
+   public static class CheckAge implements RecordAutomationHandlerInterface
    {
       public static String SUFFIX_FOR_MINORS = " (a minor)";
 
@@ -1076,7 +1120,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class FailAutomationForSith extends RecordAutomationHandler
+   public static class FailAutomationForSith implements RecordAutomationHandlerInterface
    {
 
       /*******************************************************************************
@@ -1099,7 +1143,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class LogPersonUpdate extends RecordAutomationHandler
+   public static class LogPersonUpdate implements RecordAutomationHandlerInterface
    {
       public static List<Integer> updatedIds = new ArrayList<>();
 
@@ -1144,7 +1188,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_PEOPLE)
          .withTableName(TABLE_NAME_PERSON_MEMORY)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -1175,13 +1219,13 @@ public class TestUtils
          .withName(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)
          .withTableName(TABLE_NAME_PERSON)
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("setup")
             .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
             .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
          )
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -1200,7 +1244,7 @@ public class TestUtils
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          )
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
@@ -1221,7 +1265,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName(PROCESS_NAME_ADD_TO_PEOPLES_AGE)
          .withTableName(TABLE_NAME_PERSON)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("getAgeStatistics")
             .withCode(new QCodeReference()
                .withName(GetAgeStatistics.class.getName())
@@ -1235,7 +1279,7 @@ public class TestUtils
                .withFieldList(List.of(
                   new QFieldMetaData("minAge", QFieldType.INTEGER),
                   new QFieldMetaData("maxAge", QFieldType.INTEGER)))))
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("addAge")
             .withCode(new QCodeReference()
                .withName(AddAge.class.getName())
@@ -1265,7 +1309,7 @@ public class TestUtils
             .withTableName(defineTableBasepull().getName()))
          .withName(PROCESS_NAME_BASEPULL)
          .withTableName(TABLE_NAME_PERSON)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())

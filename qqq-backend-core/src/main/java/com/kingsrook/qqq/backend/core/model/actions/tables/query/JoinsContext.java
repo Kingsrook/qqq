@@ -79,6 +79,11 @@ public class JoinsContext
    ////////////////////////////////////////////////////////////////
    private final Map<String, String> aliasToTableNameMap = new HashMap<>();
 
+   ////////////////////////////////////////////////////////////////////////////////////////
+   // option (see constructor that takes it) to not expand the filter for security locks //
+   ////////////////////////////////////////////////////////////////////////////////////////
+   private boolean omitSecurity = false;
+
    /////////////////////////////////////////////////////////////////////////////
    // we will get a TON of more output if this gets turned up, so be cautious //
    /////////////////////////////////////////////////////////////////////////////
@@ -88,8 +93,19 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    ** Constructor
+    ** Constructor - same as original, but assumes the QInstance from QContext.
     **
+    *******************************************************************************/
+   public JoinsContext(String tableName, List<QueryJoin> queryJoins, QQueryFilter filter) throws QException
+   {
+      this(QContext.getQInstance(), tableName, queryJoins, filter);
+   }
+
+
+
+   /*******************************************************************************
+    * Constructor - original.
+    *
     *******************************************************************************/
    public JoinsContext(QInstance instance, String tableName, List<QueryJoin> queryJoins, QQueryFilter filter) throws QException
    {
@@ -99,6 +115,35 @@ public class JoinsContext
       this.securityFilter = new QQueryFilter();
       this.securityFilterCursor = this.securityFilter;
 
+      init(instance, tableName, filter);
+   }
+
+
+
+   /*******************************************************************************
+    * Constructor - allows you to omit security, and doesn't pre-assume any
+    * query joins.
+    *
+    *******************************************************************************/
+   public JoinsContext(String tableName, QQueryFilter filter, boolean omitSecurity) throws QException
+   {
+      this.instance = QContext.getQInstance();
+      this.mainTableName = tableName;
+      this.queryJoins = new ArrayList<>();
+      this.omitSecurity = omitSecurity;
+      this.securityFilter = new QQueryFilter();
+      this.securityFilterCursor = this.securityFilter;
+
+      init(instance, tableName, filter);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void init(QInstance instance, String tableName, QQueryFilter filter) throws QException
+   {
       // log("--- START ----------------------------------------------------------------------", logPair("mainTable", tableName));
       dumpDebug(true, false);
 
@@ -116,11 +161,14 @@ public class JoinsContext
       ///////////////////////////////////////////////////////////////////////////////////////
       // ensure that any record locks on the main table, which require a join, are present //
       ///////////////////////////////////////////////////////////////////////////////////////
-      MultiRecordSecurityLock multiRecordSecurityLock = RecordSecurityLockFilters.filterForReadLockTree(CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks()));
-      for(RecordSecurityLock lock : multiRecordSecurityLock.getLocks())
+      if(!omitSecurity)
       {
-         ensureRecordSecurityLockIsRepresented(tableName, tableName, lock, null);
-         logFilter("After ensureRecordSecurityLockIsRepresented[fieldName=" + lock.getFieldName() + "]:", securityFilter);
+         MultiRecordSecurityLock multiRecordSecurityLock = RecordSecurityLockFilters.filterForReadLockTree(CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks()));
+         for(RecordSecurityLock lock : multiRecordSecurityLock.getLocks())
+         {
+            ensureRecordSecurityLockIsRepresented(tableName, tableName, lock, null);
+            logFilter("After ensureRecordSecurityLockIsRepresented[fieldName=" + lock.getFieldName() + "]:", securityFilter);
+         }
       }
 
       ///////////////////////////////////////////////////////////////////////////////////
@@ -134,13 +182,16 @@ public class JoinsContext
       ///////////////////////////////////////////////////////////////
       // ensure any joins that contribute a recordLock are present //
       ///////////////////////////////////////////////////////////////
-      ensureAllJoinRecordSecurityLocksAreRepresented(instance);
-      logFilter("After ensureAllJoinRecordSecurityLocksAreRepresented:", securityFilter);
+      if(!omitSecurity)
+      {
+         ensureAllJoinRecordSecurityLocksAreRepresented(instance);
+         logFilter("After ensureAllJoinRecordSecurityLocksAreRepresented:", securityFilter);
 
-      ////////////////////////////////////////////////////////////////////////////////////
-      // if there were any security filters built, then put those into the input filter //
-      ////////////////////////////////////////////////////////////////////////////////////
-      addSecurityFiltersToInputFilter(filter);
+         ////////////////////////////////////////////////////////////////////////////////////
+         // if there were any security filters built, then put those into the input filter //
+         ////////////////////////////////////////////////////////////////////////////////////
+         addSecurityFiltersToInputFilter(filter);
+      }
 
       log("Constructed JoinsContext", logPair("mainTableName", this.mainTableName), logPair("queryJoins", this.queryJoins.stream().map(qj -> qj.getJoinTable()).collect(Collectors.joining(","))));
       log("", logPair("securityFilter", securityFilter));
@@ -867,8 +918,13 @@ public class JoinsContext
     *******************************************************************************/
    private void processQueryJoin(QueryJoin queryJoin) throws QException
    {
-      QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
-      String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
+      QTableMetaData joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+      if(joinTable == null)
+      {
+         throw (new QException("Unrecognized name for join table: " + queryJoin.getJoinTable()));
+      }
+
+      String tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
       if(aliasToTableNameMap.containsKey(tableNameOrAlias))
       {
          dumpDebug(false, true);

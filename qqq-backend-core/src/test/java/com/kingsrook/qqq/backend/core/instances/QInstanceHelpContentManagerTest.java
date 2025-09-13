@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContent;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContentMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContentRole;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
@@ -473,6 +475,62 @@ class QInstanceHelpContentManagerTest extends BaseTest
       assertThat(collectingLogger.getCollectedMessages()).hasSize(1);
       assertThat(collectingLogger.getCollectedMessages().get(0).getMessage()).contains("Missing slot name");
       collectingLogger.clear();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSupplementalMetaDataHelpContentPlugin() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.withSupplementalMetaData(new TestSupplementalMetaDataHelpContentPlugin());
+      new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      String content = "We are the priests";
+
+      QInstanceHelpContentManager.processHelpContentRecord(qInstance, new HelpContent()
+         .withId(1)
+         .withKey("someContentNotOtherwiseHandled")
+         .withContent(content)
+         .withRole(HelpContentRole.INSERT_SCREEN.getId()).toQRecord());
+
+      assertEquals(1, TestSupplementalMetaDataHelpContentPlugin.acceptedContent.size());
+      assertEquals(content, TestSupplementalMetaDataHelpContentPlugin.acceptedContent.get(0));
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static class TestSupplementalMetaDataHelpContentPlugin implements QSupplementalInstanceMetaData, QHelpContentPlugin
+   {
+      private static List<String> acceptedContent = new ArrayList<>();
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      @Override
+      public void acceptHelpContent(QInstance qInstance, QHelpContent helpContent, Map<String, String> nameValuePairs)
+      {
+         acceptedContent.add(helpContent.getContent());
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      @Override
+      public String getName()
+      {
+         return getClass().getName();
+      }
    }
 
 

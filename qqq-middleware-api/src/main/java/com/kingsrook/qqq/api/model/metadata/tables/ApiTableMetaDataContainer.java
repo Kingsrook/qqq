@@ -27,10 +27,12 @@ import java.util.Map;
 import com.kingsrook.qqq.api.ApiSupplementType;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -214,7 +216,13 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
                // if we have the same field name more than once, which can happen if a field is both in the     //
                // removed-list and the table's normal field list.                                               //
                ///////////////////////////////////////////////////////////////////////////////////////////////////
-               GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, version.toString(), tableMetaData.getName()));
+               GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsInput().withApiName(apiName).withVersion(version.toString()).withTableName(tableMetaData.getName()));
+            }
+            catch(QNotFoundException qnfe)
+            {
+               /////////////////////////////
+               // skip tables not in apis //
+               /////////////////////////////
             }
             catch(Exception e)
             {
@@ -228,5 +236,25 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
             }
          }
       }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   protected ApiTableMetaDataContainer finishClone(QSupplementalTableMetaData abstractClone)
+   {
+      ApiTableMetaDataContainer clone = (ApiTableMetaDataContainer) abstractClone;
+      if(apis != null)
+      {
+         clone.apis = new LinkedHashMap<>();
+         for(Map.Entry<String, ApiTableMetaData> entry : apis.entrySet())
+         {
+            clone.apis.put(entry.getKey(), entry.getValue().clone());
+         }
+      }
+      return null;
    }
 }

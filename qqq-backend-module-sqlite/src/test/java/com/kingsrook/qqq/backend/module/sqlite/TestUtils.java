@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.sqlite;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -86,7 +87,6 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
    public static void primeTestDatabase(String sqlFileName) throws Exception
    {
       SQLiteBackendMetaData backend = TestUtils.defineBackend();
@@ -98,7 +98,7 @@ public class TestUtils
       {
          InputStream primeTestDatabaseSqlStream = SQLiteBackendModule.class.getResourceAsStream("/" + sqlFileName);
          assertNotNull(primeTestDatabaseSqlStream);
-         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         List<String> lines = IOUtils.readLines(primeTestDatabaseSqlStream, StandardCharsets.UTF_8);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
          String joinedSQL = String.join("\n", lines);
          for(String sql : joinedSQL.split(";"))

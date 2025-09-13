@@ -148,8 +148,10 @@ public class QInstanceValidatorTest extends BaseTest
 
 
    /*******************************************************************************
-    **
+    * the point of this method is to test the deprecated member, so, don't need to
+    * get a compiler warning about usage of deprecated member.
     *******************************************************************************/
+   @SuppressWarnings("deprecation")
    @Test
    void testMetaDataFilter()
    {
@@ -172,6 +174,30 @@ public class QInstanceValidatorTest extends BaseTest
 
       assertValidationSuccess((qInstance) -> qInstance.setMetaDataActionCustomizer(new QCodeReference(DefaultNoopMetaDataActionCustomizer.class)));
       assertValidationSuccess((qInstance) -> qInstance.setMetaDataActionCustomizer(null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInstanceLevelTableCustomizers()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.withTableCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(QInstanceValidator.class)),
+         "Instance tableCustomizer of type preInsertRecord: CodeReference is not of the expected type");
+
+      assertValidationFailureReasons((qInstance) ->
+      {
+         qInstance.withTableCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(QInstanceValidator.class));
+         qInstance.withTableCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(QInstanceValidator.class));
+         qInstance.withTableCustomizer(TableCustomizers.PRE_DELETE_RECORD, new QCodeReference(QInstanceValidator.class));
+      },
+         "Instance tableCustomizer of type postUpdateRecord: CodeReference is not of the expected type",
+         "Instance tableCustomizer of type postUpdateRecord: CodeReference is not of the expected type",
+         "Instance tableCustomizer of type preDeleteRecord: CodeReference is not of the expected type");
+
+      assertValidationSuccess((qInstance) -> qInstance.withTableCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(CustomizerValid.class)));
    }
 
 

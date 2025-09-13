@@ -108,7 +108,19 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
          Long mark = System.currentTimeMillis();
 
-         try(Connection connection = getConnection(aggregateInput))
+         Connection connection;
+         boolean    needToCloseConnection = false;
+         if(aggregateInput.getTransaction() != null && aggregateInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
+         {
+            connection = rdbmsTransaction.getConnection();
+         }
+         else
+         {
+            connection = getConnection(aggregateInput);
+            needToCloseConnection = true;
+         }
+
+         try
          {
             statement = connection.prepareStatement(sql);
 
@@ -185,6 +197,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
          finally
          {
             logSQL(sql, params, mark);
+
+            if(needToCloseConnection)
+            {
+               connection.close();
+            }
          }
 
          return rs;

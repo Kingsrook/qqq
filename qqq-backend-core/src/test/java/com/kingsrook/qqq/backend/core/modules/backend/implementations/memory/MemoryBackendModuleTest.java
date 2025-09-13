@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -46,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -55,12 +57,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -209,10 +213,79 @@ class MemoryBackendModuleTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testVariants() throws QException
+   {
+      ////////////////////////////////////
+      // insert our two variant options //
+      ////////////////////////////////////
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS).withRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("name", "People"),
+         new QRecord().withValue("id", 2).withValue("name", "Planets")
+      )));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // assert we fail if no variant set in session when working with a table that needs them //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      assertThatThrownBy(() -> new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("name", "Tom")
+      )))).hasMessageContaining("Could not find Backend Variant information");
+
+      ///////////////////////////////////////////////////////////
+      // set the variant in session, and assert we insert once //
+      ///////////////////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 1));
+      Integer peopleId1 = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("name", "Tom")
+      ))).getRecords().get(0).getValueInteger("id");
+      assertEquals(1, peopleId1);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // set the other variant - make sure we insert, and get the same serial (e.g., they differ per variant) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 2));
+      Integer planetId1 = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("name", "Mercury"),
+         new QRecord().withValue("name", "Venus"),
+         new QRecord().withValue("name", "Earth")
+      ))).getRecords().get(0).getValueInteger("id");
+      assertEquals(1, planetId1);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure counts return what we expect per-variant                                         //
+      // also, put the variant ids as strings, just to make sure we're a little type-flexible there //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, "2"));
+      assertEquals(3, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA)).getCount());
+
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, "1"));
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA)).getCount());
+
+      /////////////////////////////////////////////
+      // assert we fail if trying unknown variant //
+      /////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 4));
+      assertThatThrownBy(() -> new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("name", "England")
+      )))).hasMessageContaining("Could not find Backend Variant in table memoryVariantOptions with id '4'");
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQueryOperators() throws QException
    {
       QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+
+      /////////////////////////////////////////////
+      // add a date field, for testing DATE type //
+      /////////////////////////////////////////////
+      table.addField(new QFieldMetaData("date", QFieldType.DATE));
+
       QSession       session   = new QSession();
 
       InsertInput insertInput = new InsertInput();
@@ -235,7 +308,7 @@ class MemoryBackendModuleTest extends BaseTest
 
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).size());
       assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).get(0).getValue("name"));
-      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))).size());
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))));
 
       assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("notFound"))).size());
       assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("Triangle", "Circle"))).get(0).getValue("name"));
@@ -657,6 +730,38 @@ class MemoryBackendModuleTest extends BaseTest
             assertEquals("Flanders", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoins() throws QException
+   {
+      QContext.getQSession().setSecurityKeyValues(Map.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, List.of(true)));
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_ORDER).withRecords(List.of(
+         new QRecord().withValue("id", 1),
+         new QRecord().withValue("id", 2)
+      )));
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_LINE_ITEM).withRecords(List.of(
+         new QRecord().withValue("sku", "A").withValue("orderId", 1),
+         new QRecord().withValue("sku", "B").withValue("orderId", 1),
+         new QRecord().withValue("sku", "A").withValue("orderId", 2)
+      )));
+
+      QueryOutput queryOutput = new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_ORDER)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_LINE_ITEM)));
+      assertEquals(3, queryOutput.getRecords().size());
+
+      CountOutput countOutput = new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_LINE_ITEM))
+         .withIncludeDistinctCount(true));
+      assertEquals(3, countOutput.getCount());
+      assertEquals(2, countOutput.getDistinctCount());
    }
 
 

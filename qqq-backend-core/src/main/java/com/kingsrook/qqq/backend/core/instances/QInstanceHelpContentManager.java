@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpFormat;
@@ -162,6 +163,23 @@ public class QInstanceHelpContentManager
          else if(nameValuePairs.containsKey("instanceLevel"))
          {
             processHelpContentForInstance(qInstance, key, slotName, roles, helpContent);
+         }
+         else
+         {
+            for(QSupplementalInstanceMetaData supplementalInstanceMetaData : qInstance.getSupplementalMetaData().values())
+            {
+               if(supplementalInstanceMetaData instanceof QHelpContentPlugin helpContentPlugin)
+               {
+                  try
+                  {
+                     helpContentPlugin.acceptHelpContent(qInstance, helpContent, nameValuePairs);
+                  }
+                  catch(Exception e)
+                  {
+                     LOG.warn("Error processing a helpContent record in a helpContentPlugin", e, logPair("pluginName", supplementalInstanceMetaData.getName()), logPair("id", record.getValue("id")));
+                  }
+               }
+            }
          }
       }
       catch(Exception e)

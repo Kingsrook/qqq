@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.map
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
- ** Unit test for BulkLoadMappingSuggester 
+ ** Unit test for BulkLoadMappingSuggester
  *******************************************************************************/
 class BulkLoadMappingSuggesterTest extends BaseTest
 {
@@ -47,12 +48,12 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSimpleFlat()
+   void testSimpleFlat() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_PERSON_MEMORY);
       List<String>           headerRow      = List.of("Id", "First Name", "lastname", "email", "homestate");
 
-      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow);
+      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, false);
       assertEquals("v1", bulkLoadProfile.getVersion());
       assertEquals("FLAT", bulkLoadProfile.getLayout());
       assertNull(getFieldByName(bulkLoadProfile, "id"));
@@ -68,12 +69,12 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSimpleTall()
+   void testSimpleTall() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
       List<String>           headerRow      = List.of("orderNo", "shipto name", "sku", "quantity");
 
-      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow);
+      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, false);
       assertEquals("v1", bulkLoadProfile.getVersion());
       assertEquals("TALL", bulkLoadProfile.getLayout());
       assertEquals(0, getFieldByName(bulkLoadProfile, "orderNo").getColumnIndex());
@@ -88,12 +89,12 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testTallWithTableNamesOnAssociations()
+   void testTallWithTableNamesOnAssociations() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
       List<String>           headerRow      = List.of("Order No", "Ship To Name", "Order Line: SKU", "Order Line: Quantity");
 
-      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow);
+      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, false);
       assertEquals("v1", bulkLoadProfile.getVersion());
       assertEquals("TALL", bulkLoadProfile.getLayout());
       assertEquals(0, getFieldByName(bulkLoadProfile, "orderNo").getColumnIndex());
@@ -120,7 +121,7 @@ class BulkLoadMappingSuggesterTest extends BaseTest
             BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
             List<String>           headerRow      = List.of("orderNo", "ship to name", "address 1", "address 2");
 
-            BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow);
+            BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, false);
             assertEquals(0, getFieldByName(bulkLoadProfile, "orderNo").getColumnIndex());
             assertEquals(1, getFieldByName(bulkLoadProfile, "shipToName").getColumnIndex());
             assertEquals(2, getFieldByName(bulkLoadProfile, "address1").getColumnIndex());
@@ -136,7 +137,7 @@ class BulkLoadMappingSuggesterTest extends BaseTest
             BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
             List<String>           headerRow      = List.of("orderNo", "ship to name", "address 1", "address 2");
 
-            BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow);
+            BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, false);
             assertEquals(0, getFieldByName(bulkLoadProfile, "orderNo").getColumnIndex());
             assertEquals(1, getFieldByName(bulkLoadProfile, "shipToName").getColumnIndex());
             assertEquals(2, getFieldByName(bulkLoadProfile, "address").getColumnIndex());
@@ -152,13 +153,17 @@ class BulkLoadMappingSuggesterTest extends BaseTest
             BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
             List<String>           headerRow      = List.of("orderNo", "ship to name", "address", "address 2");
 
-            BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow);
+            BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, false);
             assertEquals(0, getFieldByName(bulkLoadProfile, "orderNo").getColumnIndex());
             assertEquals(1, getFieldByName(bulkLoadProfile, "shipToName").getColumnIndex());
             assertEquals(2, getFieldByName(bulkLoadProfile, "address1").getColumnIndex());
             assertEquals(3, getFieldByName(bulkLoadProfile, "address2").getColumnIndex());
             reInitInstanceInContext(TestUtils.defineInstance());
          }
+      }
+      catch(QException e)
+      {
+         throw new RuntimeException(e);
       }
       finally
       {
@@ -172,12 +177,12 @@ class BulkLoadMappingSuggesterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSimpleWide()
+   void testSimpleWide() throws QException
    {
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER);
       List<String>           headerRow      = List.of("orderNo", "ship to name", "sku", "quantity1", "sku 2", "quantity 2");
 
-      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow);
+      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, false);
       assertEquals("v1", bulkLoadProfile.getVersion());
       assertEquals("WIDE", bulkLoadProfile.getLayout());
       assertEquals(0, getFieldByName(bulkLoadProfile, "orderNo").getColumnIndex());
@@ -191,6 +196,31 @@ class BulkLoadMappingSuggesterTest extends BaseTest
       // assert that the order of fields matches the file's ordering //
       /////////////////////////////////////////////////////////////////
       assertEquals(List.of("orderNo", "shipToName", "orderLine.sku,0", "orderLine.quantity,0", "orderLine.sku,1", "orderLine.quantity,1"),
+         bulkLoadProfile.getFieldList().stream().map(f -> f.getFieldName()).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testIdMatchedChildrenForBulkEditOriginally() throws QException
+   {
+      BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER, true);
+      List<String>           headerRow      = List.of("id", "ship to name");
+
+      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, true);
+      assertEquals("v1", bulkLoadProfile.getVersion());
+      assertEquals("FLAT", bulkLoadProfile.getLayout());
+      assertEquals(2, bulkLoadProfile.getFieldList().size());
+      assertEquals(0, getFieldByName(bulkLoadProfile, "id").getColumnIndex());
+      assertEquals(1, getFieldByName(bulkLoadProfile, "shipToName").getColumnIndex());
+
+      /////////////////////////////////////////////////////////////////
+      // assert that the order of fields matches the file's ordering //
+      /////////////////////////////////////////////////////////////////
+      assertEquals(List.of("id", "shipToName"),
          bulkLoadProfile.getFieldList().stream().map(f -> f.getFieldName()).toList());
    }
 

@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -42,6 +44,7 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -118,6 +121,30 @@ class GetActionTest extends BaseTest
       // confirm that if we query for "SQUARE", we do find it (because query will to-lower-case the criteria) //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
       assertNotNull(GetAction.execute(TestUtils.TABLE_NAME_SHAPE, Map.of("name", "sQuArE")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTablePersonalization() throws QException
+   {
+      QContext.getQSession().getUser().setIdReference("jdoe");
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("firstName", "Darin")));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // customize firstName field to do a to-upper-case                                                   //
+      // this is verifying that QueryAction.postRecordActions has access to the personalized tableMetaData //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals("Darin", new GetAction().executeForRecord(new GetInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withPrimaryKey(1).withInputSource(QInputSource.USER)).getValueString("firstName"));
+      ExamplePersonalizer.addFieldToAddForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY,
+         QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getField("firstName").clone().withBehavior(CaseChangeBehavior.TO_UPPER_CASE),
+         QContext.getQSession().getUser().getIdReference());
+      assertEquals("DARIN", new GetAction().executeForRecord(new GetInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withPrimaryKey(1).withInputSource(QInputSource.USER)).getValueString("firstName"));
    }
 
 }

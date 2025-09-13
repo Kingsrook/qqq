@@ -23,20 +23,30 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.FilterValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.SelectionValidationHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -58,7 +68,23 @@ public class AggregateAction
    {
       ActionHelper.validateSession(aggregateInput);
 
-      QTableMetaData   table   = aggregateInput.getTable();
+      if(aggregateInput.getTableName() == null)
+      {
+         throw (new QException("Table name was not specified in aggregate input"));
+      }
+
+      QTableMetaData table = aggregateInput.getTable();
+      if(table == null)
+      {
+         throw (new QException("A table named [" + aggregateInput.getTableName() + "] was not found in the active QInstance"));
+      }
+
+      table = TableMetaDataPersonalizerAction.execute(aggregateInput);
+      aggregateInput.setTableMetaData(table);
+
+      FilterValidationHelper.validateFieldNamesInFilter(aggregateInput);
+      validateFieldNames(aggregateInput);
+
       QBackendMetaData backend = aggregateInput.getBackend();
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,6 +108,34 @@ public class AggregateAction
       QueryStatManager.getInstance().add(queryStat);
 
       return aggregateOutput;
+   }
+
+
+
+   /***************************************************************************
+    * make sure field names in the aggregate and group by sections are valid.
+    ***************************************************************************/
+   private static void validateFieldNames(AggregateInput aggregateInput) throws QException
+   {
+      Set<String> inputFieldNames = new LinkedHashSet<>();
+      for(Aggregate aggregate : CollectionUtils.nonNullList(aggregateInput.getAggregates()))
+      {
+         CollectionUtils.addIfNotNull(inputFieldNames, aggregate.getFieldName());
+      }
+
+      for(GroupBy groupBy : CollectionUtils.nonNullList(aggregateInput.getGroupBys()))
+      {
+         CollectionUtils.addIfNotNull(inputFieldNames, groupBy.getFieldName());
+      }
+
+      if(CollectionUtils.nullSafeHasContents(inputFieldNames))
+      {
+         List<String> unrecognizedFieldNames = SelectionValidationHelper.getUnrecognizedFieldNames(aggregateInput, inputFieldNames);
+         if(CollectionUtils.nullSafeHasContents(unrecognizedFieldNames))
+         {
+            throw (new QException("AggregateInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));
+         }
+      }
    }
 
 

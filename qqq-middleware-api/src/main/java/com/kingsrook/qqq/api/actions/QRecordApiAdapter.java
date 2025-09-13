@@ -29,11 +29,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.api.actions.output.ApiOutputMapWrapper;
+import com.kingsrook.qqq.api.actions.output.ApiOutputQRecordWrapper;
+import com.kingsrook.qqq.api.actions.output.ApiOutputRecordWrapperInterface;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapperBulkSupportInterface;
+import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
@@ -45,6 +49,8 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -85,14 +91,52 @@ public class QRecordApiAdapter
     *******************************************************************************/
    public static ArrayList<Map<String, Serializable>> qRecordsToApiMapList(List<QRecord> records, String tableName, String apiName, String apiVersion) throws QException
    {
+      Map<String, ApiFieldCustomValueMapper> fieldValueMappers = getFieldValueMappers(records, tableName, apiName, apiVersion);
+
+      ArrayList<Map<String, Serializable>> rs = new ArrayList<>();
+      for(QRecord record : records)
+      {
+         ApiOutputMapWrapper apiOutputMap = qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers, new ApiOutputMapWrapper(new LinkedHashMap<>()));
+         rs.add(apiOutputMap == null ? null : apiOutputMap.getContents());
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** version of the qRecordToApiMap that returns QRecords, not maps.
+    ** useful for cases where we're staying inside QQQ, but working with an api-
+    ** versioned application.
+    *******************************************************************************/
+   public static List<QRecord> qRecordsToApiVersionedQRecordList(List<QRecord> records, String tableName, String apiName, String apiVersion) throws QException
+   {
+      Map<String, ApiFieldCustomValueMapper> fieldValueMappers = getFieldValueMappers(records, tableName, apiName, apiVersion);
+
+      List<QRecord> rs = new ArrayList<>();
+      for(QRecord record : records)
+      {
+         ApiOutputQRecordWrapper apiOutputQRecord = qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers, new ApiOutputQRecordWrapper(new QRecord().withTableName(tableName)));
+         rs.add(apiOutputQRecord.getContents());
+      }
+
+      return (rs);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static Map<String, ApiFieldCustomValueMapper> getFieldValueMappers(List<QRecord> records, String tableName, String apiName, String apiVersion) throws QException
+   {
       Map<String, ApiFieldCustomValueMapper> fieldValueMappers = new HashMap<>();
 
-      List<QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
+      List<QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsInput().withApiName(apiName).withVersion(apiVersion).withTableName(tableName));
       for(QFieldMetaData field : tableApiFields)
       {
          ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
-         String           apiFieldName     = ApiFieldMetaData.getEffectiveApiFieldName(apiName, field);
-
          if(apiFieldMetaData.getCustomValueMapper() != null)
          {
             if(!fieldValueMappers.containsKey(apiFieldMetaData.getCustomValueMapper().getName()))
@@ -107,31 +151,24 @@ public class QRecordApiAdapter
             }
          }
       }
-
-      ArrayList<Map<String, Serializable>> rs = new ArrayList<>();
-      for(QRecord record : records)
-      {
-         rs.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers));
-      }
-
-      return (rs);
+      return fieldValueMappers;
    }
 
 
 
    /*******************************************************************************
-    ** private version of convert a QRecord to a map for the API - takes params to
+    ** private version of convert a QRecord to a map for the API (or, another
+    ** QRecord - whatever object is in the `O output` param). Takes params to
     ** support working in bulk w/ customizers much better.
     *******************************************************************************/
-   private static Map<String, Serializable> qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion, Map<String, ApiFieldCustomValueMapper> fieldValueMappers) throws QException
+   private static <C, O extends ApiOutputRecordWrapperInterface<C, O>> O qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion, Map<String, ApiFieldCustomValueMapper> fieldValueMappers, O output) throws QException
    {
       if(record == null)
       {
          return (null);
       }
 
-      List<QFieldMetaData>                tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
-      LinkedHashMap<String, Serializable> outputRecord   = new LinkedHashMap<>();
+      List<QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsInput().withApiName(apiName).withVersion(apiVersion).withTableName(tableName));
 
       /////////////////////////////////////////
       // iterate over the table's api fields //
@@ -172,7 +209,7 @@ public class QRecordApiAdapter
             value = Base64.getEncoder().encodeToString(bytes);
          }
 
-         outputRecord.put(apiFieldName, value);
+         output.putValue(apiFieldName, value);
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,16 +224,18 @@ public class QRecordApiAdapter
             continue;
          }
 
-         ArrayList<Map<String, Serializable>> associationList = new ArrayList<>();
-         outputRecord.put(association.getName(), associationList);
+         ArrayList<O> associationList = new ArrayList<>();
 
          for(QRecord associatedRecord : CollectionUtils.nonNullList(CollectionUtils.nonNullMap(record.getAssociatedRecords()).get(association.getName())))
          {
-            associationList.add(qRecordToApiMap(associatedRecord, association.getAssociatedTableName(), apiName, apiVersion));
+            ApiOutputRecordWrapperInterface<C, O> apiOutputAssociation = output.newSibling(associatedRecord.getTableName());
+            associationList.add(qRecordToApiMap(associatedRecord, association.getAssociatedTableName(), apiName, apiVersion, fieldValueMappers, apiOutputAssociation.unwrap()));
          }
+
+         output.putAssociation(association.getName(), associationList);
       }
 
-      return (outputRecord);
+      return (output);
    }
 
 
@@ -231,10 +270,20 @@ public class QRecordApiAdapter
     *******************************************************************************/
    public static QRecord apiJsonObjectToQRecord(JSONObject jsonObject, String tableName, String apiName, String apiVersion, boolean includeNonEditableFields) throws QException
    {
+      return apiJsonObjectToQRecord(jsonObject, tableName, apiName, apiVersion, includeNonEditableFields, QInputSource.SYSTEM);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QRecord apiJsonObjectToQRecord(JSONObject jsonObject, String tableName, String apiName, String apiVersion, boolean includeNonEditableFields, InputSource inputSource) throws QException
+   {
       ////////////////////////////////////////////////////////////////////////////////
       // make map of apiFieldNames (e.g., names as api uses them) to QFieldMetaData //
       ////////////////////////////////////////////////////////////////////////////////
-      Map<String, QFieldMetaData> apiFieldsMap           = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
+      Map<String, QFieldMetaData> apiFieldsMap           = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsInput().withApiName(apiName).withVersion(apiVersion).withTableName(tableName).withInputSource(inputSource));
       List<String>                unrecognizedFieldNames = new ArrayList<>();
       QRecord                     qRecord                = new QRecord();
 
@@ -258,44 +307,7 @@ public class QRecordApiAdapter
          ////////////////////////////////////////////////
          if(apiFieldsMap.containsKey(jsonKey))
          {
-            QFieldMetaData field = apiFieldsMap.get(jsonKey);
-            Object         value = jsonObject.isNull(jsonKey) ? null : jsonObject.get(jsonKey);
-
-            if(field.getType().equals(QFieldType.BLOB) && value instanceof String s)
-            {
-               value = Base64.getDecoder().decode(s);
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // generally, omit non-editable fields -                                                              //
-            // however - if we're asked to include the primary key (and this is the primary key), then include it //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////
-            if(!field.getIsEditable())
-            {
-               if(includeNonEditableFields)
-               {
-                  LOG.trace("Even though field [" + field.getName() + "] is not editable, we'll use it, because we've been asked to include non-editable fields");
-               }
-               else
-               {
-                  continue;
-               }
-            }
-
-            ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
-            if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
-            {
-               qRecord.setValue(apiFieldMetaData.getReplacedByFieldName(), value);
-            }
-            else if(apiFieldMetaData.getCustomValueMapper() != null)
-            {
-               ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
-               customValueMapper.consumeApiValue(qRecord, value, jsonObject, jsonKey);
-            }
-            else
-            {
-               qRecord.setValue(field.getName(), value);
-            }
+            setValueFromApiFieldInQRecord(jsonObject, jsonKey, apiName, apiFieldsMap, qRecord, includeNonEditableFields);
          }
          else if(associationMap.containsKey(jsonKey))
          {
@@ -368,6 +380,68 @@ public class QRecordApiAdapter
 
 
 
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static void setValueFromApiFieldInQRecord(JSONObject apiObject, String apiFieldName, String apiName, Map<String, QFieldMetaData> apiFieldsMap, QRecord qRecord, boolean includeNonEditableFields) throws QException
+   {
+      QFieldMetaData field = apiFieldsMap.get(apiFieldName);
+      if(field == null)
+      {
+         throw (new QException("Unrecognized apiFieldName: " + apiFieldName));
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // generally, omit non-editable fields, unless the param to include them is given. //
+      /////////////////////////////////////////////////////////////////////////////////////
+      if(!field.getIsEditable())
+      {
+         if(includeNonEditableFields)
+         {
+            LOG.trace("Even though field [" + field.getName() + "] is not editable, we'll use it, because we've been asked to include non-editable fields");
+         }
+         else
+         {
+            return;
+         }
+      }
+
+      ///////////////////////////////////////
+      // get the value from the api object //
+      ///////////////////////////////////////
+      Object value = apiObject.isNull(apiFieldName) ? null : apiObject.get(apiFieldName);
+      if(field.getType().equals(QFieldType.BLOB) && value instanceof String s)
+      {
+         value = Base64.getDecoder().decode(s);
+      }
+
+      ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
+      if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
+      {
+         ///////////////////////////////////////////////////////////////
+         // if field was replaced, then set OLD field name in QRecord //
+         ///////////////////////////////////////////////////////////////
+         qRecord.setValue(apiFieldMetaData.getReplacedByFieldName(), value);
+      }
+      else if(apiFieldMetaData.getCustomValueMapper() != null)
+      {
+         ///////////////////////////////////////////////////////////
+         // if a custom value mapper is to be used, then do so... //
+         ///////////////////////////////////////////////////////////
+         ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+         customValueMapper.consumeApiValue(qRecord, value, apiObject, apiFieldName);
+      }
+      else
+      {
+         //////////////////////////////////////////////////////
+         // else, default case, set the value in the qrecord //
+         //////////////////////////////////////////////////////
+         qRecord.setValue(field.getName(), value);
+      }
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -379,14 +453,21 @@ public class QRecordApiAdapter
       List<String> versionsWithThisField = new ArrayList<>();
       for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())
       {
-         if(!supportedVersion.toString().equals(apiVersion))
+         Map<String, QFieldMetaData> versionFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsInput().withApiName(apiName).withVersion(supportedVersion.toString()).withTableName(tableName));
+         if(versionFields.containsKey(unrecognizedFieldName))
          {
-            Map<String, QFieldMetaData> versionFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, supportedVersion.toString(), tableName));
-            if(versionFields.containsKey(unrecognizedFieldName))
-            {
-               versionsWithThisField.add(supportedVersion.toString());
-            }
+            versionsWithThisField.add(supportedVersion.toString());
          }
+      }
+
+      if(versionsWithThisField.contains(apiVersion))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // handle case where the field /is/ in this version, but not for this user (e.g., based on a table //
+         // personalizer). it seems like maybe we should cover that, to avoid saying "not in version X, but //
+         // in version: X...                                                                                //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (unrecognizedFieldName + " is not allowed for the current user");
       }
 
       if(CollectionUtils.nullSafeHasContents(versionsWithThisField))

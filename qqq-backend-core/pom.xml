@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-backend-core</artifactId>
+   <name>QQQ Backend Core</name>
+   <description>Core library for the QQQ low-code framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
@@ -120,6 +122,11 @@
          <groupId>org.apache.poi</groupId>
          <artifactId>poi-ooxml</artifactId>
          <version>5.2.5</version>
+      </dependency>
+      <dependency>
+         <groupId>org.commonmark</groupId>
+         <artifactId>commonmark</artifactId>
+         <version>0.25.0</version>
       </dependency>
 
       <!-- adding to help FastExcel -->

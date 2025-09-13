@@ -61,11 +61,11 @@ public class GarbageCollectorExtractStep extends ExtractViaQueryStep
 
 
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
+   /***************************************************************************
+    *
+    ***************************************************************************/
    @Override
-   protected void customizeInputPreQuery(QueryInput queryInput)
+   protected void customizeInputPreQuery(RunBackendStepInput runBackendStepInput, QueryInput queryInput)
    {
       queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
    }

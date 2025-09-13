@@ -35,8 +35,8 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -95,6 +95,9 @@ public class ExportAction
     *******************************************************************************/
    public void preExecute(ExportInput exportInput) throws QException
    {
+      QTableMetaData table = TableMetaDataPersonalizerAction.execute(exportInput);
+      exportInput.setTableMetaData(table);
+
       ActionHelper.validateSession(exportInput);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
@@ -105,8 +108,7 @@ public class ExportAction
       ///////////////////////////////////
       if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
       {
-         QTableMetaData              table        = exportInput.getTable();
-         Map<String, QTableMetaData> joinTableMap = getJoinTableMap(table);
+         Map<String, QTableMetaData> joinTableMap = getJoinTableMap(exportInput, table);
 
          List<String> badFieldNames = new ArrayList<>();
          for(String fieldName : exportInput.getFieldNames())
@@ -151,12 +153,13 @@ public class ExportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static Map<String, QTableMetaData> getJoinTableMap(QTableMetaData table)
+   private static Map<String, QTableMetaData> getJoinTableMap(ExportInput exportInput, QTableMetaData table) throws QException
    {
       Map<String, QTableMetaData> joinTableMap = new HashMap<>();
       for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
       {
-         joinTableMap.put(exposedJoin.getJoinTable(), QContext.getQInstance().getTable(exposedJoin.getJoinTable()));
+         QTableMetaData joinTable = TableMetaDataPersonalizerAction.execute(new ExportInput().withTableName(exposedJoin.getJoinTable()).withInputSource(exportInput.getInputSource()));
+         joinTableMap.put(exposedJoin.getJoinTable(), joinTable);
       }
       return joinTableMap;
    }
@@ -168,6 +171,9 @@ public class ExportAction
     *******************************************************************************/
    public ExportOutput execute(ExportInput exportInput) throws QException
    {
+      QTableMetaData table = TableMetaDataPersonalizerAction.execute(exportInput);
+      exportInput.setTableMetaData(table);
+
       if(!preExecuteRan)
       {
          /////////////////////////////////////
@@ -186,6 +192,7 @@ public class ExportAction
       QueryInput  queryInput  = new QueryInput();
       queryInput.setTableName(exportInput.getTableName());
       queryInput.setFilter(exportInput.getQueryFilter());
+      queryInput.setInputSource(exportInput.getInputSource());
 
       List<QueryJoin> queryJoins     = new ArrayList<>();
       Set<String>     addedJoinNames = new HashSet<>();
@@ -219,6 +226,11 @@ public class ExportAction
       queryInput.setShouldTranslatePossibleValues(true);
       queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
       queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
+
+      if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
+      {
+         queryInput.withFieldNamesToInclude(new HashSet<>(exportInput.getFieldNames()));
+      }
 
       /////////////////////////////////////////////////////////////////
       // tell this query that it needs to put its output into a pipe //
@@ -371,10 +383,10 @@ public class ExportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<QFieldMetaData> getFields(ExportInput exportInput)
+   private List<QFieldMetaData> getFields(ExportInput exportInput) throws QException
    {
       QTableMetaData              table        = exportInput.getTable();
-      Map<String, QTableMetaData> joinTableMap = getJoinTableMap(table);
+      Map<String, QTableMetaData> joinTableMap = getJoinTableMap(exportInput, table);
 
       List<QFieldMetaData> fieldList;
       if(exportInput.getFieldNames() != null)

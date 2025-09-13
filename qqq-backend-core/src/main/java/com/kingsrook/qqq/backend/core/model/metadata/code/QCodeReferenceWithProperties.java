@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
 
 
 /*******************************************************************************
@@ -55,5 +56,36 @@ public class QCodeReferenceWithProperties extends QCodeReference
    public Map<String, Serializable> getProperties()
    {
       return properties;
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      if(!super.equals(o))
+      {
+         return false;
+      }
+      QCodeReferenceWithProperties that = (QCodeReferenceWithProperties) o;
+      return Objects.equals(properties, that.properties);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(super.hashCode(), properties);
    }
 }

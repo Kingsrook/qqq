@@ -68,6 +68,8 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
 
    private Map<Pair<String, String>, Integer> cachedFetches = new HashMap<>();
 
+   private static boolean warnedAboutAuditMissingTables = false;
+
 
 
    /*******************************************************************************
@@ -231,6 +233,25 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
 
       if(CollectionUtils.nullSafeHasContents(input.getAuditSingleInputList()))
       {
+         if(QContext.getQInstance().getTable("audit") == null)
+         {
+            if(!warnedAboutAuditMissingTables)
+            {
+               warnedAboutAuditMissingTables = true;
+               LOG.info("Audit table not found, so won't be able to store audit records...");
+            }
+            for(AuditSingleInput auditSingleInput : CollectionUtils.nonNullList(input.getAuditSingleInputList()))
+            {
+               LOG.info("audit",
+                  logPair("tableName", auditSingleInput.getAuditTableName()),
+                  logPair("recordId", auditSingleInput.getRecordId()),
+                  logPair("userName", auditSingleInput.getAuditUserName()),
+                  logPair("details", auditSingleInput.getDetails()),
+                  logPair("message", auditSingleInput.getMessage()));
+            }
+            return (auditOutput);
+         }
+
          try
          {
             List<QRecord> auditRecords = new ArrayList<>();
@@ -291,6 +312,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             /////////////////////////////
             InsertInput insertInput = new InsertInput();
             insertInput.setTableName("audit");
+            insertInput.setTransaction(input.getTransaction());
             insertInput.setRecords(auditRecords);
             InsertOutput insertOutput = new InsertAction().execute(insertInput);
 
@@ -318,6 +340,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             {
                insertInput = new InsertInput();
                insertInput.setTableName("auditDetail");
+               insertInput.setTransaction(input.getTransaction());
                insertInput.setRecords(auditDetailRecords);
                new InsertAction().execute(insertInput);
             }

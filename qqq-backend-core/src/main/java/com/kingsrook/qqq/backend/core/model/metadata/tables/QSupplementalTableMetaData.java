@@ -22,16 +22,24 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import java.util.HashSet;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
  ** Base-class for table-level meta-data defined by some supplemental module, etc,
  ** outside of qqq core
  *******************************************************************************/
-public abstract class QSupplementalTableMetaData
+public abstract class QSupplementalTableMetaData implements Cloneable
 {
+   private static final QLogger LOG = QLogger.getLogger(QSupplementalTableMetaData.class);
+
+   private static Set<Class<?>> warnedAboutMissingFinishClones = new HashSet<>();
+
 
 
    /*******************************************************************************
@@ -82,4 +90,48 @@ public abstract class QSupplementalTableMetaData
       // noop in base class //
       ////////////////////////
    }
+
+
+
+   /***************************************************************************
+    * adding cloneable to this type hierarchy - subclasses need to implement
+    * finishClone to copy ther specific state.
+    ***************************************************************************/
+   @Override
+   public final QSupplementalTableMetaData clone()
+   {
+      try
+      {
+         QSupplementalTableMetaData clone = (QSupplementalTableMetaData) super.clone();
+         finishClone(clone);
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
+
+
+
+   /***************************************************************************
+    * finish the cloning operation started in the base class. copy all state
+    * from the subclass into the input clone (which can be safely casted to
+    * the subclass's type, as it was obtained by super.clone())
+    *
+    * Rather than making this public and breaking all existing implementations
+    * that don't have it - we're making it protected, with a one-time warning
+    * if it isn't implemented in a subclass.
+    ***************************************************************************/
+   protected QSupplementalTableMetaData finishClone(QSupplementalTableMetaData abstractClone)
+   {
+      if(!warnedAboutMissingFinishClones.contains(abstractClone.getClass()))
+      {
+         LOG.warn("Missing finishClone method in a subclass of QSupplementalTableMetaData.", logPair("className", abstractClone.getClass().getName()));
+         warnedAboutMissingFinishClones.add(abstractClone.getClass());
+      }
+
+      return (abstractClone);
+   }
+
 }

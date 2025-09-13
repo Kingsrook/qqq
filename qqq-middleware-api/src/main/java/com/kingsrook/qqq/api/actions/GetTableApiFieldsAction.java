@@ -24,25 +24,32 @@ package com.kingsrook.qqq.api.actions;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsOutput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
+import org.apache.commons.lang3.BooleanUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -51,8 +58,10 @@ import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
  *******************************************************************************/
 public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApiFieldsInput, GetTableApiFieldsOutput>
 {
-   private static Map<ApiNameVersionAndTableName, List<QFieldMetaData>>        fieldListCache = new HashMap<>();
-   private static Map<ApiNameVersionAndTableName, Map<String, QFieldMetaData>> fieldMapCache  = new HashMap<>();
+   private static final QLogger LOG = QLogger.getLogger(GetTableApiFieldsAction.class);
+
+   private static Memoization<MemoizationKey, List<QFieldMetaData>>        fieldListMemoization = new Memoization<>();
+   private static Memoization<MemoizationKey, Map<String, QFieldMetaData>> fieldMapMemoization  = new Memoization<>();
 
 
 
@@ -61,8 +70,30 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
     *******************************************************************************/
    public static void clearCaches()
    {
-      fieldListCache.clear();
-      fieldMapCache.clear();
+      fieldListMemoization.clear();
+      fieldMapMemoization.clear();
+   }
+
+
+
+   /*******************************************************************************
+    * With the introduction of TablePersonalization in 0.27, if an instance has a
+    * table personalizer, it is expected that such personalization may or may not
+    * need to apply based on the InputSource of the action (e.g., USER vs SYSTEM).
+    * As such, that property needs to be known in this method chain, so, the former
+    * input here is no longer adequate - hence, deprecated.
+    *
+    * If this method is used, the default input source of SYSTEM will be used, so
+    * a table-personalizer that only applies for inputSource=USER would not be applied.
+    *******************************************************************************/
+   @Deprecated(since = "0.27.0 - call the overload that takes Input object")
+   public static Map<String, QFieldMetaData> getTableApiFieldMap(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
+   {
+      return getTableApiFieldMap(new GetTableApiFieldsInput()
+         .withTableName(apiNameVersionAndTableName.tableName())
+         .withApiName(apiNameVersionAndTableName.apiName())
+         .withVersion(apiNameVersionAndTableName.apiVersion())
+      );
    }
 
 
@@ -70,16 +101,19 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
    /*******************************************************************************
     ** convenience (and caching) wrapper
     *******************************************************************************/
-   public static Map<String, QFieldMetaData> getTableApiFieldMap(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
+   public static Map<String, QFieldMetaData> getTableApiFieldMap(GetTableApiFieldsInput input) throws QException
    {
-      if(!fieldMapCache.containsKey(apiNameVersionAndTableName))
+      String         userId = ObjectUtils.tryElse(() -> QContext.getQSession().getUser().getIdReference(), null);
+      MemoizationKey key    = new MemoizationKey(input.getApiName(), input.getVersion(), input.getTableName(), userId, input.getInputSource());
+
+      return fieldMapMemoization.getResultThrowing(key, k ->
       {
-         List<QFieldMetaData>        tableApiFieldList   = getTableApiFieldList(apiNameVersionAndTableName);
+         List<QFieldMetaData>        tableApiFieldList   = getTableApiFieldList(input);
          Map<String, QFieldMetaData> map                 = new LinkedHashMap<>();
          Set<String>                 duplicateFieldNames = new HashSet<>();
          for(QFieldMetaData qFieldMetaData : tableApiFieldList)
          {
-            String effectiveApiFieldName = ApiFieldMetaData.getEffectiveApiFieldName(apiNameVersionAndTableName.apiName(), qFieldMetaData);
+            String effectiveApiFieldName = ApiFieldMetaData.getEffectiveApiFieldName(input.getApiName(), qFieldMetaData);
             if(map.containsKey(effectiveApiFieldName))
             {
                duplicateFieldNames.add(effectiveApiFieldName);
@@ -95,10 +129,24 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
             throw (new QException("The field names [" + duplicateFieldNames + "] appear in this api table more than once.  (Do you need to exclude a field that is still in the table, but is also marked as removed?)"));
          }
 
-         fieldMapCache.put(apiNameVersionAndTableName, map);
-      }
+         return (map);
+      }).orElse(null);
+   }
 
-      return (fieldMapCache.get(apiNameVersionAndTableName));
+
+
+   /*******************************************************************************
+    * @see #getTableApiFieldMap(GetTableApiFieldsInput) for comment on deprecation
+    * here re: table personalization and input source.
+    *******************************************************************************/
+   @Deprecated(since = "0.27.0 - call the overload that takes Input object")
+   public static List<QFieldMetaData> getTableApiFieldList(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
+   {
+      return getTableApiFieldList(new GetTableApiFieldsInput()
+         .withTableName(apiNameVersionAndTableName.tableName())
+         .withApiName(apiNameVersionAndTableName.apiName())
+         .withVersion(apiNameVersionAndTableName.apiVersion())
+      );
    }
 
 
@@ -106,17 +154,12 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
    /*******************************************************************************
     ** convenience (and caching) wrapper
     *******************************************************************************/
-   public static List<QFieldMetaData> getTableApiFieldList(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
+   public static List<QFieldMetaData> getTableApiFieldList(GetTableApiFieldsInput input) throws QException
    {
-      if(!fieldListCache.containsKey(apiNameVersionAndTableName))
-      {
-         List<QFieldMetaData> value = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput()
-            .withTableName(apiNameVersionAndTableName.tableName())
-            .withVersion(apiNameVersionAndTableName.apiVersion())
-            .withApiName(apiNameVersionAndTableName.apiName())).getFields();
-         fieldListCache.put(apiNameVersionAndTableName, value);
-      }
-      return (fieldListCache.get(apiNameVersionAndTableName));
+      String         userId = ObjectUtils.tryElse(() -> QContext.getQSession().getUser().getIdReference(), null);
+      MemoizationKey key    = new MemoizationKey(input.getApiName(), input.getVersion(), input.getTableName(), userId, input.getInputSource());
+
+      return fieldListMemoization.getResultThrowing(key, k -> (new GetTableApiFieldsAction().execute(input).getFields())).orElse(null);
    }
 
 
@@ -125,6 +168,17 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
     ** Input-record for convenience methods
     *******************************************************************************/
    public record ApiNameVersionAndTableName(String apiName, String apiVersion, String tableName)
+   {
+
+   }
+
+
+
+   /***************************************************************************
+    * memoization key.  Adds both userId and inputSource, as those are the
+    * expected "keys" that would be used within a table personalizer.
+    ***************************************************************************/
+   private record MemoizationKey(String apiName, String apiVersion, String tableName, String userId, InputSource inputSource)
    {
 
    }
@@ -141,13 +195,18 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       QTableMetaData table = QContext.getQInstance().getTable(input.getTableName());
       if(table == null)
       {
-         throw (new QException("Unrecognized table name: " + input.getTableName()));
+         throw (new QNotFoundException("Unrecognized table name: " + input.getTableName()));
       }
 
-      // todo - verify the table is in this version?
+      table = TableMetaDataPersonalizerAction.execute(input);
 
       APIVersion version = new APIVersion(input.getVersion());
-      // todo - validate the version?
+
+      APIVersionRange tableApiVersionRange = getApiVersionRange(input.getApiName(), table);
+      if(BooleanUtils.isTrue(input.getDoCheckTableApiVersion()) && !tableApiVersionRange.includes(version))
+      {
+         throw (new QNotFoundException("Table [" + input.getTableName() + "] was not found in this version of this api."));
+      }
 
       ///////////////////////////////////////////////////////
       // get fields on the table which are in this version //
@@ -173,9 +232,45 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
          }
       }
 
-      fields.sort(Comparator.comparing(QFieldMetaData::getLabel));
+      fields.sort(Comparator.comparing(QFieldMetaData::getLabel).thenComparing(QFieldMetaData::getName));
 
       return (new GetTableApiFieldsOutput().withFields(fields));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private APIVersionRange getApiVersionRange(String apiName, QTableMetaData table) throws QNotFoundException
+   {
+      ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+      if(apiTableMetaDataContainer == null)
+      {
+         LOG.debug("Returning not found because table doesn't have an apiTableMetaDataContainer", logPair("tableName", table.getName()));
+         throw (new QNotFoundException("Table [" + table.getName() + "] was not found in this api."));
+      }
+
+      ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApis().get(apiName);
+      if(apiTableMetaData == null)
+      {
+         LOG.debug("Returning not found because api isn't present in table's apiTableMetaDataContainer", logPair("apiName", apiName), logPair("tableName", table.getName()));
+         throw (new QNotFoundException("Table [" + table.getName() + "] was not found in this api."));
+      }
+
+      if(apiTableMetaData.getInitialVersion() != null)
+      {
+         if(apiTableMetaData.getFinalVersion() != null)
+         {
+            return (APIVersionRange.betweenAndIncluding(apiTableMetaData.getInitialVersion(), apiTableMetaData.getFinalVersion()));
+         }
+         else
+         {
+            return (APIVersionRange.afterAndIncluding(apiTableMetaData.getInitialVersion()));
+         }
+      }
+
+      return (APIVersionRange.none());
    }
 
 

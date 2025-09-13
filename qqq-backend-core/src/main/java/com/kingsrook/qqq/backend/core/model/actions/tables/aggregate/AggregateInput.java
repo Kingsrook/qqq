@@ -25,8 +25,11 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 
@@ -35,8 +38,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
  ** Input data for the Count action
  **
  *******************************************************************************/
-public class AggregateInput extends AbstractTableActionInput
+public class AggregateInput extends AbstractTableActionInput implements QueryOrCountInputInterface
 {
+   private QBackendTransaction transaction;
+
    private QQueryFilter    filter;
    private List<Aggregate> aggregates;
    private List<GroupBy>   groupBys = new ArrayList<>();
@@ -403,5 +408,48 @@ public class AggregateInput extends AbstractTableActionInput
       }
 
       return (queryHints.contains(queryHint));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for transaction
+    *******************************************************************************/
+   public QBackendTransaction getTransaction()
+   {
+      return (this.transaction);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for transaction
+    *******************************************************************************/
+   public AggregateInput withTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public AggregateInput withInputSource(InputSource inputSource)
+   {
+      super.withInputSource(inputSource);
+      return (this);
    }
 }

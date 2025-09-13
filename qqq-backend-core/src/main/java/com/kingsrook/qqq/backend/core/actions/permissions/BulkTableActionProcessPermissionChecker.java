@@ -57,7 +57,7 @@ public class BulkTableActionProcessPermissionChecker implements CustomPermission
          switch(bulkActionName)
          {
             case "bulkInsert" -> PermissionsHelper.checkTablePermissionThrowing(tableActionInput, TablePermissionSubType.INSERT);
-            case "bulkEdit" -> PermissionsHelper.checkTablePermissionThrowing(tableActionInput, TablePermissionSubType.EDIT);
+            case "bulkEdit", "bulkEditWithFile" -> PermissionsHelper.checkTablePermissionThrowing(tableActionInput, TablePermissionSubType.EDIT);
             case "bulkDelete" -> PermissionsHelper.checkTablePermissionThrowing(tableActionInput, TablePermissionSubType.DELETE);
             default -> LOG.warn("Unexpected bulk action name when checking permissions for process: " + processName);
          }

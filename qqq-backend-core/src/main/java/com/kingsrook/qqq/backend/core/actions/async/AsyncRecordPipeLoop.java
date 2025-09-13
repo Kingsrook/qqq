@@ -51,6 +51,7 @@ public class AsyncRecordPipeLoop
    private static final int INIT_SLEEP_MS = 10;
 
    private Integer minRecordsToConsume = 10;
+   private String  forcedJobUUID;
 
 
 
@@ -72,7 +73,15 @@ public class AsyncRecordPipeLoop
       // start the extraction function as an async job //
       ///////////////////////////////////////////////////
       AsyncJobManager asyncJobManager = new AsyncJobManager();
-      String          jobUUID         = asyncJobManager.startJob(jobName, supplier::apply);
+      if(getForcedJobUUID() != null)
+      {
+         ////////////////////////////////////////////////////////////
+         // if a forced job uuid is set, set it in the job manager //
+         ////////////////////////////////////////////////////////////
+         asyncJobManager.setForcedJobUUID(getForcedJobUUID());
+      }
+
+      String jobUUID = asyncJobManager.startJob(jobName, supplier::apply);
       LOG.debug("Started supplier job [" + jobUUID + "] for record pipe.");
 
       AsyncJobState  jobState       = AsyncJobState.RUNNING;
@@ -220,6 +229,37 @@ public class AsyncRecordPipeLoop
    public AsyncRecordPipeLoop withMinRecordsToConsume(Integer minRecordsToConsume)
    {
       this.minRecordsToConsume = minRecordsToConsume;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for forcedJobUUID
+    *******************************************************************************/
+   public String getForcedJobUUID()
+   {
+      return (this.forcedJobUUID);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for forcedJobUUID
+    *******************************************************************************/
+   public void setForcedJobUUID(String forcedJobUUID)
+   {
+      this.forcedJobUUID = forcedJobUUID;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for forcedJobUUID
+    *******************************************************************************/
+   public AsyncRecordPipeLoop withForcedJobUUID(String forcedJobUUID)
+   {
+      this.forcedJobUUID = forcedJobUUID;
       return (this);
    }
 

@@ -39,6 +39,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -563,7 +566,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
             .withQueryWithoutLimitDefault(3)
             .withQueryWithoutLimitLogLevel(Level.WARN);
 
-         QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+         QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(QJavalinUtils.class);
 
          String filterJson = """
             {"criteria":[]}""";
@@ -583,7 +586,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       }
       finally
       {
-         QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+         QLogger.activateCollectingLoggerForClass(QJavalinUtils.class);
          resetMetaDataQueryWithoutLimitSettings();
       }
    }
@@ -1053,6 +1056,21 @@ class QJavalinImplementationTest extends QJavalinTestBase
    }
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportOmitHeader()
+   {
+      String               filterJson = getFirstNameEqualsFilterJSON("Tim");
+      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/export/Favorite People.csv?omitHeaderRow=true&filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
+      assertEquals("filename=Favorite People.csv", response.getHeaders().get("Content-Disposition").get(0));
+      String[] csvLines = response.getBody().split("\n");
+      assertEquals(1, csvLines.length);
+      assertThat(csvLines[0]).contains("Tim");
+   }
+
+
 
    /*******************************************************************************
     **
@@ -1075,7 +1093,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
     **
     *******************************************************************************/
    @Test
-   void testPossibleValueWithoutTableOrProcess()
+   void testStandalonePossibleValueSource()
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/possibleValues/person").asString();
       assertEquals(200, response.getStatus());
@@ -1083,6 +1101,28 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertNotNull(jsonObject);
       assertNotNull(jsonObject.getJSONArray("options"));
       assertEquals(6, jsonObject.getJSONArray("options").length());
+      assertEquals(1, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
+      assertEquals("Darin Kelkhoff (1)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testStandalonePossibleValueSourceWithFilter()
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/possibleValues/person")
+         .field("values", JsonUtils.toJson(Map.of("firstInitial", "D")))
+         .field("filter", JsonUtils.toJson(new QQueryFilter(new QFilterCriteria("firstName", QCriteriaOperator.STARTS_WITH, "${input.firstInitial}"))))
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(1, jsonObject.getJSONArray("options").length());
       assertEquals(1, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
       assertEquals("Darin Kelkhoff (1)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
    }
@@ -1480,6 +1520,8 @@ class QJavalinImplementationTest extends QJavalinTestBase
    public static class TestDownloadFileSupplementalAction implements DownloadFileSupplementalAction
    {
       static int callCount = 0;
+
+
 
       @Override
       public void run(DownloadFileSupplementalActionInput input, DownloadFileSupplementalActionOutput output) throws QException

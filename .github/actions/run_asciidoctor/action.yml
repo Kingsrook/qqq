@@ -1,9 +1,0 @@
-name: run_asciidoctor
-runs:
-  using: composite
-  steps:
-  - name: Run asciidoctor
-    run: |-
-      cd docs
-      asciidoctor -a docinfo=shared index.adoc
-    shell: bash

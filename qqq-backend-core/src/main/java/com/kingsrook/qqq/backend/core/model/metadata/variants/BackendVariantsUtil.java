@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -51,7 +52,7 @@ public class BackendVariantsUtil
       String   variantTypeKey = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
       if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(variantTypeKey))
       {
-         throw (new QException("Could not find Backend Variant information in session under key '" + variantTypeKey + "' for Backend '" + backendMetaData.getName() + "'"));
+         throw (new QUserFacingException("Could not find Backend Variant information in session under key '" + variantTypeKey + "' for Backend '" + backendMetaData.getName() + "'"));
       }
       Serializable variantId = session.getBackendVariants().get(variantTypeKey);
       return variantId;
@@ -83,6 +84,9 @@ public class BackendVariantsUtil
          }
          else
          {
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // note, we'll consider this a programmer-error, not a user-facing one (e.g., bad submitted data), so not throw user-facing //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             throw (new QException("Backend Variant's recordLookupFunction is not of any expected type (should have been caught by instance validation??)"));
          }
       }
@@ -99,7 +103,7 @@ public class BackendVariantsUtil
 
       if(record == null)
       {
-         throw (new QException("Could not find Backend Variant in table " + backendMetaData.getBackendVariantsConfig().getOptionsTableName() + " with id '" + variantId + "'"));
+         throw (new QUserFacingException("Could not find Backend Variant in table " + backendMetaData.getBackendVariantsConfig().getOptionsTableName() + " with id '" + variantId + "'"));
       }
       return record;
    }

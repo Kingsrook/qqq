@@ -31,7 +31,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,10 +45,16 @@ import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.permissions.BulkTableActionProcessPermissionChecker;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnricherPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.bulk.TableKeyFieldsPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -55,6 +63,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueB
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -75,6 +84,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProc
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
@@ -84,6 +94,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.PrepareBulkEditStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileMappingStep;
@@ -210,6 +221,37 @@ public class QInstanceEnricher
     ***************************************************************************/
    private void enrichInstance()
    {
+      ////////////////////////////////////////////////////////////////////////////////////
+      // enriching some objects may cause additional ones to be added to the qInstance! //
+      // this caused concurrent modification exceptions, when we just iterated.         //
+      // we could make a copy of the map and just process that, but then we wouldn't    //
+      // enrich any new objects that do get added, so, use this technique instead.      //
+      ////////////////////////////////////////////////////////////////////////////////////
+      Set<QSupplementalInstanceMetaData> toEnrich = new LinkedHashSet<>(qInstance.getSupplementalMetaData().values());
+      Set<QSupplementalInstanceMetaData> enriched = new HashSet<>();
+      int                                count    = 0;
+      while(!toEnrich.isEmpty())
+      {
+         Iterator<QSupplementalInstanceMetaData> iterator                     = toEnrich.iterator();
+         QSupplementalInstanceMetaData           supplementalInstanceMetaData = iterator.next();
+         iterator.remove();
+
+         supplementalInstanceMetaData.enrich(qInstance);
+         enriched.add(supplementalInstanceMetaData);
+
+         for(QSupplementalInstanceMetaData possiblyNew : qInstance.getSupplementalMetaData().values())
+         {
+            if(!toEnrich.contains(possiblyNew) && !enriched.contains(possiblyNew))
+            {
+               if(count++ > 100)
+               {
+                  throw (new QRuntimeException("Too many new QSupplementalInstanceMetaData objects were added while enriching others.  This probably indicates a bug in enrichment code.  Throwing to prevent infinite loop."));
+               }
+               toEnrich.add(possiblyNew);
+            }
+         }
+      }
+
       runPlugins(QInstance.class, qInstance, qInstance);
    }
 
@@ -582,6 +624,14 @@ public class QInstanceEnricher
          }
       }
 
+      ////////////////////////////////////////////////////
+      // enrich any supplemental meta data on the field //
+      ////////////////////////////////////////////////////
+      for(QSupplementalFieldMetaData supplementalFieldMetaData : CollectionUtils.nonNullMap(field.getSupplementalMetaData()).values())
+      {
+         supplementalFieldMetaData.enrich(qInstance, field);
+      }
+
       runPlugins(QFieldMetaData.class, field, qInstance);
    }
 
@@ -857,6 +907,11 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void defineTableBulkProcesses(QInstance qInstance)
    {
+      if(qInstance.getPossibleValueSource(TableKeyFieldsPossibleValueSource.NAME) == null)
+      {
+         qInstance.addPossibleValueSource(defineTableKeyFieldsPossibleValueSource());
+      }
+
       for(QTableMetaData table : qInstance.getTables().values())
       {
          if(table.getFields() == null)
@@ -867,21 +922,29 @@ public class QInstanceEnricher
             continue;
          }
 
-         // todo - add idea of 'supportsBulkX'
+         QBackendMetaData backend = qInstance.getBackend(table.getBackendName());
+
+         // todo - add idea of 'supportsBulkX'?
          String bulkInsertProcessName = table.getName() + ".bulkInsert";
-         if(qInstance.getProcess(bulkInsertProcessName) == null)
+         if(qInstance.getProcess(bulkInsertProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_INSERT))
          {
             defineTableBulkInsert(qInstance, table, bulkInsertProcessName);
          }
 
          String bulkEditProcessName = table.getName() + ".bulkEdit";
-         if(qInstance.getProcess(bulkEditProcessName) == null)
+         if(qInstance.getProcess(bulkEditProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_UPDATE))
          {
             defineTableBulkEdit(qInstance, table, bulkEditProcessName);
          }
 
+         String bulkEditWithFileProcessName = table.getName() + ".bulkEditWithFile";
+         if(qInstance.getProcess(bulkEditWithFileProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_UPDATE))
+         {
+            defineTableBulkEditWithFile(qInstance, table, bulkEditWithFileProcessName);
+         }
+
          String bulkDeleteProcessName = table.getName() + ".bulkDelete";
-         if(qInstance.getProcess(bulkDeleteProcessName) == null)
+         if(qInstance.getProcess(bulkDeleteProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_DELETE))
          {
             defineTableBulkDelete(qInstance, table, bulkDeleteProcessName);
          }
@@ -933,10 +996,6 @@ public class QInstanceEnricher
          }
       }
 
-      String fieldsForHelpText = editableFields.stream()
-         .map(QFieldMetaData::getLabel)
-         .collect(Collectors.joining(", "));
-
       QBackendStepMetaData prepareFileUploadStep = new QBackendStepMetaData()
          .withName("prepareFileUpload")
          .withCode(new QCodeReference(BulkInsertPrepareFileUploadStep.class));
@@ -984,16 +1043,16 @@ public class QInstanceEnricher
          .withCode(new QCodeReference(BulkInsertReceiveValueMappingStep.class));
 
       int i = 0;
-      process.addStep(i++, prepareFileUploadStep);
-      process.addStep(i++, uploadScreen);
+      process.withStep(i++, prepareFileUploadStep);
+      process.withStep(i++, uploadScreen);
 
-      process.addStep(i++, prepareFileMappingStep);
-      process.addStep(i++, fileMappingScreen);
-      process.addStep(i++, receiveFileMappingStep);
+      process.withStep(i++, prepareFileMappingStep);
+      process.withStep(i++, fileMappingScreen);
+      process.withStep(i++, receiveFileMappingStep);
 
-      process.addStep(i++, prepareValueMappingStep);
-      process.addStep(i++, valueMappingScreen);
-      process.addStep(i++, receiveValueMappingStep);
+      process.withStep(i++, prepareValueMappingStep);
+      process.withStep(i++, valueMappingScreen);
+      process.withStep(i++, receiveValueMappingStep);
 
       process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW).setRecordListFields(editableFields);
 
@@ -1038,6 +1097,8 @@ public class QInstanceEnricher
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
          .filter(f -> !f.getType().equals(QFieldType.BLOB))
+         .map(QFieldMetaData::clone)
+         .map(QInstanceEnricher::addProcessFallbacksToPvsFilter)
          .toList();
 
       QFrontendStepMetaData editScreen = new QFrontendStepMetaData()
@@ -1053,9 +1114,131 @@ public class QInstanceEnricher
                Fields whose switches are off will not be updated."""))
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_EDIT_FORM));
 
-      process.addStep(0, editScreen);
+      process.withStep(0, editScreen);
       process.getFrontendStep("review").setRecordListFields(editableFields);
+
+      QBackendStepMetaData prepareBulkEditStep = new QBackendStepMetaData()
+         .withName("prepareBulkEdit")
+         .withCode(new QCodeReference(PrepareBulkEditStep.class));
+      process.withStep(0, prepareBulkEditStep);
+
       qInstance.addProcess(process);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void defineTableBulkEditWithFile(QInstance qInstance, QTableMetaData table, String processName)
+   {
+      Map<String, Serializable> values = new HashMap<>();
+      values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
+      values.put(StreamedETLWithFrontendProcess.FIELD_PREVIEW_MESSAGE, "This is a preview of the records that will be updated.");
+
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+            BulkInsertExtractStep.class,
+            BulkInsertTransformStep.class,
+            BulkEditLoadStep.class,
+            values
+         )
+         .withName(processName)
+         .withLabel(table.getLabel() + " Bulk Edit With File")
+         .withTableName(table.getName())
+         .withIsHidden(true)
+         .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
+
+      List<QFieldMetaData> editableFields = table.getFields().values().stream()
+         .filter(QFieldMetaData::getIsEditable)
+         .filter(f -> !f.getType().equals(QFieldType.BLOB))
+         .toList();
+
+      QBackendStepMetaData prepareFileUploadStep = new QBackendStepMetaData()
+         .withName("prepareFileUpload")
+         .withCode(new QCodeReference(BulkInsertPrepareFileUploadStep.class));
+
+      QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
+         .withName("upload")
+         .withLabel("Upload File")
+         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB)
+            .withFieldAdornment(FileUploadAdornment.newFieldAdornment()
+               .withValue(FileUploadAdornment.formatDragAndDrop())
+               .withValue(FileUploadAdornment.widthFull()))
+            .withLabel(table.getLabel() + " File")
+            .withIsRequired(true))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.HTML))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM));
+
+      QBackendStepMetaData prepareFileMappingStep = new QBackendStepMetaData()
+         .withName("prepareFileMapping")
+         .withCode(new QCodeReference(BulkInsertPrepareFileMappingStep.class));
+
+      QFrontendStepMetaData fileMappingScreen = new QFrontendStepMetaData()
+         .withName("fileMapping")
+         .withLabel("File Mapping")
+         .withBackStepName("prepareFileUpload")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_FILE_MAPPING_FORM))
+         .withFormField(new QFieldMetaData("hasHeaderRow", QFieldType.BOOLEAN))
+         .withFormField(new QFieldMetaData("layout", QFieldType.STRING)) // is actually PVS, but, this field is only added to help support helpContent, so :shrug:
+         .withFormField(new QFieldMetaData("tableKeyFields", QFieldType.STRING).withPossibleValueSourceName(TableKeyFieldsPossibleValueSource.NAME));
+
+      QBackendStepMetaData receiveFileMappingStep = new QBackendStepMetaData()
+         .withName("receiveFileMapping")
+         .withCode(new QCodeReference(BulkInsertReceiveFileMappingStep.class));
+
+      QBackendStepMetaData prepareValueMappingStep = new QBackendStepMetaData()
+         .withName("prepareValueMapping")
+         .withCode(new QCodeReference(BulkInsertPrepareValueMappingStep.class));
+
+      QFrontendStepMetaData valueMappingScreen = new QFrontendStepMetaData()
+         .withName("valueMapping")
+         .withLabel("Value Mapping")
+         .withBackStepName("prepareFileMapping")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_VALUE_MAPPING_FORM));
+
+      QBackendStepMetaData receiveValueMappingStep = new QBackendStepMetaData()
+         .withName("receiveValueMapping")
+         .withCode(new QCodeReference(BulkInsertReceiveValueMappingStep.class));
+
+      int i = 0;
+      process.withStep(i++, prepareFileUploadStep);
+      process.withStep(i++, uploadScreen);
+
+      process.withStep(i++, prepareFileMappingStep);
+      process.withStep(i++, fileMappingScreen);
+      process.withStep(i++, receiveFileMappingStep);
+
+      process.withStep(i++, prepareValueMappingStep);
+      process.withStep(i++, valueMappingScreen);
+      process.withStep(i++, receiveValueMappingStep);
+
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW).setRecordListFields(editableFields);
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // put the bulk-load profile form (e.g., for saving it) on the review & result screens) //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW)
+         .withBackStepName("prepareFileMapping")
+         .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
+
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_RESULT)
+         .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
+
+      qInstance.addProcess(process);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QPossibleValueSource defineTableKeyFieldsPossibleValueSource()
+   {
+      return (new QPossibleValueSource()
+         .withName(TableKeyFieldsPossibleValueSource.NAME)
+         .withType(QPossibleValueSourceType.CUSTOM)
+         .withCustomCodeReference(new QCodeReference(TableKeyFieldsPossibleValueSource.class)));
    }
 
 
@@ -1404,10 +1587,10 @@ public class QInstanceEnricher
          if(possibleValueSource.getIdType() == null)
          {
             QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
-            if(table != null)
+            if(table != null && table.getFields() != null)
             {
                String         primaryKeyField         = table.getPrimaryKeyField();
-               QFieldMetaData primaryKeyFieldMetaData = table.getFields().get(primaryKeyField);
+               QFieldMetaData primaryKeyFieldMetaData = CollectionUtils.nonNullMap(table.getFields()).get(primaryKeyField);
                if(primaryKeyFieldMetaData != null)
                {
                   possibleValueSource.setIdType(primaryKeyFieldMetaData.getType());
@@ -1441,7 +1624,7 @@ public class QInstanceEnricher
             {
                QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getAdHoc(QCustomPossibleValueProvider.class, possibleValueSource.getCustomCodeReference());
 
-               Method getPossibleValueMethod = customPossibleValueProvider.getClass().getDeclaredMethod("getPossibleValue", Serializable.class);
+               Method getPossibleValueMethod = customPossibleValueProvider.getClass().getMethod("getPossibleValue", Serializable.class);
                Type   returnType             = getPossibleValueMethod.getGenericReturnType();
                Type   idType                 = ((ParameterizedType) returnType).getActualTypeArguments()[0];
 
@@ -1477,7 +1660,18 @@ public class QInstanceEnricher
       if(enrichMethod.isPresent())
       {
          Class<?> parameterType = enrichMethod.get().getParameterTypes()[0];
-         enricherPlugins.add(parameterType, plugin);
+
+         Set<String> existingPluginIdentifiers = enricherPlugins.getOrDefault(parameterType, Collections.emptyList())
+            .stream().map(p -> p.getPluginIdentifier())
+            .collect(Collectors.toSet());
+         if(existingPluginIdentifiers.contains(plugin.getPluginIdentifier()))
+         {
+            LOG.debug("Enricher plugin is already registered - not re-adding it", logPair("pluginIdentifer", plugin.getPluginIdentifier()));
+         }
+         else
+         {
+            enricherPlugins.add(parameterType, plugin);
+         }
       }
       else
       {
@@ -1493,6 +1687,17 @@ public class QInstanceEnricher
    public static void removeAllEnricherPlugins()
    {
       enricherPlugins.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for enricherPlugins
+    **
+    *******************************************************************************/
+   public static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> getEnricherPlugins()
+   {
+      return enricherPlugins;
    }
 
 
@@ -1637,4 +1842,70 @@ public class QInstanceEnricher
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** For any QFieldMetaData that has a PVS filter referencing ${input.someVar},
+    ** add a process-level fallback so it becomes:
+    **   ${input.someVar}??${processValues.possibleValueFilterValueSomeVar}
+    **
+    ** This keeps table definitions clean (${input.x} only) and pushes knowledge
+    ** of process fallbacks into the enricher-generated processes.
+    *******************************************************************************/
+   private static QFieldMetaData addProcessFallbacksToPvsFilter(QFieldMetaData field)
+   {
+      QQueryFilter filter = field.getPossibleValueSourceFilter();
+      if(filter == null)
+      {
+         return field;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // Transform each criterion value that is a String containing ${input.<name>} //
+      ////////////////////////////////////////////////////////////////////////////////
+      List<QFilterCriteria> newCriteria = new ArrayList<>();
+      for(QFilterCriteria c : CollectionUtils.nonNullList(filter.getCriteria()))
+      {
+         Serializable[]     newValues = null;
+         List<Serializable> vals      = new ArrayList<>();
+         for(Serializable v : CollectionUtils.nonNullList(c.getValues()))
+         {
+            if(v instanceof String s)
+            {
+               String transformed = java.util.regex.Pattern
+                  .compile("\\$\\{input\\.([A-Za-z0-9_]+)}")
+                  .matcher(s)
+                  .replaceAll(mr ->
+                  {
+                     String var = mr.group(1);
+                     String cap = var.substring(0, 1).toUpperCase(Locale.ROOT) + (var.length() > 1 ? var.substring(1) : "");
+                     return java.util.regex.Matcher.quoteReplacement("${input." + var + "}??${processValues.possibleValueFilterValue" + cap + "}");
+                  });
+               vals.add(transformed);
+            }
+            else
+            {
+               vals.add(v);
+            }
+         }
+         newValues = vals.toArray(new Serializable[0]);
+         newCriteria.add(new QFilterCriteria(c.getFieldName(), c.getOperator(), newValues));
+      }
+
+      QQueryFilter newFilter = new QQueryFilter();
+      for(QFilterCriteria nc : newCriteria)
+      {
+         newFilter.addCriteria(nc);
+      }
+      ///////////////////////////////
+      // copy order-bys if present //
+      ///////////////////////////////
+      for(QFilterOrderBy ob : CollectionUtils.nonNullList(filter.getOrderBys()))
+      {
+         newFilter.withOrderBy(new QFilterOrderBy(ob.getFieldName(), ob.getIsAscending()));
+      }
+
+      field.withPossibleValueSourceFilter(newFilter);
+      return field;
+   }
 }

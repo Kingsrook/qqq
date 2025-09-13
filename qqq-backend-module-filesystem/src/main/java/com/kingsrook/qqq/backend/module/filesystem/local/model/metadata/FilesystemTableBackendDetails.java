@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.model.metadata;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule;
 
@@ -39,6 +40,17 @@ public class FilesystemTableBackendDetails extends AbstractFilesystemTableBacken
    {
       super();
       setBackendType(FilesystemBackendModule.class);
+   }
+
+
+
+   /***************************************************************************
+    * finish the cloning process in a subclass of AbstractFilesystemTableBackendDetails
+    ***************************************************************************/
+   @Override
+   protected FilesystemTableBackendDetails finishFilesystemSubclassClone(QTableBackendDetails cloned)
+   {
+      return ((FilesystemTableBackendDetails) super.finishFilesystemSubclassClone(cloned));
    }
 
 }

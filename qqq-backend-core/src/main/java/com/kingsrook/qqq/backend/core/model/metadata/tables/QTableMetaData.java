@@ -63,7 +63,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  ** Meta-Data to define a table in a QQQ instance.
  **
  *******************************************************************************/
-public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules, TopLevelMetaDataInterface, SourceQBitAware
+public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules, TopLevelMetaDataInterface, SourceQBitAware, Cloneable
 {
    private static final QLogger LOG = QLogger.getLogger(QTableMetaData.class);
 
@@ -933,7 +933,15 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       this.enabledCapabilities = enabledCapabilities;
       if(this.disabledCapabilities != null)
       {
-         this.disabledCapabilities.removeAll(enabledCapabilities);
+         try
+         {
+            this.disabledCapabilities.removeAll(enabledCapabilities);
+         }
+         catch(UnsupportedOperationException e)
+         {
+            this.disabledCapabilities = new HashSet<>(this.disabledCapabilities);
+            this.disabledCapabilities.removeAll(enabledCapabilities);
+         }
       }
    }
 
@@ -1018,7 +1026,15 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       this.disabledCapabilities = disabledCapabilities;
       if(this.enabledCapabilities != null)
       {
-         this.enabledCapabilities.removeAll(disabledCapabilities);
+         try
+         {
+            this.enabledCapabilities.removeAll(disabledCapabilities);
+         }
+         catch(UnsupportedOperationException e)
+         {
+            this.enabledCapabilities = new HashSet<>(this.enabledCapabilities);
+            this.enabledCapabilities.removeAll(disabledCapabilities);
+         }
       }
    }
 
@@ -1134,8 +1150,9 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if the table's backend says the capability is disabled, then by default, then the capability is disabled... //
+      // (or if the backend isn't given, then it doesn't say one way or the other, so just check the table)          //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(backend.getDisabledCapabilities().contains(capability))
+      if(backend != null && backend.getDisabledCapabilities().contains(capability))
       {
          hasCapability = false;
 
@@ -1558,6 +1575,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    }
 
 
+
    /*******************************************************************************
     ** Getter for sourceQBitName
     *******************************************************************************/
@@ -1590,5 +1608,179 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QTableMetaData clone()
+   {
+      try
+      {
+         QTableMetaData clone = (QTableMetaData) super.clone();
+
+         if(fields != null)
+         {
+            Map<String, QFieldMetaData> clonedFields = new LinkedHashMap<>();
+            for(Map.Entry<String, QFieldMetaData> entry : fields.entrySet())
+            {
+               clonedFields.put(entry.getKey(), entry.getValue().clone());
+            }
+            clone.setFields(clonedFields);
+         }
+
+         if(uniqueKeys != null)
+         {
+            List<UniqueKey> clonedUniqueKeys = new ArrayList<>();
+            for(UniqueKey uniqueKey : uniqueKeys)
+            {
+               clonedUniqueKeys.add(uniqueKey.clone());
+            }
+            clone.setUniqueKeys(clonedUniqueKeys);
+         }
+
+         if(associations != null)
+         {
+            List<Association> clonedAssociations = new ArrayList<>();
+            for(Association association : associations)
+            {
+               clonedAssociations.add(association.clone());
+            }
+            clone.setAssociations(clonedAssociations);
+         }
+
+         if(recordSecurityLocks != null)
+         {
+            List<RecordSecurityLock> clonedRecordSecurityLocks = new ArrayList<>();
+            for(RecordSecurityLock lock : recordSecurityLocks)
+            {
+               clonedRecordSecurityLocks.add(lock.clone());
+            }
+            clone.setRecordSecurityLocks(clonedRecordSecurityLocks);
+         }
+
+         if(permissionRules != null)
+         {
+            clone.setPermissionRules(permissionRules.clone());
+         }
+
+         if(auditRules != null)
+         {
+            clone.setAuditRules(auditRules.clone());
+         }
+
+         if(backendDetails != null)
+         {
+            clone.setBackendDetails(backendDetails.clone());
+         }
+
+         if(automationDetails != null)
+         {
+            clone.setAutomationDetails(automationDetails.clone());
+         }
+
+         if(customizers != null)
+         {
+            Map<String, QCodeReference> clonedCustomizers = new HashMap<>();
+            for(Map.Entry<String, QCodeReference> entry : customizers.entrySet())
+            {
+               clonedCustomizers.put(entry.getKey(), entry.getValue().clone());
+            }
+            clone.setCustomizers(clonedCustomizers);
+         }
+
+         if(icon != null)
+         {
+            clone.setIcon(icon.clone());
+         }
+
+         if(recordLabelFields != null)
+         {
+            clone.setRecordLabelFields(new ArrayList<>(recordLabelFields));
+         }
+
+         if(sections != null)
+         {
+            List<QFieldSection> clonedSections = new ArrayList<>();
+            for(QFieldSection section : sections)
+            {
+               clonedSections.add(section.clone());
+            }
+            clone.setSections(clonedSections);
+         }
+
+         if(associatedScripts != null)
+         {
+            List<AssociatedScript> clonedAssociatedScripts = new ArrayList<>();
+            for(AssociatedScript script : associatedScripts)
+            {
+               clonedAssociatedScripts.add(script.clone());
+            }
+            clone.setAssociatedScripts(clonedAssociatedScripts);
+         }
+
+         if(enabledCapabilities != null)
+         {
+            clone.setEnabledCapabilities(new HashSet<>(enabledCapabilities));
+         }
+
+         if(disabledCapabilities != null)
+         {
+            clone.setDisabledCapabilities(new HashSet<>(disabledCapabilities));
+         }
+
+         if(cacheOf != null)
+         {
+            clone.setCacheOf(cacheOf.clone());
+         }
+
+         if(supplementalMetaData != null)
+         {
+            Map<String, QSupplementalTableMetaData> clonedSupplementalMetaData = new HashMap<>();
+            for(Map.Entry<String, QSupplementalTableMetaData> entry : supplementalMetaData.entrySet())
+            {
+               clonedSupplementalMetaData.put(entry.getKey(), entry.getValue().clone());
+            }
+            clone.setSupplementalMetaData(clonedSupplementalMetaData);
+         }
+
+         if(exposedJoins != null)
+         {
+            List<ExposedJoin> clonedExposedJoins = new ArrayList<>();
+            for(ExposedJoin exposedJoin : exposedJoins)
+            {
+               clonedExposedJoins.add(exposedJoin.clone());
+            }
+            clone.setExposedJoins(clonedExposedJoins);
+         }
+
+         if(shareableTableMetaData != null)
+         {
+            clone.setShareableTableMetaData(shareableTableMetaData.clone());
+         }
+
+         if(helpContent != null)
+         {
+            Map<String, List<QHelpContent>> clonedHelpContent = new HashMap<>();
+            for(Map.Entry<String, List<QHelpContent>> entry : helpContent.entrySet())
+            {
+               List<QHelpContent> clonedHelpContentList = new ArrayList<>();
+               for(QHelpContent helpContent : entry.getValue())
+               {
+                  clonedHelpContentList.add(helpContent.clone());
+               }
+               clonedHelpContent.put(entry.getKey(), clonedHelpContentList);
+            }
+            clone.setHelpContent(clonedHelpContent);
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new RuntimeException(e);
+      }
+   }
 
 }

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.audits;
 
 import java.io.Serializable;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -37,6 +38,8 @@ public class DMLAuditInput extends AbstractActionInput implements Serializable
    private List<QRecord>            recordList;
    private List<QRecord>            oldRecordList;
    private AbstractTableActionInput tableActionInput;
+
+   private QBackendTransaction transaction;
 
    private String auditContext = null;
 
@@ -163,5 +166,44 @@ public class DMLAuditInput extends AbstractActionInput implements Serializable
       this.auditContext = auditContext;
       return (this);
    }
+
+
+   /*******************************************************************************
+    * Getter for transaction
+    * @see #withTransaction(QBackendTransaction)
+    *******************************************************************************/
+   public QBackendTransaction getTransaction()
+   {
+      return (this.transaction);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for transaction
+    * @see #withTransaction(QBackendTransaction)
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for transaction
+    *
+    * @param transaction
+    * transaction that will be used for inserting the audits, where (presumably)
+    * the DML against the record occurred as well
+    *
+    * @return this
+    *******************************************************************************/
+   public DMLAuditInput withTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+      return (this);
+   }
+
 
 }

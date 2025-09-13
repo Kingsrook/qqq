@@ -28,7 +28,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -37,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 /*******************************************************************************
@@ -136,6 +139,55 @@ class ColumnStatsStepTest extends BaseTest
       assertThat(valueCounts.get(2).getValues())
          .hasFieldOrPropertyWithValue("timestamp", null)
          .hasFieldOrPropertyWithValue("count", 1);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalizationLeadsToNoFieldErrorWhenAppropriate() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(new QRecord().withValue("noOfShoes", 1).withValue("lastName", "Simpson")));
+      new InsertAction().execute(insertInput);
+
+      RunBackendStepInput input = new RunBackendStepInput();
+      input.addValue("tableName", TestUtils.TABLE_NAME_PERSON_MEMORY);
+      input.addValue("fieldName", "lastName");
+      input.addValue("orderBy", "count.desc");
+
+      RunBackendStepOutput output = new RunBackendStepOutput();
+      new ColumnStatsStep().run(input, output);
+      Map<String, Serializable> values = output.getValues();
+
+      /////////////////////////////////////////////////
+      // by default assert we get values as expected //
+      /////////////////////////////////////////////////
+      @SuppressWarnings("unchecked")
+      List<QRecord> valueCounts = (List<QRecord>) values.get("valueCounts");
+      assertThat(valueCounts.get(0).getValues())
+         .hasFieldOrPropertyWithValue("lastName", "Simpson")
+         .hasFieldOrPropertyWithValue("count", 1);
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // now personalize the table to remove the field we're trying to do stats on //
+      ///////////////////////////////////////////////////////////////////////////////
+      String userId = "jdoe";
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY, "lastName", userId);
+      QContext.getQSession().getUser().setIdReference(userId);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // we shoudl get an exception if we re-run now -- this user isn't allowed to see that field. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      assertThatThrownBy(() -> new ColumnStatsStep().run(input, new RunBackendStepOutput()))
+         .rootCause()
+         .hasMessageContaining("Field [lastName] was not found in table");
+
    }
 
 }

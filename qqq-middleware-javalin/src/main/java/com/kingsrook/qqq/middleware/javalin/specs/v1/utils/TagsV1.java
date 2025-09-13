@@ -32,10 +32,7 @@ public enum TagsV1 implements TagsInterface
 {
    AUTHENTICATION("Authentication"),
    GENERAL("General"),
-   QUERY("Query"),
-   INSERT("Insert"),
-   UPDATE("Update"),
-   DELETE("Delete"),
+   TABLES("Tables"),
    PROCESSES("Processes"),
    REPORTS("Reports"),
    WIDGETS("Widgets");

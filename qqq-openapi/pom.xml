@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-openapi</artifactId>
+   <name>QQQ OpenAPI</name>
+   <description>OpenAPI integration for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
@@ -72,6 +74,18 @@
 
    <build>
       <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <version>3.4.2</version>
+            <executions>
+               <execution>
+                  <goals>
+                     <goal>test-jar</goal>
+                  </goals>
+               </execution>
+            </executions>
+         </plugin>
          <!-- plugins specifically for this module -->
          <!-- none at this time -->
 

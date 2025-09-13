@@ -40,7 +40,7 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMap
 public class TableMetaDataLight implements ToSchema
 {
    @OpenAPIExclude()
-   private QFrontendTableMetaData wrapped;
+   protected QFrontendTableMetaData wrapped;
 
 
 

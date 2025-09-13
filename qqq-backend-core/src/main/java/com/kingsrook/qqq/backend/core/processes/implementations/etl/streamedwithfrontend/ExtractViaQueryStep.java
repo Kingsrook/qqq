@@ -130,7 +130,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
          queryInput.setIncludeAssociations(true);
       }
 
-      customizeInputPreQuery(queryInput);
+      customizeInputPreQuery(runBackendStepInput, queryInput);
 
       new QueryAction().execute(queryInput);
 
@@ -144,9 +144,24 @@ public class ExtractViaQueryStep extends AbstractExtractStep
    /*******************************************************************************
     ** chance for sub-classes to change things about the query input, if they want.
     *******************************************************************************/
+   protected void customizeInputPreQuery(RunBackendStepInput runBackendStepInput, QueryInput queryInput)
+   {
+      customizeInputPreQuery(queryInput);
+
+      if(runBackendStepInput.getCallback() != null)
+      {
+         runBackendStepInput.getCallback().customizeInputPreQuery(runBackendStepInput, queryInput);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** chance for sub-classes to change things about the query input, if they want.
+    *******************************************************************************/
+   @Deprecated(since = "Overload that takes RunBackendStepInput was added in 0.26")
    protected void customizeInputPreQuery(QueryInput queryInput)
    {
-
    }
 
 
@@ -229,7 +244,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       //////////////////////////////////////////////////////////////////////////////////////
       // if the queryFilterJson field is populated, read the filter from it and return it //
       //////////////////////////////////////////////////////////////////////////////////////
-      if(queryFilterJson != null)
+      if(StringUtils.hasContent(queryFilterJson))
       {
          return getQueryFilterFromJson(queryFilterJson, "Error loading query filter from json field");
       }

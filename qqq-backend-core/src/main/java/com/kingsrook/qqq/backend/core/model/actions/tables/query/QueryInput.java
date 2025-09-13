@@ -31,7 +31,10 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.ActionFlag;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 
 
@@ -42,7 +45,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterf
  ** CountInput, and AggregateInput}, with common attributes for all of these
  ** "read" operations (like, queryHints,
  *******************************************************************************/
-public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface, Cloneable
+public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface, QueryOrCountInputInterface, Cloneable
 {
    private QBackendTransaction transaction;
    private QQueryFilter        filter;
@@ -83,6 +86,7 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    private Collection<String> associationNamesToInclude = null;
 
    private EnumSet<QueryHint> queryHints = EnumSet.noneOf(QueryHint.class);
+   private Set<ActionFlag>    flags;
 
 
 
@@ -725,4 +729,84 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    * Getter for flags
+    * @see #withFlags(Set)
+    *******************************************************************************/
+   public Set<ActionFlag> getFlags()
+   {
+      return (this.flags);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for flags
+    * @see #withFlags(Set)
+    *******************************************************************************/
+   public void setFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for flags
+    *
+    * @param flags
+    * framework, backend-module, or application defined flags that con be used to drive
+    * behaviors.  For example, maybe to bypass caching actions, or to customize a
+    * query, etc.
+    * @return this
+    *******************************************************************************/
+   public QueryInput withFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public QueryInput withFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         this.flags = new HashSet<>();
+      }
+      this.flags.add(flag);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public boolean hasFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         return (false);
+      }
+
+      return (this.flags.contains(flag));
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QueryInput withInputSource(InputSource inputSource)
+   {
+      super.withInputSource(inputSource);
+      return (this);
+   }
 }

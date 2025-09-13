@@ -83,6 +83,7 @@ import com.kingsrook.qqq.openapi.model.Content;
 import com.kingsrook.qqq.openapi.model.Example;
 import com.kingsrook.qqq.openapi.model.ExampleWithListValue;
 import com.kingsrook.qqq.openapi.model.ExampleWithSingleValue;
+import com.kingsrook.qqq.openapi.model.In;
 import com.kingsrook.qqq.openapi.model.Info;
 import com.kingsrook.qqq.openapi.model.Method;
 import com.kingsrook.qqq.openapi.model.OpenAPI;
@@ -93,6 +94,7 @@ import com.kingsrook.qqq.openapi.model.Response;
 import com.kingsrook.qqq.openapi.model.Schema;
 import com.kingsrook.qqq.openapi.model.SecurityScheme;
 import com.kingsrook.qqq.openapi.model.Tag;
+import com.kingsrook.qqq.openapi.model.Type;
 import io.javalin.http.ContentType;
 import io.javalin.http.HttpStatus;
 import org.apache.commons.lang.BooleanUtils;
@@ -289,16 +291,16 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
        */
 
       componentSchemas.put("baseSearchResultFields", new Schema()
-         .withType("object")
+         .withType(Type.OBJECT)
          .withProperties(MapBuilder.of(
             "count", new Schema()
-               .withType("integer")
+               .withType(Type.INTEGER)
                .withDescription("Number of records that matched the search criteria"),
             "pageNo", new Schema()
-               .withType("integer")
+               .withType(Type.INTEGER)
                .withDescription("Requested result page number"),
             "pageSize", new Schema()
-               .withType("integer")
+               .withType(Type.INTEGER)
                .withDescription("Requested result page size")
          )));
 
@@ -440,11 +442,11 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          if(queryByQueryStringEnabled)
          {
             componentSchemas.put(tableApiName + "SearchResult", new Schema()
-               .withType("object")
+               .withType(Type.OBJECT)
                .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/baseSearchResultFields")))
                .withProperties(MapBuilder.of(
                   "records", new Schema()
-                     .withType("array")
+                     .withType(Type.ARRAY)
                      .withItems(new Schema()
                         .withAllOf(ListBuilder.of(
                            new Schema().withRef("#/components/schemas/" + tableApiName)))))));
@@ -470,29 +472,29 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                new Parameter()
                   .withName("pageNo")
                   .withDescription("Which page of results to return.  Starts at 1.")
-                  .withIn("query")
-                  .withSchema(new Schema().withType("integer")),
+                  .withIn(In.QUERY)
+                  .withSchema(new Schema().withType(Type.INTEGER)),
                new Parameter()
                   .withName("pageSize")
                   .withDescription("Max number of records to include in a page.  Defaults to 50.  Must be between 1 and 1000.")
-                  .withIn("query")
-                  .withSchema(new Schema().withType("integer")),
+                  .withIn(In.QUERY)
+                  .withSchema(new Schema().withType(Type.INTEGER)),
                new Parameter()
                   .withName("includeCount")
                   .withDescription("Whether or not to include the count (total matching records) in the result. Default is true.")
-                  .withIn("query")
-                  .withSchema(new Schema().withType("boolean").withEnumValues(ListBuilder.of("true", "false"))),
+                  .withIn(In.QUERY)
+                  .withSchema(new Schema().withType(Type.BOOLEAN).withEnumValues(ListBuilder.of("true", "false"))),
                new Parameter()
                   .withName("orderBy")
                   .withDescription("How the results of the query should be sorted. SQL-style, comma-separated list of field names, each optionally followed by ASC or DESC (defaults to ASC).")
-                  .withIn("query")
-                  .withSchema(new Schema().withType("string"))
+                  .withIn(In.QUERY)
+                  .withSchema(new Schema().withType(Type.STRING))
                   .withExamples(buildOrderByExamples(apiName, primaryKeyApiName, tableApiFields)),
                new Parameter()
                   .withName("booleanOperator")
                   .withDescription("Whether to combine query field as an AND or an OR.  Default is AND.")
-                  .withIn("query")
-                  .withSchema(new Schema().withType("string").withEnumValues(ListBuilder.of("AND", "OR")))))
+                  .withIn(In.QUERY)
+                  .withSchema(new Schema().withType(Type.STRING).withEnumValues(ListBuilder.of("AND", "OR")))))
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
             .withResponse(HttpStatus.OK.getCode(), new Response()
                .withDescription("Successfully searched the " + tableLabel + " table (though may have found 0 records).")
@@ -523,11 +525,11 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             queryGet.getParameters().add(new Parameter()
                .withName(fieldName)
                .withDescription(description.toString())
-               .withIn("query")
+               .withIn(In.QUERY)
                .withExplode(true)
                .withSchema(new Schema()
-                  .withType("array")
-                  .withItems(new Schema().withType("string")))
+                  .withType(Type.ARRAY)
+                  .withItems(new Schema().withType(Type.STRING)))
                .withExamples(getCriteriaExamples(openAPI.getComponents().getExamples(), tableApiField)));
          }
 
@@ -553,7 +555,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                new Parameter()
                   .withName(primaryKeyApiName)
                   .withDescription(primaryKeyLabel + " of the " + tableLabel + " to get.")
-                  .withIn("path")
+                  .withIn(In.PATH)
                   .withRequired(true)
                   .withSchema(new Schema().withType(getFieldType(primaryKeyField)))))
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
@@ -573,7 +575,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                new Parameter()
                   .withName(primaryKeyApiName)
                   .withDescription(primaryKeyLabel + " of the " + tableLabel + " to update.")
-                  .withIn("path")
+                  .withIn(In.PATH)
                   .withRequired(true)
                   .withSchema(new Schema().withType(getFieldType(primaryKeyField)))))
             .withRequestBody(new RequestBody()
@@ -595,7 +597,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                new Parameter()
                   .withName(primaryKeyApiName)
                   .withDescription(primaryKeyLabel + " of the " + tableLabel + " to delete.")
-                  .withIn("path")
+                  .withIn(In.PATH)
                   .withRequired(true)
                   .withSchema(new Schema().withType(getFieldType(primaryKeyField)))))
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
@@ -627,7 +629,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription("Successfully created the requested " + tableLabel)
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema()
-                     .withType("object")
+                     .withType(Type.OBJECT)
                      .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
                         .withType(getFieldType(primaryKeyField))
                         .withExample("47")))))))
@@ -652,7 +654,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription("Values for the " + tableLabel + " records to create.")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema()
-                     .withType("array")
+                     .withType(Type.ARRAY)
                      .withItems(new Schema().withRef("#/components/schemas/" + tableApiName))))))
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
             .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyApiName, primaryKeyField, "post"))
@@ -668,7 +670,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription("Values for the " + tableLabel + " records to update.")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema()
-                     .withType("array")
+                     .withType(Type.ARRAY)
                      .withItems(new Schema()
                         .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/" + tableApiName)))
                         .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
@@ -690,7 +692,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription(primaryKeyLabel + " values for the " + tableLabel + " records to delete.")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema()
-                     .withType("array")
+                     .withType(Type.ARRAY)
                      .withItems(new Schema().withType(getFieldType(primaryKeyField)))
                      .withExample(List.of(42, 47))))))
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
@@ -910,7 +912,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          {
             for(QFieldMetaData field : CollectionUtils.nonNullList(pathParams.getFields()))
             {
-               parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("path"));
+               parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn(In.PATH));
             }
          }
 
@@ -922,14 +924,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          {
             if(queryStringParams.getRecordIdsField() != null)
             {
-               parameters.add(processFieldToParameter(apiInstanceMetaData, queryStringParams.getRecordIdsField()).withIn("query"));
+               parameters.add(processFieldToParameter(apiInstanceMetaData, queryStringParams.getRecordIdsField()).withIn(In.QUERY));
             }
 
             for(QFieldMetaData field : CollectionUtils.nonNullList(queryStringParams.getFields()))
             {
                if(ApiFieldUtils.isIncluded(apiName, field) && ApiFieldUtils.getApiVersionRange(apiName, field).includes(apiVersion))
                {
-                  parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("query"));
+                  parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn(In.QUERY));
                }
             }
          }
@@ -961,7 +963,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             {
                content.withSchema(new Schema()
                   .withDescription(bodyDescription)
-                  .withType("string")
+                  .withType(Type.STRING)
                   .withExample(exampleWithSingleValue.getValue()));
             }
 
@@ -982,7 +984,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          parameters.add(new Parameter()
             .withName("async")
-            .withIn("query")
+            .withIn(In.QUERY)
             .withDescription("""
                Indicates if the job should be ran asynchronously.
                If false or not specified, then the job is ran synchronously and returns with an appropriate response status when completed.
@@ -993,7 +995,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                "false", new ExampleWithSingleValue().withValue(false).withSummary("Run the job synchronously."),
                "true", new ExampleWithSingleValue().withValue(true).withSummary("Run the job asynchronously.")
             ))
-            .withSchema(new Schema().withType("boolean")));
+            .withSchema(new Schema().withType(Type.BOOLEAN)));
       }
 
       if(CollectionUtils.nullSafeHasContents(parameters))
@@ -1018,9 +1020,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withDescription("The process has been started asynchronously.  You can call back later to check its status.")
             .withContent(MapBuilder.of(ContentType.JSON, new Content()
                .withSchema(new Schema()
-                  .withType("object")
+                  .withType(Type.OBJECT)
                   .withProperties(MapBuilder.of(
-                     "jobId", new Schema().withType("string").withFormat("uuid").withDescription("id of the asynchronous job")
+                     "jobId", new Schema().withType(Type.STRING).withFormat("uuid").withDescription("id of the asynchronous job")
                   ))
                )
             ))
@@ -1076,16 +1078,16 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          for(QFieldMetaData field : CollectionUtils.nonNullList(pathParams.getFields()))
          {
-            parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("path"));
+            parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn(In.PATH));
          }
       }
 
       parameters.add(new Parameter()
          .withName("jobId")
-         .withIn("path")
+         .withIn(In.PATH)
          .withRequired(true)
          .withDescription("Id of the job, as returned by the API call that started it.")
-         .withSchema(new Schema().withType("string").withFormat("uuid")));
+         .withSchema(new Schema().withType(Type.STRING).withFormat("uuid")));
 
       ////////////////////////////////////////////////////////
       // add the async input for optionally-async processes //
@@ -1100,12 +1102,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withDescription("The process is still running.  You can call back later to get its final status.")
          .withContent(MapBuilder.of(ContentType.JSON, new Content()
             .withSchema(new Schema()
-               .withType("object")
+               .withType(Type.OBJECT)
                .withProperties(MapBuilder.of(
-                  "jobId", new Schema().withType("string").withFormat("uuid").withDescription("id of the asynchronous job"),
-                  "message", new Schema().withNullable(true).withType("string").withDescription("a status message about the progress of the job").withExample("Processing records"),
-                  "current", new Schema().withNullable(true).withType("integer").withDescription("for jobs that count progress, indicator of the current number being processed").withExample(7),
-                  "total", new Schema().withNullable(true).withType("integer").withDescription("for jobs that count progress, indicator of the total number being processed").withExample(9)
+                  "jobId", new Schema().withType(Type.STRING).withFormat("uuid").withDescription("id of the asynchronous job"),
+                  "message", new Schema().withNullable(true).withType(Type.STRING).withDescription("a status message about the progress of the job").withExample("Processing records"),
+                  "current", new Schema().withNullable(true).withType(Type.INTEGER).withDescription("for jobs that count progress, indicator of the current number being processed").withExample(7),
+                  "total", new Schema().withNullable(true).withType(Type.INTEGER).withDescription("for jobs that count progress, indicator of the total number being processed").withExample(9)
                ))
             )
          ))
@@ -1268,7 +1270,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    {
       LinkedHashMap<String, Schema> tableFields = new LinkedHashMap<>();
       Schema tableSchema = new Schema()
-         .withType("object")
+         .withType(Type.OBJECT)
          .withProperties(tableFields);
 
       for(QFieldMetaData field : tableApiFields)
@@ -1461,7 +1463,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          neededTableSchemas.add(associatedTable.getName());
 
          tableSchema.getProperties().put(association.getName(), new Schema()
-            .withType("array")
+            .withType(Type.ARRAY)
             .withItems(new Schema().withRef("#/components/schemas/" + associatedTableApiName)));
       }
    }
@@ -1607,18 +1609,18 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       };
 
       Map<String, Schema> properties = new LinkedHashMap<>();
-      properties.put("statusCode", new Schema().withType("integer"));
-      properties.put("statusText", new Schema().withType("string"));
-      properties.put("error", new Schema().withType("string"));
+      properties.put("statusCode", new Schema().withType(Type.INTEGER));
+      properties.put("statusText", new Schema().withType(Type.STRING));
+      properties.put("error", new Schema().withType(Type.STRING));
       properties.put(primaryKeyApiName, new Schema().withType(getFieldType(primaryKeyField)));
 
       return new Response()
          .withDescription("Multiple statuses.  See body for details.")
          .withContent(MapBuilder.of("application/json", new Content()
             .withSchema(new Schema()
-               .withType("array")
+               .withType(Type.ARRAY)
                .withItems(new Schema()
-                  .withType("object")
+                  .withType(Type.OBJECT)
                   .withProperties(properties))
                .withExample(example))));
    }
@@ -1704,7 +1706,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String getFieldType(QFieldMetaData field)
+   public static Type getFieldType(QFieldMetaData field)
    {
       return (getFieldType(field.getType()));
    }
@@ -1714,14 +1716,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static String getFieldType(QFieldType type)
+   private static Type getFieldType(QFieldType type)
    {
       return switch(type)
       {
-         case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> "string";
-         case INTEGER, LONG -> "integer"; // todo - we could give 'format' w/ int32 & int64 to further specify
-         case DECIMAL -> "number";
-         case BOOLEAN -> "boolean";
+         case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> Type.STRING;
+         case INTEGER, LONG -> Type.INTEGER; // todo - we could give 'format' w/ int32 & int64 to further specify
+         case DECIMAL -> Type.NUMBER;
+         case BOOLEAN -> Type.BOOLEAN;
       };
    }
 
@@ -1796,9 +1798,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withDescription(description)
          .withContent(MapBuilder.of("application/json", new Content()
             .withSchema(new Schema()
-               .withType("object")
+               .withType(Type.OBJECT)
                .withProperties(MapBuilder.of("error", new Schema()
-                  .withType("string")
+                  .withType(Type.STRING)
                   .withExample(example)
                ))
             )

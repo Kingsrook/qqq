@@ -34,8 +34,9 @@
    </parent>
 
    <properties>
-      <!-- props specifically to this module -->
-      <!-- none at this time -->
+      <!-- Skip deployment to Maven Central - this is a sample project, not a library -->
+      <maven.deploy.skip>true</maven.deploy.skip>
+      <central.publishing.skip>true</central.publishing.skip>
    </properties>
 
    <dependencies>

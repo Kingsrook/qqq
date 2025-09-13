@@ -119,6 +119,11 @@ public class S3QueryActionTest extends BaseS3Test
          .withGlob("*.txt");
       reInitInstanceInContext(instance);
 
+      /////////////////////////////////////////////////////
+      // make sure to reset the table in the query input //
+      /////////////////////////////////////////////////////
+      queryInput.setTableName(TestUtils.TABLE_NAME_BLOB_S3);
+
       queryInput.setFilter(new QQueryFilter());
       queryOutput = s3QueryAction.execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Query should use glob and find 2 rows");
@@ -162,6 +167,11 @@ public class S3QueryActionTest extends BaseS3Test
       ((S3TableBackendDetails) (instance.getTable(TestUtils.TABLE_NAME_BLOB_S3_SANS_PREFIX).getBackendDetails()))
          .withGlob("*.txt");
       reInitInstanceInContext(instance);
+
+      /////////////////////////////////////////////////////
+      // make sure to reset the table in the query input //
+      /////////////////////////////////////////////////////
+      queryInput.setTableName(TestUtils.TABLE_NAME_BLOB_S3_SANS_PREFIX);
 
       queryInput.setFilter(new QQueryFilter());
       queryOutput = s3QueryAction.execute(queryInput);

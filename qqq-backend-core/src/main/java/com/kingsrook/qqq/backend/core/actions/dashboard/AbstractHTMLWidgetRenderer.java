@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 import java.io.Serializable;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -32,17 +31,23 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.QQueryFilterDeduper;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -51,6 +56,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
 {
+   private static final QLogger LOG = QLogger.getLogger(AbstractHTMLWidgetRenderer.class);
+
 
 
    /*******************************************************************************
@@ -123,6 +130,10 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableBulkLoad(RenderWidgetInput input, String tableName) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
+      if(tablePath == null || !doesHaveTablePermission(tableName))
+      {
+         return (null);
+      }
       return (tablePath + "/" + tableName + ".bulkInsert");
    }
 
@@ -134,7 +145,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableBulkLoadChildren(RenderWidgetInput input, String tableName) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(tableName))
       {
          return (null);
       }
@@ -150,6 +161,10 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableCreate(RenderWidgetInput input, String tableName) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
+      if(tablePath == null || !doesHaveTablePermission(tableName))
+      {
+         return (null);
+      }
       return (tablePath + "/create");
    }
 
@@ -161,7 +176,11 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableCreateWithDefaultValues(RenderWidgetInput input, String tableName, Map<String, Serializable> defaultValues) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      return (tablePath + "/create#defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), Charset.defaultCharset()));
+      if(tablePath == null || !doesHaveTablePermission(tableName))
+      {
+         return (null);
+      }
+      return (tablePath + "/create#defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), StandardCharsets.UTF_8));
    }
 
 
@@ -173,7 +192,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    {
       String totalString = QValueFormatter.formatValue(DisplayFormat.COMMAS, count);
       String tablePath   = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null || filter == null)
+      if(tablePath == null || filter == null || !doesHaveTablePermission(tableName))
       {
          return (totalString);
       }
@@ -189,7 +208,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static void addTableFilterToListIfPermissed(RenderWidgetInput input, String tableName, List<String> urls, QQueryFilter filter) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(tableName))
       {
          return;
       }
@@ -206,7 +225,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableFilterUnencoded(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(tableName))
       {
          return (null);
       }
@@ -223,13 +242,13 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableFilter(String tableName, QQueryFilter filter) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(tableName))
       {
          return (null);
       }
 
       filter = QQueryFilterDeduper.dedupeFilter(filter);
-      return (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+      return (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), StandardCharsets.UTF_8));
    }
 
 
@@ -253,7 +272,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
       String countString = QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords);
       String displayText = StringUtils.hasContent(plural) ? (" " + plural) : "";
       String tablePath   = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(tableName))
       {
          return (countString + displayText);
       }
@@ -277,7 +296,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String aHrefViewRecord(String tableName, Serializable id, String linkText) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(tableName))
       {
          return (linkText);
       }
@@ -304,6 +323,10 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkRecordEdit(String tableName, Serializable recordId) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
+      if(tablePath == null || !doesHaveTablePermission(tableName))
+      {
+         return (null);
+      }
       return (tablePath + "/" + recordId + "/edit");
    }
 
@@ -315,7 +338,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkRecordView(String tableName, Serializable recordId) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(tableName))
       {
          return (null);
       }
@@ -333,6 +356,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    {
       return linkProcessForFilter(processName, filter);
    }
+
 
 
    /*******************************************************************************
@@ -358,7 +382,6 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
 
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -367,6 +390,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    {
       return linkProcessForRecord(processName, recordId);
    }
+
 
 
    /*******************************************************************************
@@ -409,7 +433,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableCreateChild(RenderWidgetInput input, String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(childTableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(childTableName))
       {
          return (null);
       }
@@ -449,7 +473,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String aHrefTableCreateChild(RenderWidgetInput input, String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(childTableName);
-      if(tablePath == null)
+      if(tablePath == null || !doesHaveTablePermission(childTableName))
       {
          return (null);
       }
@@ -457,4 +481,26 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
       return ("<a href=\"" + linkTableCreateChild(input, childTableName, defaultValues, defaultValues.keySet()) + "\">Create new</a>");
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static boolean doesHaveTablePermission(String tableName)
+   {
+      QTableMetaData table = QContext.getQInstance().getTable(tableName);
+      if(table == null)
+      {
+         LOG.debug("Returning no-permission for table, because of unrecognized table name", logPair("tableName", tableName));
+         return (false);
+      }
+
+      PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(new MetaDataInput(), table);
+      if(PermissionCheckResult.ALLOW.equals(permissionResult))
+      {
+         return (true);
+      }
+
+      return (false);
+   }
 }

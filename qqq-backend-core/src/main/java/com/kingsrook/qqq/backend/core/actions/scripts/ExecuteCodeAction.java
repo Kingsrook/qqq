@@ -194,7 +194,7 @@ public class ExecuteCodeAction
       List<ScriptRevisionFile> files = scriptRevision.getFiles();
       if(files == null || files.isEmpty())
       {
-         throw (new QException("Script Revision " + scriptRevision.getId() + " had more than 1 associated ScriptRevisionFile (and the name to use was not specified)."));
+         throw (new QException("Script Revision " + scriptRevision.getId() + " did not have an associated ScriptRevisionFile."));
       }
       else
       {

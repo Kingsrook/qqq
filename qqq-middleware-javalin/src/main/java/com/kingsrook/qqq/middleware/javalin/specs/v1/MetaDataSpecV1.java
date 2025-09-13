@@ -22,38 +22,21 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1;
 
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
-import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
-import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
-import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.MetaDataExecutor;
 import com.kingsrook.qqq.middleware.javalin.executors.io.MetaDataInput;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
 import com.kingsrook.qqq.middleware.javalin.specs.BasicOperation;
 import com.kingsrook.qqq.middleware.javalin.specs.BasicResponse;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.MetaDataResponseV1;
+import com.kingsrook.qqq.middleware.javalin.specs.v1.utils.MetaDataSpecUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.utils.TagsV1;
 import com.kingsrook.qqq.openapi.model.Example;
 import com.kingsrook.qqq.openapi.model.HttpMethod;
@@ -69,7 +52,6 @@ import io.javalin.http.Context;
  *******************************************************************************/
 public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaDataResponseV1, MetaDataExecutor>
 {
-
    /***************************************************************************
     **
     ***************************************************************************/
@@ -187,68 +169,13 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
    {
       Map<String, Example> examples = new HashMap<>();
 
-      QInstance exampleInstance = new QInstance();
-
-      exampleInstance.setAuthentication(new QAuthenticationMetaData().withName("anonymous").withType(QAuthenticationType.FULLY_ANONYMOUS));
-
-      QBackendMetaData exampleBackend = new QBackendMetaData()
-         .withName("example")
-         .withBackendType(MemoryBackendModule.class);
-      exampleInstance.addBackend(exampleBackend);
-
-      //////////////////////////////////////
-      // create stable sorting of entries //
-      //////////////////////////////////////
-      TreeSet<Capability> capabilities = new TreeSet<>(Comparator.comparing((Capability c) -> c.name()));
-      capabilities.addAll(Capability.allReadCapabilities());
-      capabilities.addAll(Capability.allWriteCapabilities());
-
-      QTableMetaData exampleTable = new QTableMetaData()
-         .withName("person")
-         .withLabel("Person")
-         .withBackendName("example")
-         .withPrimaryKeyField("id")
-         .withIsHidden(false)
-         .withIcon(new QIcon().withName("person_outline"))
-         .withEnabledCapabilities(capabilities)
-         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
-         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
-      exampleInstance.addTable(exampleTable);
-
-      QProcessMetaData exampleProcess = new QProcessMetaData()
-         .withName("samplePersonProcess")
-         .withLabel("Sample Person Process")
-         .withTableName("person")
-         .withIsHidden(false)
-         .withIcon(new QIcon().withName("person_add"))
-         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
-         .withStep(new QFrontendStepMetaData().withName("example"));
-      exampleInstance.addProcess(exampleProcess);
-
-      QAppMetaData childApp = new QAppMetaData()
-         .withName("childApp")
-         .withLabel("Child App")
-         .withIcon(new QIcon().withName("child_friendly"))
-         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
-         .withChild(exampleProcess);
-      exampleInstance.addApp(childApp);
-
-      QAppMetaData exampleApp = new QAppMetaData()
-         .withName("homeApp")
-         .withLabel("Home App")
-         .withIcon(new QIcon().withName("home"))
-         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
-         .withChild(childApp)
-         .withChild(exampleTable);
-      exampleInstance.addApp(exampleApp);
-
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       // double-wrap the context here, so the instance will exist when the system-user-session is created //
       // to avoid warnings out of system-user-session about there not being an instance in context.       //
       //////////////////////////////////////////////////////////////////////////////////////////////////////
-      QContext.withTemporaryContext(new CapturedContext(exampleInstance, null), () ->
+      QContext.withTemporaryContext(new CapturedContext(MetaDataSpecUtils.getExampleInstance(), null), () ->
       {
-         QContext.withTemporaryContext(new CapturedContext(exampleInstance, new QSystemUserSession()), () ->
+         QContext.withTemporaryContext(new CapturedContext(MetaDataSpecUtils.getExampleInstance(), new QSystemUserSession()), () ->
          {
             try
             {
@@ -272,17 +199,6 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
          MetaDataResponseV1.class.getSimpleName(),
          examples
       );
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
-   public void handleOutput(Context context, MetaDataResponseV1 output) throws Exception
-   {
-      context.result(JsonUtils.toJson(output));
    }
 
 }

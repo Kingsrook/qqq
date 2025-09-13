@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,8 +42,8 @@ class QRecordWithJoinedRecordsTest extends BaseTest
    @Test
    void test()
    {
-      QRecord order = new QRecord().withValue("id", 1).withValue("orderNo", "101").withValue("orderDate", LocalDate.of(2025, Month.JANUARY, 1));
-      QRecord lineItem = new QRecord().withValue("id", 2).withValue("sku", "ABC").withValue("quantity", 47);
+      QRecord order     = new QRecord().withValue("id", 1).withValue("orderNo", "101").withValue("orderDate", LocalDate.of(2025, Month.JANUARY, 1));
+      QRecord lineItem  = new QRecord().withValue("id", 2).withValue("sku", "ABC").withValue("quantity", 47);
       QRecord extrinsic = new QRecord().withValue("id", 3).withValue("key", "MyKey").withValue("value", "MyValue");
 
       QRecordWithJoinedRecords joinedRecords = new QRecordWithJoinedRecords(order);
@@ -71,6 +72,33 @@ class QRecordWithJoinedRecordsTest extends BaseTest
       joinedRecords.setValue("shipToCity", "St. Louis");
       assertEquals("St. Louis", joinedRecords.getValue("shipToCity"));
       assertEquals("St. Louis", order.getValue("shipToCity"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBuildCrossProduct()
+   {
+      QRecord order = new QRecord().withValue("id", 1).withValue("orderNo", "101").withValue("orderDate", LocalDate.of(2025, Month.JANUARY, 1));
+      List<QRecord> lineItems = List.of(
+         new QRecord().withValue("id", 2).withValue("sku", "ABC").withValue("quantity", 47),
+         new QRecord().withValue("id", 3).withValue("sku", "DEF").withValue("quantity", 42),
+         new QRecord().withValue("id", 4).withValue("sku", "XYZ").withValue("quantity", 1024)
+      );
+
+      QRecordWithJoinedRecords joinedRecords = new QRecordWithJoinedRecords(order);
+      List<QRecordWithJoinedRecords> crossProduct = joinedRecords.buildCrossProduct("lineItem", lineItems);
+      assertEquals(3, crossProduct.size());
+      assertEquals("101", crossProduct.get(0).getValue("orderNo"));
+      assertEquals("ABC", crossProduct.get(0).getValue("lineItem.sku"));
+      assertEquals("101", crossProduct.get(1).getValue("orderNo"));
+      assertEquals("DEF", crossProduct.get(1).getValue("lineItem.sku"));
+      assertEquals("101", crossProduct.get(2).getValue("orderNo"));
+      assertEquals("XYZ", crossProduct.get(2).getValue("lineItem.sku"));
+
    }
 
 }

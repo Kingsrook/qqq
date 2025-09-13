@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables.cache;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -30,8 +31,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class CacheUseCase
+public class CacheUseCase implements Cloneable
 {
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -255,6 +257,45 @@ public class CacheUseCase
    {
       this.doCopySourcePrimaryKeyToCache = doCopySourcePrimaryKeyToCache;
       return (this);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public CacheUseCase clone()
+   {
+      try
+      {
+         CacheUseCase clone = (CacheUseCase) super.clone();
+
+         if(cacheUniqueKey != null)
+         {
+            clone.cacheUniqueKey = cacheUniqueKey.clone();
+         }
+
+         if(sourceUniqueKey != null)
+         {
+            clone.sourceUniqueKey = sourceUniqueKey.clone();
+         }
+
+         if(excludeRecordsMatching != null)
+         {
+            clone.excludeRecordsMatching = new ArrayList<>();
+            for(QQueryFilter filter : excludeRecordsMatching)
+            {
+               clone.excludeRecordsMatching.add(filter.clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 }

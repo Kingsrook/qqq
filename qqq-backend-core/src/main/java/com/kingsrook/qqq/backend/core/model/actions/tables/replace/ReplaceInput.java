@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.replace;
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.ActionFlag;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -39,11 +42,13 @@ public class ReplaceInput extends AbstractTableActionInput
    private UniqueKey           key;
    private List<QRecord>       records;
    private QQueryFilter        filter;
-   private boolean performDeletes                 = true;
-   private boolean allowNullKeyValuesToEqual      = false;
-   private boolean setPrimaryKeyInInsertedRecords = false;
+   private boolean             performDeletes                 = true;
+   private boolean             allowNullKeyValuesToEqual      = false;
+   private boolean             setPrimaryKeyInInsertedRecords = false;
 
    private boolean omitDmlAudit = false;
+
+   private Set<ActionFlag> flags;
 
 
 
@@ -301,6 +306,67 @@ public class ReplaceInput extends AbstractTableActionInput
    {
       this.setPrimaryKeyInInsertedRecords = setPrimaryKeyInInsertedRecords;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for flags
+    *******************************************************************************/
+   public Set<ActionFlag> getFlags()
+   {
+      return (this.flags);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for flags
+    *******************************************************************************/
+   public void setFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for flags
+    *******************************************************************************/
+   public ReplaceInput withFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public ReplaceInput withFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         this.flags = new HashSet<>();
+      }
+      this.flags.add(flag);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public boolean hasFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         return (false);
+      }
+
+      return (this.flags.contains(flag));
    }
 
 }

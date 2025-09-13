@@ -67,7 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for full bulk insert process
  *******************************************************************************/
-class BulkInsertFullProcessTest extends BaseTest
+public class BulkInsertFullProcessTest extends BaseTest
 {
    private static final String defaultEmail = "noone@kingsrook.com";
 
@@ -125,7 +125,7 @@ class BulkInsertFullProcessTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void test() throws Exception
+   public void test() throws Exception
    {
       assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
 
@@ -224,7 +224,7 @@ class BulkInsertFullProcessTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSummaryLinePrimaryKeys() throws Exception
+   public void testSummaryLinePrimaryKeys() throws Exception
    {
       assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
       QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
@@ -267,7 +267,7 @@ class BulkInsertFullProcessTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSummaryLineErrors() throws Exception
+   public void testSummaryLineErrors() throws Exception
    {
       assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
       QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
@@ -304,7 +304,7 @@ class BulkInsertFullProcessTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testOneRow() throws Exception
+   public void testOneRow() throws Exception
    {
       ///////////////////////////////////////
       // make sure table is empty to start //

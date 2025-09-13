@@ -33,6 +33,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
  *******************************************************************************/
 public class Order extends QRecordEntity
 {
+   public static final String TABLE_NAME = "order";
+
    @QField()
    private String orderNo;
 

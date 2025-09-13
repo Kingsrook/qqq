@@ -246,6 +246,7 @@ public class DeleteAction
       {
          DMLAuditInput dmlAuditInput = new DMLAuditInput()
             .withTableActionInput(deleteInput)
+            .withTransaction(deleteInput.getTransaction())
             .withAuditContext(deleteInput.getAuditContext());
          oldRecordList.ifPresent(l -> dmlAuditInput.setRecordList(l));
          new DMLAuditAction().execute(dmlAuditInput);
@@ -401,6 +402,7 @@ public class DeleteAction
          if(CollectionUtils.nullSafeHasContents(associatedKeys))
          {
             DeleteInput nextLevelDeleteInput = new DeleteInput();
+            nextLevelDeleteInput.setFlags(deleteInput.getFlags());
             nextLevelDeleteInput.setTransaction(deleteInput.getTransaction());
             nextLevelDeleteInput.setTableName(association.getAssociatedTableName());
             nextLevelDeleteInput.setPrimaryKeys(associatedKeys);

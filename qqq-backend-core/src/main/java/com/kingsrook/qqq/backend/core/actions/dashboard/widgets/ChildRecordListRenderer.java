@@ -24,12 +24,15 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 import java.io.Serializable;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.google.gson.reflect.TypeToken;
+import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractHTMLWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -40,11 +43,13 @@ import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -65,6 +70,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -176,6 +182,18 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          return (this);
       }
 
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withOmitFieldNames(List<String> omitFieldNames)
+      {
+         ArrayList<String> arrayList = CollectionUtils.useOrWrap(omitFieldNames, new TypeToken<>() {});
+         widgetMetaData.withDefaultValue("omitFieldNames", arrayList);
+         return (this);
+      }
+
    }
 
 
@@ -195,14 +213,25 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          QTableMetaData leftTable   = QContext.getQInstance().getTable(join.getLeftTable());
          QTableMetaData rightTable  = QContext.getQInstance().getTable(join.getRightTable());
 
+         Map<String, Serializable> widgetMetaDataDefaultValues = input.getWidgetMetaData().getDefaultValues();
+         List<String>              omitFieldNames              = (List<String>) widgetMetaDataDefaultValues.get("omitFieldNames");
+         if(omitFieldNames == null)
+         {
+            omitFieldNames = new ArrayList<>();
+         }
+         else
+         {
+            omitFieldNames = new MutableList<>(omitFieldNames);
+         }
+
          Integer maxRows = null;
          if(StringUtils.hasContent(input.getQueryParams().get("maxRows")))
          {
             maxRows = ValueUtils.getValueAsInteger(input.getQueryParams().get("maxRows"));
          }
-         else if(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"))
+         else if(widgetMetaDataDefaultValues.containsKey("maxRows"))
          {
-            maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().get("maxRows"));
+            maxRows = ValueUtils.getValueAsInteger(widgetMetaDataDefaultValues.get("maxRows"));
          }
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -234,8 +263,19 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             for(JoinOn joinOn : join.getJoinOns())
             {
                filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, List.of(primaryRecord.getValue(joinOn.getLeftField()))));
+               omitFieldNames.add(joinOn.getRightField());
             }
-            filter.setOrderBys(join.getOrderBys());
+
+            Serializable orderBy = widgetMetaDataDefaultValues.get("orderBy");
+            if(orderBy instanceof List orderByList && !orderByList.isEmpty() && orderByList.get(0) instanceof QFilterOrderBy)
+            {
+               filter.setOrderBys(orderByList);
+            }
+            else
+            {
+               filter.setOrderBys(join.getOrderBys());
+            }
+
             filter.setLimit(maxRows);
 
             QueryInput queryInput = new QueryInput();
@@ -243,6 +283,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             queryInput.setShouldTranslatePossibleValues(true);
             queryInput.setShouldGenerateDisplayValues(true);
             queryInput.setFilter(filter);
+            queryInput.setInputSource(QInputSource.USER);
             queryOutput = new QueryAction().execute(queryInput);
 
             QValueFormatter.setBlobValuesToDownloadUrls(rightTable, queryOutput.getRecords());
@@ -261,11 +302,23 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             }
          }
 
-         String tablePath   = QContext.getQInstance().getTablePath(rightTable.getName());
-         String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+         String tablePath = QContext.getQInstance().getTablePath(rightTable.getName());
+         if(!AbstractHTMLWidgetRenderer.doesHaveTablePermission(rightTable.getName()))
+         {
+            tablePath = null;
+         }
+         String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), StandardCharsets.UTF_8));
 
          ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, rightTable, tablePath, viewAllLink, totalRows);
+         widgetData.setOmitFieldNames(omitFieldNames);
 
+         //////////////////////////////////////////////////////////////////////////////////////////////////////
+         // todo - think about - should we check if user has permission on the child table here?             //
+         // at first it seems like an obvious "yes" - but - for cases where the child is a managed           //
+         // association (e.g., you're adding children on the parent record's insert/edit screen - in that    //
+         // case would we want to allow adding children even if the child table wasn't directly available?   //
+         // PermissionsHelper.hasTablePermission(input, rightTable.getName(), TablePermissionSubType.INSERT) //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////
          if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("canAddChildRecord"))))
          {
             widgetData.setCanAddChildRecord(true);
@@ -284,11 +337,10 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
 
             widgetData.setDefaultValuesForNewChildRecords(defaultValuesForNewChildRecords);
 
-            Map<String, Serializable> widgetValues = input.getWidgetMetaData().getDefaultValues();
-            if(widgetValues.containsKey("disabledFieldsForNewChildRecords"))
+            if(widgetMetaDataDefaultValues.containsKey("disabledFieldsForNewChildRecords"))
             {
                @SuppressWarnings("unchecked")
-               Set<String> disabledFieldsForNewChildRecords = (Set<String>) widgetValues.get("disabledFieldsForNewChildRecords");
+               Set<String> disabledFieldsForNewChildRecords = (Set<String>) widgetMetaDataDefaultValues.get("disabledFieldsForNewChildRecords");
                widgetData.setDisabledFieldsForNewChildRecords(disabledFieldsForNewChildRecords);
             }
             else
@@ -308,10 +360,10 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
                }
             }
 
-            if(widgetValues.containsKey("defaultValuesForNewChildRecordsFromParentFields"))
+            if(widgetMetaDataDefaultValues.containsKey("defaultValuesForNewChildRecordsFromParentFields"))
             {
                @SuppressWarnings("unchecked")
-               Map<String, String> defaultValuesForNewChildRecordsFromParentFields = (Map<String, String>) widgetValues.get("defaultValuesForNewChildRecordsFromParentFields");
+               Map<String, String> defaultValuesForNewChildRecordsFromParentFields = (Map<String, String>) widgetMetaDataDefaultValues.get("defaultValuesForNewChildRecordsFromParentFields");
                widgetData.setDefaultValuesForNewChildRecordsFromParentFields(defaultValuesForNewChildRecordsFromParentFields);
             }
          }

@@ -28,10 +28,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.ExamplePersonalizer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -39,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -50,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -843,4 +849,62 @@ class UpdateActionTest extends BaseTest
          assertThat(initialModifyDate).isEqualTo(newModifyDate);
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPersonalization() throws QException
+   {
+      String userWithPesonalizedTable    = "jdoe";
+      String userWithoutPesonalizedTable = "jkirk";
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // for one user, add short max-length to lastName, and isRequired to noOfShoes //
+      /////////////////////////////////////////////////////////////////////////////////
+      ExamplePersonalizer.registerInQInstance();
+      ExamplePersonalizer.addCustomizableTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      ExamplePersonalizer.addFieldToAddForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY,
+         QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getField("lastName").clone().withMaxLength(6).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS),
+         userWithPesonalizedTable);
+      ExamplePersonalizer.addFieldToAddForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY,
+         QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getField("noOfShoes").clone().withIsRequired(true),
+         userWithPesonalizedTable);
+
+      InsertOutput insertOutput = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("lastName", "Smith")));
+      Integer      id           = insertOutput.getRecords().get(0).getValueInteger("id");
+
+      ///////////////////////////////////////////////////////////////
+      // ensure default behaviors for user without personalization //
+      ///////////////////////////////////////////////////////////////
+      QContext.getQSession().getUser().setIdReference(userWithoutPesonalizedTable);
+      new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Simpson")).withInputSource(QInputSource.USER));
+      assertEquals("Simpson", insertOutput.getRecords().get(0).getValueString("lastName"));
+
+      //////////////////////////////////////////////////////////////////////////////
+      // now as personalized user - first get an error for missing required value //
+      //////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().getUser().setIdReference(userWithPesonalizedTable);
+      UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Jefferson").withValue("noOfShoes", null)).withInputSource(QInputSource.USER));
+      assertThat(updateOutput.getRecords().get(0).getErrorsAsString()).contains("Missing value in required field: No Of Shoes");
+
+      ///////////////////////////////////////////////////////
+      // try again, and let it work and see name truncated //
+      ///////////////////////////////////////////////////////
+      updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("lastName", "Jefferson").withValue("noOfShoes", 3)).withInputSource(QInputSource.USER));
+      assertThat(updateOutput.getRecords().get(0).getErrors()).isNullOrEmpty();
+      assertEquals("Jef...", insertOutput.getRecords().get(0).getValueString("lastName"));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now remove a field from the table for that user - then make sure values in that field don't get set. //
+      // note, this detail is handled in the backend module.                                                  //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ExamplePersonalizer.addFieldToRemoveForUserId(TestUtils.TABLE_NAME_PERSON_MEMORY, "cost", userWithPesonalizedTable);
+      new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecord(new QRecord().withValue("id", id).withValue("cost", new BigDecimal("3.50"))).withInputSource(QInputSource.USER));
+      QRecord updatedRecord = new GetAction().executeForRecord(new GetInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withPrimaryKey(id));
+      assertNull(updatedRecord.getValue("cost"));
+   }
+
 }

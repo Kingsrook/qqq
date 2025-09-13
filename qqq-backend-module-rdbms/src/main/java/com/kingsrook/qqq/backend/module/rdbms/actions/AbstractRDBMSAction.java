@@ -111,7 +111,7 @@ public abstract class AbstractRDBMSAction
     **
     ** That is, table.backendDetails.tableName if set -- else, table.name
     *******************************************************************************/
-   protected String getTableName(QTableMetaData table)
+   public static String getTableName(QTableMetaData table)
    {
       if(table.getBackendDetails() instanceof RDBMSTableBackendDetails details)
       {
@@ -130,7 +130,7 @@ public abstract class AbstractRDBMSAction
     **
     ** That is, field.backendName if set -- else, field.name
     *******************************************************************************/
-   protected String getColumnName(QFieldMetaData field)
+   public static String getColumnName(QFieldMetaData field)
    {
       if(field.getBackendName() != null)
       {

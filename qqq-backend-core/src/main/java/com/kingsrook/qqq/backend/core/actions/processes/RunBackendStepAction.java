@@ -198,10 +198,10 @@ public class RunBackendStepAction
             //////////////////////////////////////////////////
             // look for record ids in the input data values //
             //////////////////////////////////////////////////
-            String recordIds = (String) runBackendStepInput.getValue("recordIds");
+            String recordIds = runBackendStepInput.getValueString("recordIds");
             if(recordIds == null)
             {
-               recordIds = (String) runBackendStepInput.getValue("recordId");
+               recordIds = runBackendStepInput.getValueString("recordId");
             }
 
             ///////////////////////////////////////////////////////////
@@ -238,6 +238,14 @@ public class RunBackendStepAction
                }
 
                queryInput.getFilter().setLimit(process.getMaxInputRecords() + 1);
+            }
+
+            /////////////////////////////////////////////////////////////////////////////////
+            // allow callback to customize the query input just here before the query runs //
+            /////////////////////////////////////////////////////////////////////////////////
+            if(runBackendStepInput.getCallback() != null)
+            {
+               runBackendStepInput.getCallback().customizeInputPreQuery(runBackendStepInput, queryInput);
             }
 
             QueryOutput queryOutput = new QueryAction().execute(queryInput);

@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
 /*******************************************************************************
@@ -557,27 +558,55 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
     ******************************************************************************/
    public void interpretValues(Map<String, Serializable> inputValues) throws QException
    {
-      interpretValues(inputValues, FilterUseCase.DEFAULT);
+      interpretValues(FilterUseCase.DEFAULT, inputValues);
    }
 
 
 
    /*******************************************************************************
     ** Replace any criteria values that look like ${input.XXX} with the value of XXX
-    ** from the supplied inputValues map - where the handling of missing values
+    ** from the supplied inputValues map.
+    **
+    ** Note - it may be very important that you call this method on a clone of a
+    ** QQueryFilter - e.g., if it's one that defined in metaData, and that we don't
+    ** want to be (permanently) changed!!
+    **
+    ******************************************************************************/
+   @Deprecated(since = "0.27 when overload that takes multiple value maps was introduced")
+   public void interpretValues(FilterUseCase useCase, Map<String, Serializable> inputValues) throws QException
+   {
+      interpretValues(MapBuilder.of("input", inputValues), useCase);
+   }
+
+
+
+   /*******************************************************************************
+    ** Replace any criteria values that look like ${input.XXX} with the value of XXX
+    ** from the supplied valueMap map - where the handling of missing values
     ** is specified in the inputted FilterUseCase parameter
+    **
+    ** input values is a map of maps, so that more than one 'inputValue' map can be used
+    ** e.g. MapBuilder.of("input", valueMap, "processValues", processValues)
     **
     ** Note - it may be very important that you call this method on a clone of a
     ** QQueryFilter - e.g., if it's one that defined in metaData, and that we don't
     ** want to be (permanently) changed!!
     **
     *******************************************************************************/
-   public void interpretValues(Map<String, Serializable> inputValues, FilterUseCase useCase) throws QException
+   public void interpretValues(Map<String, Map<String, Serializable>> valueMap, FilterUseCase useCase) throws QException
    {
-      List<Exception> caughtExceptions = new ArrayList<>();
+      List<Exception>           caughtExceptions = new ArrayList<>();
+      Map<String, Serializable> inputValues      = valueMap.getOrDefault("input", new HashMap<>());
 
+      ////////////////////////////////////////////////////////////////////////////
+      // if process values were passed in, add those to the interpreter as well //
+      ////////////////////////////////////////////////////////////////////////////
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
-      variableInterpreter.addValueMap("input", inputValues);
+      for(String mapName : valueMap.keySet())
+      {
+         variableInterpreter.addValueMap(mapName, valueMap.get(mapName));
+      }
+
       for(QFilterCriteria criterion : getCriteria())
       {
          if(criterion.getValues() != null)
@@ -624,11 +653,12 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
                      interpretedValue = variableInterpreter.interpretForObject(valueAsString, InputNotFound.instance);
                   }
 
-                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  // if interpreting a value returned the not-found value, or an empty string,                                            //
-                  // then decide how to handle the missing value, based on the use-case input                                             //
-                  // Note: questionable, using "" here, but that's what reality is passing a lot for cases we want to treat as missing... //
-                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  /////////////////////////////////////////////////////////////////////////////////
+                  // if interpreting a value returned the not-found value, or an empty string,   //
+                  // then decide how to handle the missing value, based on the use-case input    //
+                  // Note: questionable, using "" here, but that's what reality is passing a lot //
+                  // for cases we want to treat as missing...                                    //
+                  /////////////////////////////////////////////////////////////////////////////////
                   if(interpretedValue == InputNotFound.instance || "".equals(interpretedValue))
                   {
                      CriteriaMissingInputValueBehavior missingInputValueBehavior = getMissingInputValueBehavior(useCase);
@@ -656,6 +686,21 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
                }
             }
             criterion.setValues(newValues);
+         }
+      }
+
+      //////////////////////////////////////
+      // recursively process sub filters! //
+      //////////////////////////////////////
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(getSubFilters()))
+      {
+         try
+         {
+            subFilter.interpretValues(useCase, inputValues);
+         }
+         catch(Exception e)
+         {
+            caughtExceptions.add(e);
          }
       }
 
@@ -824,6 +869,7 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
    }
 
 
+
    /*******************************************************************************
     ** Getter for subFilterSetOperator
     *******************************************************************************/
@@ -852,6 +898,7 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
       this.subFilterSetOperator = subFilterSetOperator;
       return (this);
    }
+
 
 
    /***************************************************************************

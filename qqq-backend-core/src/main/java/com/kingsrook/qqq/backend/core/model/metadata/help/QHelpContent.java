@@ -26,10 +26,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 
 
 /*******************************************************************************
- ** meta-data defintion of "Help Content" to show to a user - for use in
+ ** meta-data definition of "Help Content" to show to a user - for use in
  ** a specific "role" (e.g., insert screens but not view screens), and in a
  ** particular "format" (e.g., plain text, html, markdown).
  **
@@ -42,11 +45,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
  ** May be dynamically added to meta-data via (non-meta-) data - see
  ** HelpContentMetaDataProvider and QInstanceHelpContentManager
  *******************************************************************************/
-public class QHelpContent implements QMetaDataObject
+public class QHelpContent implements QMetaDataObject, Cloneable
 {
    private String        content;
    private HelpFormat    format;
    private Set<HelpRole> roles;
+
+   ////////////////////////////////////
+   // these appear to be thread safe //
+   ////////////////////////////////////
+   private static Parser       commonMarkParser   = Parser.builder().build();
+   private static HtmlRenderer commonMarkRenderer = HtmlRenderer.builder().build();
 
 
 
@@ -67,6 +76,38 @@ public class QHelpContent implements QMetaDataObject
    public QHelpContent(String content)
    {
       setContent(content);
+   }
+
+
+
+   /***************************************************************************
+    * Return the content as html string, based on its format.
+    * Only MARKDOWN actually gets processed (via commonmark) - but TEXT and
+    * HTML come out as-is.
+    ***************************************************************************/
+   public String getContentAsHtml()
+   {
+      if(content == null)
+      {
+         return (null);
+      }
+
+      if(HelpFormat.MARKDOWN.equals(this.format))
+      {
+         //////////////////////////////
+         // convert markdown to HTML //
+         //////////////////////////////
+         Node   document = commonMarkParser.parse(content);
+         String html     = commonMarkRenderer.render(document);
+         return (html);
+      }
+      else
+      {
+         ///////////////////////////////////////////////////
+         // other formats (html & text) just output as-is //
+         ///////////////////////////////////////////////////
+         return (content);
+      }
    }
 
 
@@ -230,4 +271,28 @@ public class QHelpContent implements QMetaDataObject
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public QHelpContent clone()
+   {
+      try
+      {
+         QHelpContent clone = (QHelpContent) super.clone();
+
+         if(roles != null)
+         {
+            clone.roles = new HashSet<>(roles);
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

@@ -22,17 +22,23 @@
 package com.kingsrook.qqq.api.model.actions;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class GetTableApiFieldsInput extends AbstractActionInput
+public class GetTableApiFieldsInput extends AbstractTableActionInput
 {
    private String apiName;
-   private String tableName;
    private String version;
+
+   /////////////////////////////////////////////////////////////////////////////////////
+   // by default, this action will throw if the input table isn't in the api version. //
+   // but, to preserve legacy behavior where that didn't happen, allow this input.    //
+   /////////////////////////////////////////////////////////////////////////////////////
+   private Boolean doCheckTableApiVersion = true;
 
 
 
@@ -68,31 +74,11 @@ public class GetTableApiFieldsInput extends AbstractActionInput
 
 
    /*******************************************************************************
-    ** Getter for tableName
-    *******************************************************************************/
-   public String getTableName()
-   {
-      return (this.tableName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tableName
-    *******************************************************************************/
-   public void setTableName(String tableName)
-   {
-      this.tableName = tableName;
-   }
-
-
-
-   /*******************************************************************************
     ** Fluent setter for tableName
     *******************************************************************************/
    public GetTableApiFieldsInput withTableName(String tableName)
    {
-      this.tableName = tableName;
+      super.withTableName(tableName);
       return (this);
    }
 
@@ -127,4 +113,46 @@ public class GetTableApiFieldsInput extends AbstractActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for doCheckTableApiVersion
+    *******************************************************************************/
+   public Boolean getDoCheckTableApiVersion()
+   {
+      return (this.doCheckTableApiVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for doCheckTableApiVersion
+    *******************************************************************************/
+   public void setDoCheckTableApiVersion(Boolean doCheckTableApiVersion)
+   {
+      this.doCheckTableApiVersion = doCheckTableApiVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for doCheckTableApiVersion
+    *******************************************************************************/
+   public GetTableApiFieldsInput withDoCheckTableApiVersion(Boolean doCheckTableApiVersion)
+   {
+      this.doCheckTableApiVersion = doCheckTableApiVersion;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public GetTableApiFieldsInput withInputSource(InputSource inputSource)
+   {
+      super.withInputSource(inputSource);
+      return (this);
+   }
 }

@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-middleware-javalin</artifactId>
+   <name>QQQ Middleware - Javalin</name>
+   <description>Javalin middleware for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
@@ -124,6 +126,18 @@
       <plugins>
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.5.3</version>
+            <configuration>
+               <additionalClasspathElements>
+                  <additionalClasspathElement>
+                     ${project.basedir}/src/test/resources/static-site.jar
+                  </additionalClasspathElement>
+               </additionalClasspathElements>
+            </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.10.1</version>
             <configuration>
@@ -161,6 +175,18 @@
                   </program>
                </programs>
             </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <version>3.4.2</version>
+            <executions>
+               <execution>
+                  <goals>
+                     <goal>test-jar</goal>
+                  </goals>
+               </execution>
+            </executions>
          </plugin>
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>

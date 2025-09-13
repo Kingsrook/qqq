@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
@@ -68,10 +69,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class PermissionsHelperTest extends BaseTest
 {
-   private static final String TABLE_NAME   = "testTable";
-   private static final String PROCESS_NAME = "testProcess";
-   private static final String REPORT_NAME  = "testReport";
-   private static final String WIDGET_NAME  = "testWidget";
+   static final String TABLE_NAME   = "testTable";
+   static final String PROCESS_NAME = "testProcess";
+   static final String APP_NAME     = "testApp";
+   static final String REPORT_NAME  = "testReport";
+   static final String WIDGET_NAME  = "testWidget";
 
 
 
@@ -430,6 +432,73 @@ class PermissionsHelperTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testAppNoPermissionsMetaDataMeansFullAccess() throws QPermissionDeniedException
+   {
+      QInstance instance = newQInstance();
+      enrich(instance);
+
+      QSession session = new QSession();
+      QContext.setQSession(session);
+
+      AbstractActionInput actionInput = new AbstractActionInput();
+      assertTrue(PermissionsHelper.hasAppPermission(actionInput, APP_NAME));
+      PermissionsHelper.checkAppPermissionThrowing(actionInput, APP_NAME);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppWithHasAccessLevelAndWithoutPermission()
+   {
+      QInstance instance = newQInstance();
+      instance.getApp(APP_NAME)
+         .setPermissionRules(new QPermissionRules()
+            .withLevel(PermissionLevel.HAS_ACCESS_PERMISSION)
+            .withDenyBehavior(DenyBehavior.DISABLED)
+         );
+      enrich(instance);
+
+      QSession session = new QSession();
+      QContext.setQSession(session);
+
+      AbstractActionInput actionInput = new AbstractActionInput();
+      assertFalse(PermissionsHelper.hasAppPermission(actionInput, APP_NAME));
+      assertThatThrownBy(() -> PermissionsHelper.checkAppPermissionThrowing(actionInput, APP_NAME)).isInstanceOf(QPermissionDeniedException.class);
+      assertEquals(PermissionCheckResult.DENY_DISABLE, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getApp(APP_NAME)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppWithHasAccessLevelAndWithPermission() throws QPermissionDeniedException
+   {
+      QInstance instance = newQInstance();
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
+      instance.getApp(APP_NAME);
+      enrich(instance);
+
+      QSession session = new QSession().withPermission(APP_NAME + ".hasAccess");
+      QContext.setQSession(session);
+
+      AbstractActionInput actionInput = new AbstractActionInput();
+      assertTrue(PermissionsHelper.hasAppPermission(actionInput, APP_NAME));
+      PermissionsHelper.checkAppPermissionThrowing(actionInput, APP_NAME);
+      assertEquals(PermissionCheckResult.ALLOW, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getApp(APP_NAME)));
+   }
+
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testReportWithHasAccessLevel() throws QPermissionDeniedException
    {
       QInstance instance = newQInstance();
@@ -501,7 +570,7 @@ class PermissionsHelperTest extends BaseTest
          instance.setDefaultPermissionRules(new QPermissionRules()
             .withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
          enrich(instance);
-         assertEquals(Set.of(TABLE_NAME + ".hasAccess", PROCESS_NAME + ".hasAccess", REPORT_NAME + ".hasAccess", WIDGET_NAME + ".hasAccess"), PermissionsHelper.getAllAvailablePermissionNames(instance));
+         assertEquals(Set.of(TABLE_NAME + ".hasAccess", PROCESS_NAME + ".hasAccess", REPORT_NAME + ".hasAccess", WIDGET_NAME + ".hasAccess", APP_NAME + ".hasAccess"), PermissionsHelper.getAllAvailablePermissionNames(instance));
       }
    }
 
@@ -510,7 +579,7 @@ class PermissionsHelperTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void enrich(QInstance instance)
+   static void enrich(QInstance instance)
    {
       reInitInstanceInContext(instance);
       new QInstanceEnricher(instance).enrich();
@@ -519,9 +588,10 @@ class PermissionsHelperTest extends BaseTest
 
 
    /*******************************************************************************
-    **
+    * build a new QInstance with some tables and process convenient for this test
+    * and other tests in this package
     *******************************************************************************/
-   private QInstance newQInstance()
+   static QInstance newQInstance()
    {
       QInstance qInstance = new QInstance();
 
@@ -544,6 +614,9 @@ class PermissionsHelperTest extends BaseTest
             .withCode(new QCodeReference(RunProcessTest.NoopBackendStep.class))
             .withName("noop")
          )));
+
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME));
 
       qInstance.addReport(new QReportMetaData()
          .withName(REPORT_NAME)
@@ -580,7 +653,7 @@ class PermissionsHelperTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void assertFullTableAccess(QInstance instance, QSession session) throws QPermissionDeniedException
+   static void assertFullTableAccess(QInstance instance, QSession session) throws QPermissionDeniedException
    {
       QContext.setQSession(session);
       AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
@@ -599,7 +672,7 @@ class PermissionsHelperTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void assertNoTableAccess(QInstance instance, QSession session)
+   static void assertNoTableAccess(QInstance instance, QSession session)
    {
       QContext.setQSession(session);
       AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);

@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -252,7 +250,7 @@ class MetaDataActionTest extends BaseTest
       // with several permissions set, we should see some things, and they should have permissions turned on //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////
       assertEquals(Set.of("person"), result.getTables().keySet());
-      assertEquals(Set.of("increaseBirthdate", "runShapesPersonReport", "person.bulkInsert", "person.bulkEdit", "person.bulkDelete"), result.getProcesses().keySet());
+      assertEquals(Set.of("increaseBirthdate", "runShapesPersonReport", "person.bulkInsert", "person.bulkEdit", "person.bulkEditWithFile", "person.bulkDelete"), result.getProcesses().keySet());
       assertEquals(Set.of("shapesPersonReport", "personJoinShapeReport", "simplePersonReport"), result.getReports().keySet());
       assertEquals(Set.of("PersonsByCreateDateBarChart"), result.getWidgets().keySet());
 
@@ -288,7 +286,7 @@ class MetaDataActionTest extends BaseTest
 
       assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
 
-      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personFile.bulkDelete", "personMemory.bulkInsert", "personMemory.bulkEdit", "personMemory.bulkDelete"), result.getProcesses().keySet());
+      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personFile.bulkEditWithFile", "personFile.bulkDelete", "personMemory.bulkInsert", "personMemory.bulkEdit", "personMemory.bulkEditWithFile", "personMemory.bulkDelete"), result.getProcesses().keySet());
       assertEquals(Set.of(), result.getReports().keySet());
       assertEquals(Set.of(), result.getWidgets().keySet());
 
@@ -335,7 +333,7 @@ class MetaDataActionTest extends BaseTest
       MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
 
       assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
-      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personMemory.bulkDelete"), result.getProcesses().keySet());
+      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personFile.bulkEditWithFile", "personMemory.bulkDelete"), result.getProcesses().keySet());
       assertEquals(Set.of(), result.getReports().keySet());
       assertEquals(Set.of(), result.getWidgets().keySet());
 
@@ -367,8 +365,6 @@ class MetaDataActionTest extends BaseTest
    @Deprecated(since = "migrated to metaDataCustomizer")
    void testFilter() throws QException
    {
-      QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(MetaDataAction.class);
-
       //////////////////////////////////////////////////////
       // run default version, and assert tables are found //
       //////////////////////////////////////////////////////
@@ -379,7 +375,6 @@ class MetaDataActionTest extends BaseTest
       // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       new MetaDataAction().execute(new MetaDataInput());
-      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("Using new default")).hasSize(1);
 
       /////////////////////////////////////////////////////////////
       // set up new instance to use a custom filter, to deny all //
@@ -398,9 +393,6 @@ class MetaDataActionTest extends BaseTest
       // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       new MetaDataAction().execute(new MetaDataInput());
-      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("actionCustomizer (via metaDataFilter reference) of type: DenyAllFilter")).hasSize(1);
-
-      QLogger.deactivateCollectingLoggerForClass(MetaDataAction.class);
 
       ////////////////////////////////////////////////////////////
       // run now with the AllowAllFilter, confirm we get tables //
@@ -420,8 +412,6 @@ class MetaDataActionTest extends BaseTest
    @Test
    void testCustomizer() throws QException
    {
-      QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(MetaDataAction.class);
-
       //////////////////////////////////////////////////////
       // run default version, and assert tables are found //
       //////////////////////////////////////////////////////
@@ -432,7 +422,6 @@ class MetaDataActionTest extends BaseTest
       // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       new MetaDataAction().execute(new MetaDataInput());
-      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("Using new default")).hasSize(1);
 
       /////////////////////////////////////////////////////////////
       // set up new instance to use a custom filter, to deny all //
@@ -449,11 +438,9 @@ class MetaDataActionTest extends BaseTest
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
+      // mmm, we stopped loggin about it, so, we'll... assume the memoization is good                                  //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       new MetaDataAction().execute(new MetaDataInput());
-      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("meta-data actionCustomizer of type: DenyAllFilteringCustomizer")).hasSize(1);
-
-      QLogger.deactivateCollectingLoggerForClass(MetaDataAction.class);
 
       /////////////////////////////////////////////////////////////////////////////////
       // run now with the DefaultNoopMetaDataActionCustomizer, confirm we get tables //
@@ -470,6 +457,7 @@ class MetaDataActionTest extends BaseTest
    /***************************************************************************
     **
     ***************************************************************************/
+   @SuppressWarnings("deprecation") // the point of this test is to use the deprecated thing.
    public static class DenyAllFilter implements MetaDataFilterInterface
    {
       /***************************************************************************

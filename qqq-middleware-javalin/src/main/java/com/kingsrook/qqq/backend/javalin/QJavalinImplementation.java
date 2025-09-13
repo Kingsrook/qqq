@@ -80,6 +80,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInpu
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
@@ -1021,6 +1022,7 @@ public class QJavalinImplementation
          QJavalinAccessLogger.logStart("get", logPair("table", tableName), logPair("primaryKey", primaryKey));
 
          getInput.setTableName(tableName);
+         getInput.setInputSource(QInputSource.USER);
          getInput.setShouldGenerateDisplayValues(true);
          getInput.setShouldTranslatePossibleValues(true);
          getInput.setShouldFetchHeavyFields(true);
@@ -1366,7 +1368,7 @@ public class QJavalinImplementation
 
          if(queryInput.getFilter() == null || queryInput.getFilter().getLimit() == null)
          {
-            handleQueryNullLimit(context, queryInput);
+            QJavalinUtils.handleQueryNullLimit(javalinMetaData, queryInput, context);
          }
 
          List<QueryJoin> queryJoins = processQueryJoinsParam(context);
@@ -1384,28 +1386,6 @@ public class QJavalinImplementation
       {
          QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
          handleException(context, e);
-      }
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private static void handleQueryNullLimit(Context context, QueryInput queryInput)
-   {
-      boolean allowed = javalinMetaData.getQueryWithoutLimitAllowed();
-      if(!allowed)
-      {
-         if(queryInput.getFilter() == null)
-         {
-            queryInput.setFilter(new QQueryFilter());
-         }
-
-         queryInput.getFilter().setLimit(javalinMetaData.getQueryWithoutLimitDefault());
-         LOG.log(javalinMetaData.getQueryWithoutLimitLogLevel(), "Query request did not specify a limit, which is not allowed.  Using default instead", null,
-            logPair("defaultLimit", javalinMetaData.getQueryWithoutLimitDefault()),
-            logPair("path", context.path()));
       }
    }
 
@@ -1508,6 +1488,8 @@ public class QJavalinImplementation
          }
 
          tableMetaDataInput.setTableName(tableName);
+         tableMetaDataInput.setInputSource(QInputSource.USER);
+
          TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
          TableMetaDataOutput tableMetaDataOutput = tableMetaDataAction.execute(tableMetaDataInput);
 
@@ -1640,6 +1622,7 @@ public class QJavalinImplementation
          setupSession(context, exportInput);
 
          exportInput.setTableName(tableName);
+         exportInput.setInputSource(QInputSource.USER);
 
          String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
          exportInput.withReportDestination(new ReportDestination()
@@ -1661,6 +1644,12 @@ public class QJavalinImplementation
          if(StringUtils.hasContent(filter))
          {
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+         }
+
+         String omitHeaderRow = QJavalinUtils.getQueryParamOrFormParam(context, "omitHeaderRow");
+         if("true".equals(omitHeaderRow))
+         {
+            exportInput.setIncludeHeaderRow(false);
          }
 
          UnsafeFunction<PipedOutputStream, ExportAction, Exception> preAction = (PipedOutputStream pos) ->
@@ -1870,13 +1859,31 @@ public class QJavalinImplementation
       {
          String possibleValueSourceName = context.pathParam("possibleValueSourceName");
 
+         Map<String, Serializable> otherValues = getOtherValueForPossibleValueRequest(context);
+
          QPossibleValueSource pvs = qInstance.getPossibleValueSource(possibleValueSourceName);
          if(pvs == null)
          {
             throw (new QNotFoundException("Could not find possible value source " + possibleValueSourceName + " in this instance."));
          }
 
-         finishPossibleValuesRequest(context, possibleValueSourceName, null);
+         //////////////////////////////////////////////////
+         // allow a filter to be passed in from frontend //
+         //////////////////////////////////////////////////
+         QQueryFilter defaultQueryFilter = null;
+         List<String> filterParam        = context.formParamMap().get("filter");
+         if(CollectionUtils.nullSafeHasContents(filterParam))
+         {
+            String possibleValueSourceFilterJSON = filterParam.get(0);
+            defaultQueryFilter = JsonUtils.toObject(possibleValueSourceFilterJSON, QQueryFilter.class);
+
+            String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
+            PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
+
+            defaultQueryFilter.interpretValues(useCase, otherValues);
+         }
+
+         finishPossibleValuesRequest(context, possibleValueSourceName, defaultQueryFilter, otherValues);
       }
       catch(Exception e)
       {
@@ -1891,29 +1898,50 @@ public class QJavalinImplementation
     *******************************************************************************/
    static void finishPossibleValuesRequest(Context context, QFieldMetaData field) throws IOException, QException
    {
-      QQueryFilter defaultQueryFilter = null;
+      QQueryFilter              defaultQueryFilter = null;
+      Map<String, Serializable> otherValues        = getOtherValueForPossibleValueRequest(context);
+
       if(field.getPossibleValueSourceFilter() != null)
       {
-         Map<String, Serializable> values = new HashMap<>();
-         if(context.formParamMap().containsKey("values"))
-         {
-            List<String> valuesParamList = context.formParamMap().get("values");
-            if(CollectionUtils.nullSafeHasContents(valuesParamList))
-            {
-               String valuesParam = valuesParamList.get(0);
-               values = JsonUtils.toObject(valuesParam, new TypeReference<>() {});
-            }
-         }
-
          defaultQueryFilter = field.getPossibleValueSourceFilter().clone();
 
          String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
          PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-         defaultQueryFilter.interpretValues(values, useCase);
+         Map<String, Serializable> processValues = new HashMap<>();
+         if(context.queryParamMap().containsKey("processUUID") && StringUtils.hasContent(context.queryParam("processUUID")))
+         {
+            Optional<ProcessState> processState = RunProcessAction.getState(context.queryParam("processUUID"));
+            if(processState.isPresent())
+            {
+               processValues = processState.get().getValues();
+            }
+         }
+
+         defaultQueryFilter.interpretValues(MapBuilder.of("input", otherValues, "processValues", processValues), useCase);
       }
 
-      finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter);
+      finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter, otherValues);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static Map<String, Serializable> getOtherValueForPossibleValueRequest(Context context) throws IOException
+   {
+      Map<String, Serializable> otherValues = new HashMap<>();
+      if(context.formParamMap().containsKey("values"))
+      {
+         List<String> valuesParamList = context.formParamMap().get("values");
+         if(CollectionUtils.nullSafeHasContents(valuesParamList))
+         {
+            String valuesParam = valuesParamList.get(0);
+            otherValues = JsonUtils.toObject(valuesParam, new TypeReference<>() {});
+         }
+      }
+      return otherValues;
    }
 
 
@@ -1921,21 +1949,30 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws QException
+   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter, Map<String, Serializable> otherValues) throws QException
    {
       String searchTerm = context.queryParam("searchTerm");
       String ids        = context.queryParam("ids");
+      String labels     = context.queryParam("labels");
 
       SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       setupSession(context, input);
       input.setPossibleValueSourceName(possibleValueSourceName);
       input.setSearchTerm(searchTerm);
       input.setDefaultQueryFilter(defaultFilter);
+      input.setOtherValues(otherValues);
+      input.setPathParamMap(context.pathParamMap());
+      input.setQueryParamMap(context.queryParamMap());
 
       if(StringUtils.hasContent(ids))
       {
          List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
          input.setIdList(idList);
+      }
+      else if(StringUtils.hasContent(labels))
+      {
+         List<String> labelList = new ArrayList<>(Arrays.asList(labels.split(",")));
+         input.setLabelList(labelList);
       }
 
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);

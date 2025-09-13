@@ -1,184 +1,53 @@
 version: 2.1
 
 orbs:
-  localstack: localstack/platform@2.1
-  browser-tools: circleci/browser-tools@1.4.7
-
-commands:
-  store_jacoco_site:
-    parameters:
-      module:
-        type: string
-    steps:
-      - store_artifacts:
-          path: << parameters.module >>/target/site/jacoco/index.html
-          when: always
-      - store_artifacts:
-          path: << parameters.module >>/target/site/jacoco/jacoco-resources
-          when: always
-
-  install_java17:
-    steps:
-      - run:
-          name: Install Java 17
-          command: |
-            sudo apt-get update
-            sudo apt install -y openjdk-17-jdk
-            sudo rm /etc/alternatives/java
-            sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
-      - run:
-          ## used by jacoco uncovered class reporting in pom.xml
-          name: Install html2text
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y html2text
-
-  mvn_verify:
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - browser-tools/install-chrome
-      - browser-tools/install-chromedriver
-      - run:
-          name: Write .env
-          command: |
-            echo "RDBMS_PASSWORD=$RDBMS_PASSWORD" >> qqq-sample-project/.env
-      - run:
-          name: Run Maven Verify
-          command: |
-            mvn -s .circleci/mvn-settings.xml -T4 verify
-      - store_jacoco_site:
-          module: qqq-backend-core
-      - store_jacoco_site:
-          module: qqq-backend-module-filesystem
-      - store_jacoco_site:
-          module: qqq-backend-module-rdbms
-      - store_jacoco_site:
-          module: qqq-backend-module-api
-      - store_jacoco_site:
-          module: qqq-middleware-api
-      - store_jacoco_site:
-          module: qqq-middleware-javalin
-      - store_jacoco_site:
-          module: qqq-middleware-picocli
-      - store_jacoco_site:
-          module: qqq-middleware-slack
-      - store_jacoco_site:
-          module: qqq-language-support-javascript
-      - store_jacoco_site:
-          module: qqq-sample-project
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p ~/test-results/junit/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
-          when: always
-      - store_test_results:
-          path: ~/test-results
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "pom.xml" }}
-
-  check_middleware_api_versions:
-      steps:
-        - checkout
-        - restore_cache:
-            keys:
-              - v1-dependencies-{{ checksum "pom.xml" }}
-        - run:
-            name: Build and Run ValidateApiVersions
-            command: |
-              mvn -s .circleci/mvn-settings.xml -T4 install -DskipTests
-              mvn -s .circleci/mvn-settings.xml -pl qqq-middleware-javalin package appassembler:assemble -DskipTests
-              qqq-middleware-javalin/target/appassembler/bin/ValidateApiVersions -r $(pwd)
-
-  mvn_jar_deploy:
-    steps:
-      - checkout
-      - run:
-          name: Adjust pom version
-          command: |
-            .circleci/adjust-pom-version.sh
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run:
-          name: Run Maven Jar Deploy
-          command: |
-            mvn -s .circleci/mvn-settings.xml -T4 flatten:flatten jar:jar deploy:deploy
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "pom.xml" }}
-
-  install_asciidoctor:
-    steps:
-      - checkout
-      - run:
-          name: Install asciidoctor
-          command: |
-            sudo apt-get update
-            sudo apt install -y asciidoctor
-
-  run_asciidoctor:
-    steps:
-      - run:
-          name: Run asciidoctor
-          command: |
-            cd docs
-            asciidoctor -a docinfo=shared index.adoc
-      - store_artifacts:
-          path: docs/index.html
-          when: always
-
-jobs:
-  mvn_test:
-    executor: localstack/default
-    steps:
-      ## - localstack/startup
-      - install_java17
-      - mvn_verify
-      - check_middleware_api_versions
-
-  mvn_deploy:
-    executor: localstack/default
-    steps:
-      ## - localstack/startup
-      - install_java17
-      - mvn_verify
-      - check_middleware_api_versions
-      - mvn_jar_deploy
-
-  publish_asciidoc:
-    executor: localstack/default
-    steps:
-      - install_asciidoctor
-      - run_asciidoctor
+  qqq-orb: kingsrook/qqq-orb@dev:alpha   # or @0.1.0 once you promote
 
 workflows:
+
   test_only:
     jobs:
-      - mvn_test:
+      - qqq-orb/test_only:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              ignore: /(dev|integration.*)/
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
               ignore: /(version|snapshot)-.*/
 
-  deploy:
+  publish_snapshot:
     jobs:
-      - mvn_deploy:
+      - qqq-orb/publish_snapshot:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: /(dev|integration.*)/
-            tags:
-              only: /(version|snapshot)-.*/
-      - publish_asciidoc:
+              only:
+                - develop
+
+  publish_release_candidate:
+    jobs:
+      - qqq-orb/publish_release_candidate:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: /dev/
+              only:
+                - /release\/.*/
+
+  publish_release:
+    jobs:
+      - qqq-orb/publish_release:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: [ main ]
+            tags:
+              only: [ /v.*/ ]
+
+  publish_hotfix_release:
+    jobs:
+      - qqq-orb/publish_hotfix_release:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only:
+                - /hotfix\/.*/

@@ -169,7 +169,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName("greet")
          .withTableName("person")
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())

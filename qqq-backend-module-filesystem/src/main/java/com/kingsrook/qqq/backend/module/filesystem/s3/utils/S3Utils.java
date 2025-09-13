@@ -26,6 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -176,7 +177,7 @@ public class S3Utils
             ///////////////////////////////////////////
             // skip files that do not match the glob //
             ///////////////////////////////////////////
-            if(!pathMatcher.matches(Path.of(URI.create("file:///" + URLEncoder.encode(key)))))
+            if(!pathMatcher.matches(Path.of(URI.create("file:///" + URLEncoder.encode(key, StandardCharsets.UTF_8)))))
             {
                // LOG.debug("Skipping file [{}] that does not match glob [{}]", key, glob);
                continue;

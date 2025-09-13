@@ -25,14 +25,16 @@ package com.kingsrook.qqq.api.actions;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -53,18 +56,23 @@ class QRecordApiAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testNullInputRecord() throws QException
+   {
+      assertNull(QRecordApiAdapter.qRecordToApiMap(null, TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2022_Q4));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQRecordToApiMap() throws QException
    {
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // QRecord has values corresponding to what's defined in the QInstance (and the underlying backend system) //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      QRecord person = new QRecord()
-         .withValue("firstName", "Tim")
-         .withValue("noOfShoes", 2)
-         .withValue("birthDate", LocalDate.of(1980, Month.MAY, 31))
-         .withValue("cost", new BigDecimal("3.50"))
-         .withValue("price", new BigDecimal("9.99"))
-         .withValue("photo", "ABCD".getBytes());
+      QRecord person = TestUtils.getTim2ShoesRecord();
 
       Map<String, Serializable> pastApiRecord = QRecordApiAdapter.qRecordToApiMap(person, TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2022_Q4);
       assertEquals(2, pastApiRecord.get("shoeCount")); // old field name - not currently in the QTable, but we can still get its value!
@@ -202,6 +210,98 @@ class QRecordApiAdapterTest extends BaseTest
       assertTrue(recordWithoutNonEditablePrimaryKeyFields.getValues().containsKey("createDate"));
       assertEquals(256, recordWithoutNonEditablePrimaryKeyFields.getValues().get("id"));
 
+      try
+      {
+         TestUtils.TablePersonalizer.register(QContext.getQInstance());
+
+         ////////////////////////////////////////////////////////////////////
+         // create date is removed by personalizer - so message is special //
+         ////////////////////////////////////////////////////////////////////
+         assertThatThrownBy(() -> QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
+         {"createDate": "2025-01-01T00:00:00Z"}
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1, true, QInputSource.USER))
+            .isInstanceOf(QBadRequestException.class)
+            .hasMessageContaining("unrecognized field name: createDate")
+            .hasMessageContaining("createDate is not allowed for the current user");
+      }
+      finally
+      {
+         TestUtils.TablePersonalizer.unregister(QContext.getQInstance());
+      }
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQRecordsToApiVersionedQRecordList() throws QException
+   {
+      QRecord person = TestUtils.getTim2ShoesRecord();
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // QRecord has values corresponding to what's defined in the QInstance (and the underlying backend system) //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QRecord pastQRecordRecord = QRecordApiAdapter.qRecordsToApiVersionedQRecordList(List.of(person), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2022_Q4).get(0);
+      assertEquals(2, pastQRecordRecord.getValueInteger("shoeCount")); // old field name - not currently in the QTable, but we can still get its value!
+      assertFalse(pastQRecordRecord.getValues().containsKey("noOfShoes")); // current field name - doesn't appear in old api-version
+      assertFalse(pastQRecordRecord.getValues().containsKey("cost")); // a current field name, but also not in this old api version
+      assertEquals("QUJDRA==", pastQRecordRecord.getValueString("photo")); // base64 version of "ABCD".getBytes()
+
+      QRecord currentQRecord = QRecordApiAdapter.qRecordsToApiVersionedQRecordList(List.of(person), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1).get(0);
+      assertFalse(currentQRecord.getValues().containsKey("shoeCount")); // old field name - not in this current api version
+      assertEquals(2, currentQRecord.getValueInteger("noOfShoes")); // current field name - value here as we expect
+      assertFalse(currentQRecord.getValues().containsKey("cost")); // future field name - not in the current api (we added the field during new dev, and didn't change the api)
+
+      QRecord futureQRecord = QRecordApiAdapter.qRecordsToApiVersionedQRecordList(List.of(person), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q2).get(0);
+      assertFalse(futureQRecord.getValues().containsKey("shoeCount")); // old field name - also not in this future api version
+      assertEquals(2, futureQRecord.getValueInteger("noOfShoes")); // current field name - still here.
+      assertEquals(new BigDecimal("3.50"), futureQRecord.getValueBigDecimal("cost")); // future field name appears now that we've requested this future api version.
+
+      for(QRecord specialRecord : List.of(pastQRecordRecord, currentQRecord, futureQRecord))
+      {
+         assertEquals(LocalDate.parse("1980-05-31"), specialRecord.getValueLocalDate("birthDay")); // use the apiFieldName
+         assertFalse(specialRecord.getValues().containsKey("price")); // excluded field never appears
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // confirm that for the alternative api, we get a record that looks just like the input record (per its api meta data) //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(String version : List.of(TestUtils.V2022_Q4, TestUtils.V2023_Q1, TestUtils.V2023_Q2))
+      {
+         QRecord alternativeQRecord = QRecordApiAdapter.qRecordsToApiVersionedQRecordList(List.of(person), TestUtils.TABLE_NAME_PERSON, TestUtils.ALTERNATIVE_API_NAME, version).get(0);
+         for(String key : person.getValues().keySet())
+         {
+            if(key.equals("photo"))
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////
+               // ok, well, skip the blob field (should be base64 version, and is covered elsewhere) //
+               ////////////////////////////////////////////////////////////////////////////////////////
+               continue;
+            }
+
+            assertEquals(person.getValueString(key), ValueUtils.getValueAsString(alternativeQRecord.getValueString(key)));
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSetValueFromApiFieldInQRecord() throws QException
+   {
+      QRecord                     record       = new QRecord();
+      Map<String, QFieldMetaData> apiFieldsMap = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(TestUtils.API_NAME, TestUtils.V2022_Q4, TestUtils.TABLE_NAME_PERSON));
+      JSONObject                  apiObject    = new JSONObject(Map.of("shoeCount", 2, "firstName", "Tim"));
+      QRecordApiAdapter.setValueFromApiFieldInQRecord(apiObject, "firstName", TestUtils.API_NAME, apiFieldsMap, record, false);
+      QRecordApiAdapter.setValueFromApiFieldInQRecord(apiObject, "shoeCount", TestUtils.API_NAME, apiFieldsMap, record, false);
+      assertEquals("Tim", record.getValueString("firstName"));
+      assertEquals(2, record.getValueInteger("noOfShoes"));
    }
 
 }

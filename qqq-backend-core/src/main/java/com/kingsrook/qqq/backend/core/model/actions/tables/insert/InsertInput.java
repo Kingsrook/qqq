@@ -23,11 +23,13 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.insert;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.ActionFlag;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -41,12 +43,13 @@ public class InsertInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
    private List<QRecord>       records;
-   private InputSource         inputSource = QInputSource.SYSTEM;
 
    private boolean skipUniqueKeyCheck = false;
 
    private boolean omitDmlAudit = false;
    private String  auditContext = null;
+
+   private Set<ActionFlag> flags;
 
 
 
@@ -256,32 +259,13 @@ public class InsertInput extends AbstractTableActionInput
 
 
 
-   /*******************************************************************************
-    ** Getter for inputSource
-    *******************************************************************************/
-   public InputSource getInputSource()
-   {
-      return (this.inputSource);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inputSource
-    *******************************************************************************/
-   public void setInputSource(InputSource inputSource)
-   {
-      this.inputSource = inputSource;
-   }
-
-
 
    /*******************************************************************************
     ** Fluent setter for inputSource
     *******************************************************************************/
    public InsertInput withInputSource(InputSource inputSource)
    {
-      this.inputSource = inputSource;
+      setInputSource(inputSource);
       return (this);
    }
 
@@ -314,6 +298,67 @@ public class InsertInput extends AbstractTableActionInput
    {
       this.auditContext = auditContext;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for flags
+    *******************************************************************************/
+   public Set<ActionFlag> getFlags()
+   {
+      return (this.flags);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for flags
+    *******************************************************************************/
+   public void setFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for flags
+    *******************************************************************************/
+   public InsertInput withFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public InsertInput withFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         this.flags = new HashSet<>();
+      }
+      this.flags.add(flag);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public boolean hasFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         return (false);
+      }
+
+      return (this.flags.contains(flag));
    }
 
 }

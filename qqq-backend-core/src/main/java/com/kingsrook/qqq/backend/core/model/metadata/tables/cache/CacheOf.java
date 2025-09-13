@@ -31,7 +31,7 @@ import java.util.List;
  ** e.g., a database table that's a "cache of" an api table - we'd have
  ** databaseTable.withCacheOf(sourceTable=apiTable)
  *******************************************************************************/
-public class CacheOf
+public class CacheOf implements Cloneable
 {
    private String             sourceTable;
    private Integer            expirationSeconds;
@@ -192,4 +192,27 @@ public class CacheOf
       return (this);
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public CacheOf clone()
+   {
+      try
+      {
+         CacheOf clone = (CacheOf) super.clone();
+         if(useCases != null)
+         {
+            clone.useCases = new ArrayList<>();
+            useCases.forEach(c -> clone.useCases.add(c.clone()));
+         }
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

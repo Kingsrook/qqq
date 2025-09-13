@@ -33,8 +33,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.automation.RunCustomTableTriggerRecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.automation.RunRecordScriptAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
@@ -442,15 +443,33 @@ public class PollingAutomationPerTableRunner implements Runnable
                   }
                }
 
-               rs.add(new TableAutomationAction()
-                  .withName("Script:" + tableTrigger.getScriptId())
+               TableAutomationAction tableAutomationAction = new TableAutomationAction()
                   .withFilter(filter)
                   .withTriggerEvent(triggerEvent)
                   .withPriority(tableTrigger.getPriority())
-                  .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class))
-                  .withValues(MapBuilder.of("scriptId", tableTrigger.getScriptId()))
-                  .withIncludeRecordAssociations(true)
-               );
+                  .withIncludeRecordAssociations(true);
+
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if the table trigger has a script id on it, then we know how to run that here in qqq-backend-core //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(tableTrigger.getScriptId() != null)
+               {
+                  rs.add(tableAutomationAction
+                     .withName("Script:" + tableTrigger.getScriptId())
+                     .withValues(MapBuilder.of("scriptId", tableTrigger.getScriptId()))
+                     .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class)));
+               }
+               else
+               {
+                  ////////////////////////////////////////////////////////////////////////////////////////////////
+                  // but - the app may have added an extension to the TableTrigger table (e.g., workflows qbit) //
+                  // so, defer to RunCustomRecordAutomationHandler for unrecognized triggers                    //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////
+                  rs.add(tableAutomationAction
+                     .withName("Custom Trigger:" + tableTrigger.getScriptId())
+                     .withValues(MapBuilder.of("tableTriggerId", tableTrigger.getId()))
+                     .withCodeReference(new QCodeReference(RunCustomTableTriggerRecordAutomationHandler.class)));
+               }
             }
             catch(Exception e)
             {
@@ -526,7 +545,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////
          List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(table, records, action);
-         LOG.debug("Of the [" + records.size() + "] records that were pending automations, [" + matchingQRecords.size() + "] of them match the filter on the action:" +  action);
+         LOG.debug("Of the [" + records.size() + "] records that were pending automations, [" + matchingQRecords.size() + "] of them match the filter on the action:" + action);
          if(CollectionUtils.nullSafeHasContents(matchingQRecords))
          {
             LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
@@ -649,7 +668,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          input.setRecordList(records);
          input.setAction(action);
 
-         RecordAutomationHandler recordAutomationHandler = QCodeLoader.getAdHoc(RecordAutomationHandler.class, action.getCodeReference());
+         RecordAutomationHandlerInterface recordAutomationHandler = QCodeLoader.getAdHoc(RecordAutomationHandlerInterface.class, action.getCodeReference());
          recordAutomationHandler.execute(input);
       }
    }

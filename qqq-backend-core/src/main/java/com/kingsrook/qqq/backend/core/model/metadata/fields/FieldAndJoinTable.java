@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
+import java.util.Collection;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -54,6 +57,49 @@ public record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable)
          String joinFieldName = fieldName.replaceAll(".*\\.", "");
 
          QTableMetaData joinTable = QContext.getQInstance().getTable(joinTableName);
+         if(joinTable == null)
+         {
+            throw (new QException("Unrecognized join table name: " + joinTableName));
+         }
+
+         return new FieldAndJoinTable(joinTable.getField(joinFieldName), joinTable);
+      }
+      else
+      {
+         return new FieldAndJoinTable(mainTable.getField(fieldName), mainTable);
+      }
+   }
+
+
+
+   /***************************************************************************
+    ** given a table, and a field-name string (which should either be the name
+    ** of a field on that table, or another tableName + "." + fieldName (from
+    ** that table - or an alias insteaad of tableName) - get back the pair of
+    ** table & field metaData that the input string is talking about.
+    ***************************************************************************/
+   public static FieldAndJoinTable get(QTableMetaData mainTable, String fieldName, Collection<QueryJoin> queryJoins) throws QException
+   {
+      if(fieldName.indexOf('.') > -1)
+      {
+         String joinTableName = fieldName.replaceAll("\\..*", "");
+         String joinFieldName = fieldName.replaceAll(".*\\.", "");
+
+         QTableMetaData joinTable = QContext.getQInstance().getTable(joinTableName);
+         if(joinTable == null)
+         {
+            ///////////////////////////////////////////////////////////////
+            // check if the table name is an alias in a given query join //
+            ///////////////////////////////////////////////////////////////
+            for(QueryJoin queryJoin : CollectionUtils.nonNullCollection(queryJoins))
+            {
+               if(joinTableName.equals(queryJoin.getAlias()))
+               {
+                  joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+               }
+            }
+         }
+
          if(joinTable == null)
          {
             throw (new QException("Unrecognized join table name: " + joinTableName));

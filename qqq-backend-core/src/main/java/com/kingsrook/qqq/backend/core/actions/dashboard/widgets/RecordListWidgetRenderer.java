@@ -23,8 +23,9 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractHTMLWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
@@ -33,6 +34,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.FilterUseCase;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -165,7 +167,7 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
          }
 
          QQueryFilter filter = ((QQueryFilter) input.getWidgetMetaData().getDefaultValues().get("filter")).clone();
-         filter.interpretValues(new HashMap<>(input.getQueryParams()), FilterUseCase.DEFAULT);
+         filter.interpretValues(FilterUseCase.DEFAULT, new HashMap<>(input.getQueryParams()));
          filter.setLimit(maxRows);
 
          String         tableName = ValueUtils.getValueAsString(input.getWidgetMetaData().getDefaultValues().get("tableName"));
@@ -176,6 +178,7 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setFilter(filter);
+         queryInput.setInputSource(QInputSource.USER);
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
          QValueFormatter.setBlobValuesToDownloadUrls(table, queryOutput.getRecords());
@@ -193,8 +196,12 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
             totalRows = new CountAction().execute(countInput).getCount();
          }
 
-         String tablePath   = QContext.getQInstance().getTablePath(tableName);
-         String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+         String tablePath = QContext.getQInstance().getTablePath(tableName);
+         if(!AbstractHTMLWidgetRenderer.doesHaveTablePermission(tableName))
+         {
+            tablePath = null;
+         }
+         String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), StandardCharsets.UTF_8));
 
          ChildRecordListData widgetData = new ChildRecordListData(input.getQueryParams().get("widgetLabel"), queryOutput, table, tablePath, viewAllLink, totalRows);
 
@@ -226,8 +233,8 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
          //////////////////////////////////////////////
          // make sure table name is given and exists //
          //////////////////////////////////////////////
-         QTableMetaData table = null;
-         String tableName = ValueUtils.getValueAsString(CollectionUtils.nonNullMap(widgetMetaData.getDefaultValues()).get("tableName"));
+         QTableMetaData table     = null;
+         String         tableName = ValueUtils.getValueAsString(CollectionUtils.nonNullMap(widgetMetaData.getDefaultValues()).get("tableName"));
          if(qInstanceValidator.assertCondition(StringUtils.hasContent(tableName), prefix + "defaultValue for tableName must be given"))
          {
             ////////////////////////////

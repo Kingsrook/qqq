@@ -32,10 +32,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -48,6 +52,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -58,6 +63,8 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 @JsonInclude(Include.NON_NULL)
 public class QFrontendTableMetaData
 {
+   private static final QLogger LOG = QLogger.getLogger(QFrontendTableMetaData.class);
+
    private String  name;
    private String  label;
    private boolean isHidden;
@@ -85,23 +92,35 @@ public class QFrontendTableMetaData
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
 
+   /***************************************************************************
+    ** standard constructor - uses all fields on the table.
+    ***************************************************************************/
+   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins)
+   {
+      this(actionInput, backendForTable, tableMetaData, includeFullMetaData, includeJoins, tableMetaData.getFields());
+   }
+
+
 
    /*******************************************************************************
-    **
+    ** alternative constructor - takes a map of fields to use (e.g., for an old
+    ** api version of the table w/ different fields!)
     *******************************************************************************/
-   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins)
+   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins, Map<String, QFieldMetaData> overrideFields)
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
       this.isHidden = tableMetaData.getIsHidden();
 
+      Map<String, QFieldMetaData> inputFields = overrideFields == null ? tableMetaData.getFields() : overrideFields;
+
       if(includeFullMetaData)
       {
          this.primaryKeyField = tableMetaData.getPrimaryKeyField();
          this.fields = new HashMap<>();
-         for(String fieldName : tableMetaData.getFields().keySet())
+         for(String fieldName : inputFields.keySet())
          {
-            QFieldMetaData field = tableMetaData.getField(fieldName);
+            QFieldMetaData field = inputFields.get(fieldName);
             if(!field.getIsHidden())
             {
                this.fields.put(fieldName, new QFrontendFieldMetaData(field));
@@ -120,16 +139,36 @@ public class QFrontendTableMetaData
          this.exposedJoins = new ArrayList<>();
          for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(tableMetaData.getExposedJoins()))
          {
-            QFrontendExposedJoin frontendExposedJoin = new QFrontendExposedJoin();
-            this.exposedJoins.add(frontendExposedJoin);
-
-            QTableMetaData joinTable = qInstance.getTable(exposedJoin.getJoinTable());
-            frontendExposedJoin.setLabel(exposedJoin.getLabel());
-            frontendExposedJoin.setIsMany(exposedJoin.getIsMany());
-            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(actionInput, backendForTable, joinTable, includeFullMetaData, false));
-            for(String joinName : exposedJoin.getJoinPath())
+            try
             {
-               frontendExposedJoin.addJoin(qInstance.getJoin(joinName));
+               QFrontendExposedJoin frontendExposedJoin = new QFrontendExposedJoin();
+
+               QTableMetaData joinTable = qInstance.getTable(exposedJoin.getJoinTable());
+
+               /////////////////////////////////////////////////////////////////////////////////////////////////////
+               // apply personalizations to the exposed join table - so user only sees fields they're supposed to //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////
+               TableMetaDataInput tableMetaDataInput = new TableMetaDataInput();
+               tableMetaDataInput.setTableName(joinTable.getName());
+               if(actionInput instanceof AbstractTableActionInput abstractTableActionInput)
+               {
+                  tableMetaDataInput.setInputSource(abstractTableActionInput.getInputSource());
+               }
+               joinTable = TableMetaDataPersonalizerAction.execute(tableMetaDataInput);
+
+               frontendExposedJoin.setLabel(exposedJoin.getLabel());
+               frontendExposedJoin.setIsMany(exposedJoin.getIsMany());
+               frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(actionInput, backendForTable, joinTable, includeFullMetaData, false));
+               for(String joinName : exposedJoin.getJoinPath())
+               {
+                  frontendExposedJoin.addJoin(qInstance.getJoin(joinName));
+               }
+
+               this.exposedJoins.add(frontendExposedJoin);
+            }
+            catch(Exception e)
+            {
+               LOG.warn("Error setting up exposed join", e, logPair("tableName", tableMetaData.getName()), logPair("joinTable", exposedJoin.getJoinTable()));
             }
          }
       }

@@ -30,9 +30,11 @@ import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCusto
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
@@ -47,6 +49,7 @@ public class ImportRecordPostQueryCustomizer extends AbstractPostQueryCustomizer
    @Override
    public List<QRecord> apply(List<QRecord> records)
    {
+
       if(CollectionUtils.nullSafeHasContents(records))
       {
          QTableMetaData table = null;
@@ -57,22 +60,45 @@ public class ImportRecordPostQueryCustomizer extends AbstractPostQueryCustomizer
 
          for(QRecord record : records)
          {
-            Map<String, Serializable> values = record.getValues();
-
-            if(table != null)
+            try
             {
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               // remove known values from a clone of the values map - then only put the un-structured values in a JSON document in the values field //
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               values = new HashMap<>(values);
-               for(String fieldName : table.getFields().keySet())
+               if(record.getValues().containsKey("values"))
                {
-                  values.remove(fieldName);
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if the record has a json blob of "values", copy the values out of there, and put them directly in the record's values map. //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  JSONObject jsonObject = JsonUtils.toJSONObject(record.getValueString("values"));
+                  for(String key : jsonObject.keySet())
+                  {
+                     if(!record.getValues().containsKey(key))
+                     {
+                        record.setValue(key, jsonObject.get(key));
+                     }
+                  }
+               }
+               else
+               {
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // remove known values from a clone of the values map - then only put the un-structured values in a JSON document in the values field //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  Map<String, Serializable> values = record.getValues();
+                  if(table != null)
+                  {
+                     values = new HashMap<>(values);
+                     for(String fieldName : table.getFields().keySet())
+                     {
+                        values.remove(fieldName);
+                     }
+                  }
+
+                  String valuesJson = JsonUtils.toJson(values);
+                  record.setValue("values", valuesJson);
                }
             }
-
-            String valuesJson = JsonUtils.toJson(values);
-            record.setValue("values", valuesJson);
+            catch(Exception e)
+            {
+               record.addError(new SystemErrorStatusMessage("Error processing unstructured values in record: " + e.getMessage()));
+            }
          }
       }
 

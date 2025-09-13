@@ -65,10 +65,12 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
          runBackendStepOutput.addValue("theFile", null);
       }
 
+      boolean                isBulkEdit     = runBackendStepInput.getProcessName().endsWith("EditWithFile");
       String                 tableName      = runBackendStepInput.getValueString("tableName");
       QTableMetaData         table          = QContext.getQInstance().getTable(tableName);
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(tableName);
       runBackendStepOutput.addValue("tableStructure", tableStructure);
+      runBackendStepOutput.addValue("isBulkEdit", isBulkEdit);
 
       List<QFieldMetaData> requiredFields   = new ArrayList<>();
       List<QFieldMetaData> additionalFields = new ArrayList<>();
@@ -84,6 +86,14 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
          }
       }
 
+      /////////////////////////////////////////////
+      // bulk edit allows primary key as a field //
+      /////////////////////////////////////////////
+      if(isBulkEdit)
+      {
+         requiredFields.add(0, table.getField(table.getPrimaryKeyField()));
+      }
+
       StringBuilder html;
       String        childTableLabels = "";
 
@@ -96,11 +106,11 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
       boolean listFieldsInHelpText = false;
 
-      if(!CollectionUtils.nullSafeHasContents(tableStructure.getAssociations()))
+      if(isBulkEdit || !CollectionUtils.nullSafeHasContents(tableStructure.getAssociations()))
       {
          html = new StringBuilder("""
             <p>Upload either a CSV or Excel (.xlsx) file, with one row for each record you want to
-            insert in the ${tableLabel} table.</p><br />
+            ${action} in the ${tableLabel} table.</p><br />
             
             <p>Your file can contain any number of columns.  You will be prompted to map fields from
             the ${tableLabel} table to columns from your file or default values for all records that
@@ -204,6 +214,7 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
       finishCSV(flatCSV);
 
       String htmlString = html.toString()
+         .replace("${action}", (isBulkEdit ? "edit" : "insert"))
          .replace("${tableLabel}", table.getLabel())
          .replace("${childTableLabels}", childTableLabels)
          .replace("${flatCSV}", Base64.getEncoder().encodeToString(flatCSV.toString().getBytes(StandardCharsets.UTF_8)))

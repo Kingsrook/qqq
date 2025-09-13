@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -30,13 +31,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationState;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
@@ -63,11 +67,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -76,6 +83,8 @@ import io.github.cdimascio.dotenv.DotenvEntry;
  *******************************************************************************/
 public class QInstance
 {
+   private static final QLogger LOG = QLogger.getLogger(QInstance.class);
+
    ///////////////////////////////////////////////////////////////////////////////
    // Do not let the backend data be serialized - e.g., sent to a frontend user //
    ///////////////////////////////////////////////////////////////////////////////
@@ -102,6 +111,8 @@ public class QInstance
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
 
+   private Map<SupplementalCustomizerType, QCodeReference> supplementalCustomizers = new LinkedHashMap<>();
+
    private Map<String, QSchedulerMetaData> schedulers       = new LinkedHashMap<>();
    private Map<String, SchedulableType>    schedulableTypes = new LinkedHashMap<>();
 
@@ -115,6 +126,8 @@ public class QInstance
 
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
    private QAuditRules      defaultAuditRules      = QAuditRules.defaultInstanceLevelNone();
+
+   private ListingHash<String, QCodeReference> tableCustomizers;
 
    @Deprecated(since = "migrated to metaDataCustomizer")
    private QCodeReference metaDataFilter = null;
@@ -219,31 +232,42 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Get the full path to a table
+    * Get the full path to a table - note - this will be regardless of whether or
+    * not the active session/user has access to the table.  You may want to also call
+    * PermissionsHelper.getPermissionCheckResult to confirm if user has permission.
     *******************************************************************************/
    public String getTablePath(String tableName) throws QException
    {
       if(!memoizedTablePaths.containsKey(tableName))
       {
-         MetaDataInput  input  = new MetaDataInput();
-         MetaDataOutput output = new MetaDataAction().execute(input);
-         memoizedTablePaths.put(tableName, searchAppTree(output.getAppTree(), tableName, AppTreeNodeType.TABLE, ""));
+         QContext.withTemporaryContext(new CapturedContext(QContext.getQInstance(), new QSystemUserSession()), () ->
+         {
+            MetaDataInput  input  = new MetaDataInput();
+            MetaDataOutput output = new MetaDataAction().execute(input);
+            memoizedTablePaths.put(tableName, searchAppTree(output.getAppTree(), tableName, AppTreeNodeType.TABLE, ""));
+         });
       }
+
       return (memoizedTablePaths.get(tableName));
    }
 
 
 
    /*******************************************************************************
-    ** Get the full path to a process
+    * Get the full path to a process - note - this will be regardless of whether or
+    * not the active session/user has access to the process.  You may want to also call
+    * PermissionsHelper.getPermissionCheckResult to confirm if user has permission.
     *******************************************************************************/
-   public String getProcessPath(AbstractActionInput actionInput, String processName) throws QException
+   public String getProcessPath(String processName) throws QException
    {
       if(!memoizedProcessPaths.containsKey(processName))
       {
-         MetaDataInput  input  = new MetaDataInput();
-         MetaDataOutput output = new MetaDataAction().execute(input);
-         return searchAppTree(output.getAppTree(), processName, AppTreeNodeType.PROCESS, "");
+         QContext.withTemporaryContext(new CapturedContext(QContext.getQInstance(), new QSystemUserSession()), () ->
+         {
+            MetaDataInput  input  = new MetaDataInput();
+            MetaDataOutput output = new MetaDataAction().execute(input);
+            memoizedProcessPaths.put(processName, searchAppTree(output.getAppTree(), processName, AppTreeNodeType.PROCESS, ""));
+         });
       }
       return (memoizedProcessPaths.get(processName));
    }
@@ -305,6 +329,10 @@ public class QInstance
     *******************************************************************************/
    public QBackendMetaData getBackend(String name)
    {
+      if(this.backends == null)
+      {
+         return (null);
+      }
       return (this.backends.get(name));
    }
 
@@ -660,6 +688,77 @@ public class QInstance
    public void setReports(Map<String, QReportMetaData> reports)
    {
       this.reports = reports;
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for a supplemental customizer based on type
+    * @see #withSupplementalCustomizers(Map)
+    *******************************************************************************/
+   public QCodeReference getSupplementalCustomizer(SupplementalCustomizerType type)
+   {
+      return (this.supplementalCustomizers.get(type));
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for supplementalCustomizers
+    * @see #withSupplementalCustomizers(Map)
+    *******************************************************************************/
+   public Map<SupplementalCustomizerType, QCodeReference> getSupplementalCustomizers()
+   {
+      return (this.supplementalCustomizers);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for supplementalCustomizers
+    * @see #withSupplementalCustomizers(Map)
+    *******************************************************************************/
+   public void setSupplementalCustomizers(Map<SupplementalCustomizerType, QCodeReference> supplementalCustomizers)
+   {
+      this.supplementalCustomizers = supplementalCustomizers;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent adder to supplementalCustomizers
+    * @see #withSupplementalCustomizers(Map)
+    *******************************************************************************/
+   public QInstance addSupplementalCustomizer(SupplementalCustomizerType type, QCodeReference customizer)
+   {
+      if(this.supplementalCustomizers == null)
+      {
+         this.supplementalCustomizers = new LinkedHashMap<>();
+      }
+      if(this.supplementalCustomizers.containsKey(type) && !this.supplementalCustomizers.get(type).equals(customizer))
+      {
+         LOG.info("Replacing QInstance supplemental customizer.", logPair("oldCustomizer", this.supplementalCustomizers.get(type).getName()), logPair("newCustomizer", customizer.getName()));
+      }
+
+      this.supplementalCustomizers.put(type, customizer);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for supplementalCustomizers
+    *
+    * @param supplementalCustomizers
+    * Map of supplemental customizer types to QCodeReference instances, allowing
+    * customizers to be applied to various QQQ components, e.g. RunAdHocScriptCustomizers
+    *
+    * @return this
+    *******************************************************************************/
+   public QInstance withSupplementalCustomizers(Map<SupplementalCustomizerType, QCodeReference> supplementalCustomizers)
+   {
+      this.supplementalCustomizers = supplementalCustomizers;
+      return (this);
    }
 
 
@@ -1621,6 +1720,78 @@ public class QInstance
    {
       this.metaDataActionCustomizer = metaDataActionCustomizer;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableCustomizers
+    *******************************************************************************/
+   public ListingHash<String, QCodeReference> getTableCustomizers()
+   {
+      return (this.tableCustomizers);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableCustomizers
+    *******************************************************************************/
+   public void setTableCustomizers(ListingHash<String, QCodeReference> tableCustomizers)
+   {
+      this.tableCustomizers = tableCustomizers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableCustomizers
+    *******************************************************************************/
+   public QInstance withTableCustomizers(ListingHash<String, QCodeReference> tableCustomizers)
+   {
+      this.tableCustomizers = tableCustomizers;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QInstance withTableCustomizer(String role, QCodeReference customizer)
+   {
+      if(this.tableCustomizers == null)
+      {
+         this.tableCustomizers = new ListingHash<>();
+      }
+
+      this.tableCustomizers.add(role, customizer);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QInstance withTableCustomizer(TableCustomizers tableCustomizer, QCodeReference customizer)
+   {
+      return (withTableCustomizer(tableCustomizer.getRole(), customizer));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableCustomizers
+    *******************************************************************************/
+   public List<QCodeReference> getTableCustomizers(TableCustomizers tableCustomizer)
+   {
+      if(this.tableCustomizers == null)
+      {
+         return (Collections.emptyList());
+      }
+
+      return (this.tableCustomizers.getOrDefault(tableCustomizer.getRole(), Collections.emptyList()));
    }
 
 }

@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** Definition of a Unique Key (or "Constraint", if you wanna use fancy words)
  ** on a QTable.
  *******************************************************************************/
-public class UniqueKey implements QMetaDataObject
+public class UniqueKey implements QMetaDataObject, Cloneable
 {
    private List<String> fieldNames;
    private String       label;
@@ -168,5 +168,28 @@ public class UniqueKey implements QMetaDataObject
       }
 
       return (StringUtils.joinWithCommasAndAnd(fieldLabels));
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public UniqueKey clone()
+   {
+      try
+      {
+         UniqueKey clone = (UniqueKey) super.clone();
+         if(fieldNames != null)
+         {
+            clone.fieldNames = new ArrayList<>(fieldNames);
+         }
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 }

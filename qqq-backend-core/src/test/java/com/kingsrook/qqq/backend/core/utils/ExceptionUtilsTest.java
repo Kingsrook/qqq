@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -125,6 +127,30 @@ class ExceptionUtilsTest extends BaseTest
       assertEquals("foo", ExceptionUtils.getTopAndBottomMessages(new Exception("foo")));
       assertEquals("foo: bar", ExceptionUtils.getTopAndBottomMessages(new Exception("foo", new Exception("bar"))));
       assertEquals("foo: baz", ExceptionUtils.getTopAndBottomMessages(new Exception("foo", new Exception("bar", new Exception("baz")))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTryIgnore()
+   {
+      ExceptionUtils.tryIgnore(() -> ((Integer) null).toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTryCatch()
+   {
+      AtomicBoolean didCatch = new AtomicBoolean(false);
+      ExceptionUtils.tryCatch(() -> ((Integer) null).toString(), e -> didCatch.set(true));
+      assertTrue(didCatch.get());
    }
 
 

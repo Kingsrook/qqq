@@ -22,19 +22,11 @@
 package com.kingsrook.qqq.backend.core.actions.automation;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
-
-
 /*******************************************************************************
  ** Base class for custom-codes to run as an automation action
  *******************************************************************************/
-public abstract class RecordAutomationHandler
+@Deprecated(since = "0.26.0 - when RecordAutomationHandlerInterface was introduced")
+public abstract class RecordAutomationHandler implements RecordAutomationHandlerInterface
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public abstract void execute(RecordAutomationInput recordAutomationInput) throws QException;
 
 }
