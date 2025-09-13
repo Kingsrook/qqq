@@ -33,7 +33,7 @@ workflows:
               only:
                 - /release\/.*/
 
-  production_release:
+  publish_release:
     jobs:
       - qqq-orb/publish_release:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
