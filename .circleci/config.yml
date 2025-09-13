@@ -13,7 +13,7 @@ workflows:
             branches:
               ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
-              ignore: /(version|snapshot)-.*/
+              ignore: /(v|snapshot)-.*/
 
   publish_snapshot:
     jobs:
