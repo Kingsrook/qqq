@@ -1,13 +1,13 @@
 version: 2.1
 
 orbs:
-  qqq-orb: kingsrook/qqq-orb@0.1.0
+  qqq-orb: kingsrook/qqq-orb@0.2.0
 
 workflows:
 
   test_only:
     jobs:
-      - qqq-orb/test_only:
+      - qqq-orb/mvn_test_only:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
@@ -17,8 +17,9 @@ workflows:
 
   publish_snapshot:
     jobs:
-      - qqq-orb/publish_snapshot:
+      - qqq-orb/mvn_publish:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          branch_type: snapshot
           filters:
             branches:
               only:
@@ -26,8 +27,9 @@ workflows:
 
   publish_release_candidate:
     jobs:
-      - qqq-orb/publish_release_candidate:
+      - qqq-orb/mvn_publish:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          branch_type: release_candidate
           filters:
             branches:
               only:
@@ -35,8 +37,9 @@ workflows:
 
   publish_release:
     jobs:
-      - qqq-orb/publish_release:
+      - qqq-orb/mvn_publish:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          branch_type: release
           filters:
             branches:
               only: [ main ]
@@ -45,8 +48,9 @@ workflows:
 
   publish_hotfix_release:
     jobs:
-      - qqq-orb/publish_hotfix_release:
+      - qqq-orb/mvn_publish:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          branch_type: hotfix
           filters:
             branches:
               only:
