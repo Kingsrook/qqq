@@ -71,6 +71,7 @@ public enum WidgetType
    DATA_BAG_VIEWER("dataBagViewer"),
    PIVOT_TABLE_SETUP("pivotTableSetup"),
    FILTER_AND_COLUMNS_SETUP("filterAndColumnsSetup"),
+   ROW_BUILDER("rowBuilder"),
    SCRIPT_VIEWER("scriptViewer");
 
 
