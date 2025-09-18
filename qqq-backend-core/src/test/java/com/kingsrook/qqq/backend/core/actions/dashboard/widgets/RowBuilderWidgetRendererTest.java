@@ -109,154 +109,121 @@ class RowBuilderWidgetRendererTest extends BaseTest
             .getWidgetMetaData()),
          "Must have a fields list with 1 or more QFieldMetaData");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            List<?> notFields = List.of(new Object());
-            //noinspection unchecked - intentional miscast to catch validation error
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields((List<QFieldMetaData>) notFields)
-               .getWidgetMetaData());
-         },
+      List<?> notFields = List.of(new Object());
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields((List<QFieldMetaData>) notFields)
+            .getWidgetMetaData()),
          "Error validating fields: class java.lang.Object cannot be cast");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(
-                  new QFieldMetaData("a", QFieldType.STRING),
-                  new QFieldMetaData("a", QFieldType.STRING)
-               ))
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(
+               new QFieldMetaData("a", QFieldType.STRING),
+               new QFieldMetaData("a", QFieldType.STRING)
+            ))
+            .getWidgetMetaData()),
          "more than 1 field named [a]");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", null)))
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", null)))
+            .getWidgetMetaData()),
          "Widget testWidget:  Field a: is missing a type");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(
-                  new QFieldMetaData("", QFieldType.INTEGER),
-                  new QFieldMetaData(null, QFieldType.INTEGER)
-               ))
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(
+               new QFieldMetaData("", QFieldType.INTEGER),
+               new QFieldMetaData(null, QFieldType.INTEGER)
+            ))
+            .getWidgetMetaData()),
          "Widget testWidget:  Field : is missing a name",
          "Widget testWidget:  Field null: is missing a name");
 
       /////////////////////
       // table use cases //
       /////////////////////
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withParentTableName(TestUtils.TABLE_NAME_ORDER)
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+            .withParentTableName(TestUtils.TABLE_NAME_ORDER)
+            .getWidgetMetaData()),
          "Has some attributes set for use on a table, but not all");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withAssociationName("orderLine")
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+            .withAssociationName("orderLine")
+            .getWidgetMetaData()),
          "Has some attributes set for use on a table, but not all");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withIsForRecordViewAndEditScreen(true)
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+            .withIsForRecordViewAndEditScreen(true)
+            .getWidgetMetaData()),
          "Has some attributes set for use on a table, but not all");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withIsForRecordViewAndEditScreen(false)
-               .withParentTableName(TestUtils.TABLE_NAME_ORDER)
-               .withAssociationName("orderLine")
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+            .withIsForRecordViewAndEditScreen(false)
+            .withParentTableName(TestUtils.TABLE_NAME_ORDER)
+            .withAssociationName("orderLine")
+            .getWidgetMetaData()),
          "Has some attributes set for use on a table, but not all");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withIsForRecordViewAndEditScreen(true)
-               .withParentTableName(TestUtils.TABLE_NAME_ORDER + "not")
-               .withAssociationName("orderLine")
-               .getWidgetMetaData());
-         },
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+            .withIsForRecordViewAndEditScreen(true)
+            .withParentTableName(TestUtils.TABLE_NAME_ORDER + "not")
+            .withAssociationName("orderLine")
+            .getWidgetMetaData()),
          "Specified an unrecognized value for parentTableName [ordernot]");
 
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withIsForRecordViewAndEditScreen(true)
-               .withParentTableName(TestUtils.TABLE_NAME_ORDER)
-               .withAssociationName("orderLineNot")
-               .getWidgetMetaData());
-         },
-         "Specified an unrecognized association name [orderLineNot] within table [order]");
-
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withIsForRecordViewAndEditScreen(true)
-               .withParentTableName(TestUtils.TABLE_NAME_ORDER)
-               .withAssociationName("orderLineNot")
-               .getWidgetMetaData());
-         },
-         "Specified an unrecognized association name [orderLineNot] within table [order]");
-
-      QInstanceValidatorTest.assertValidationSuccess(qInstance -> {
-         qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
             .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
             .withIsForRecordViewAndEditScreen(true)
             .withParentTableName(TestUtils.TABLE_NAME_ORDER)
-            .withAssociationName("orderLine")
-            .getWidgetMetaData());
-      });
+            .withAssociationName("orderLineNot")
+            .getWidgetMetaData()),
+         "Specified an unrecognized association name [orderLineNot] within table [order]");
+
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+            .withIsForRecordViewAndEditScreen(true)
+            .withParentTableName(TestUtils.TABLE_NAME_ORDER)
+            .withAssociationName("orderLineNot")
+            .getWidgetMetaData()),
+         "Specified an unrecognized association name [orderLineNot] within table [order]");
+
+      QInstanceValidatorTest.assertValidationSuccess(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+         .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+         .withIsForRecordViewAndEditScreen(true)
+         .withParentTableName(TestUtils.TABLE_NAME_ORDER)
+         .withAssociationName("orderLine")
+         .getWidgetMetaData()));
 
       ///////////////////////
       // reorder use cases //
       ///////////////////////
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withMayReorderRows(true)
-               .getWidgetMetaData());
-         },
-         "missing orderByFieldName");
-
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withOrderByFieldName("a")
-               .getWidgetMetaData());
-         },
-         "should not specify orderByFieldName unless mayReorderRows=true");
-
-      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> {
-            qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
-               .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
-               .withMayReorderRows(true)
-               .withOrderByFieldName("x")
-               .getWidgetMetaData());
-         },
-         "specified an unrecognized value for orderByFieldName [x]");
-
-      QInstanceValidatorTest.assertValidationSuccess(qInstance -> {
-         qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
             .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
             .withMayReorderRows(true)
+            .getWidgetMetaData()),
+         "missing orderByFieldName");
+
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
             .withOrderByFieldName("a")
-            .getWidgetMetaData());
-      });
+            .getWidgetMetaData()),
+         "should not specify orderByFieldName unless mayReorderRows=true");
+
+      QInstanceValidatorTest.assertValidationFailureReasons(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+            .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+            .withMayReorderRows(true)
+            .withOrderByFieldName("x")
+            .getWidgetMetaData()),
+         "specified an unrecognized value for orderByFieldName [x]");
+
+      QInstanceValidatorTest.assertValidationSuccess(qInstance -> qInstance.addWidget(RowBuilderWidgetRenderer.widgetMetaDataBuilder("testWidget")
+         .withFields(List.of(new QFieldMetaData("a", QFieldType.STRING)))
+         .withMayReorderRows(true)
+         .withOrderByFieldName("a")
+         .getWidgetMetaData()));
 
    }
 
