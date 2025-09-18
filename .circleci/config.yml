@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  qqq-orb: kingsrook/qqq-orb@0.3.1
+  qqq-orb: kingsrook/qqq-orb@0.3.7
 
 workflows:
 
