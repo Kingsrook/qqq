@@ -67,6 +67,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProvi
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReferenceLambda;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.code.TypedCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -1077,7 +1078,20 @@ public class QInstanceValidator
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
 
       String prefix = "Field " + fieldName + " in table " + tableName + " ";
+      validateField(qInstance, prefix, Optional.of(table), field);
+   }
+
+
+
+   /***************************************************************************
+    * run validation on a field - optionally within the context of a table.
+    ***************************************************************************/
+   public void validateField(QInstance qInstance, String prefix, Optional<QTableMetaData> table, QFieldMetaData field)
+   {
       validateFieldPossibleValueSourceAttributes(qInstance, field, prefix);
+
+      assertCondition(StringUtils.hasContent(field.getName()), prefix + "is missing a name");
+      assertCondition(field.getType() != null, prefix + "is missing a type");
 
       ///////////////////////////////////////////////////
       // validate things we know about field behaviors //
@@ -1091,19 +1105,28 @@ public class QInstanceValidator
       Set<Class<FieldBehavior<?>>> usedFieldBehaviorTypes = new HashSet<>();
       if(field.getBehaviors() != null)
       {
+         String prefixMinusTrailingSpace = prefix.replaceFirst(" *$", "");
+
          for(FieldBehavior<?> fieldBehavior : field.getBehaviors())
          {
             @SuppressWarnings("unchecked")
             Class<FieldBehavior<?>> behaviorClass = (Class<FieldBehavior<?>>) fieldBehavior.getClass();
 
-            List<String> behaviorErrors = fieldBehavior.validateBehaviorConfiguration(table, field);
-            if(behaviorErrors != null)
+            try
             {
-               String prefixMinusTrailingSpace = prefix.replaceFirst(" *$", "");
-               for(String behaviorError : behaviorErrors)
+               List<String> behaviorErrors = fieldBehavior.validateBehaviorConfiguration(table.orElse(null), field);
+               if(behaviorErrors != null)
                {
-                  errors.add(prefixMinusTrailingSpace + ": " + behaviorClass.getSimpleName() + ": " + behaviorError);
+                  for(String behaviorError : behaviorErrors)
+                  {
+                     errors.add(prefixMinusTrailingSpace + ": " + behaviorClass.getSimpleName() + ": " + behaviorError);
+                  }
                }
+            }
+            catch(Exception e)
+            {
+               LOG.warn(e);
+               errors.add(prefixMinusTrailingSpace + ": " + behaviorClass.getSimpleName() + ": error validating behavior: " + e.getMessage());
             }
 
             if(!fieldBehavior.allowMultipleBehaviorsOfThisType())
@@ -1159,7 +1182,11 @@ public class QInstanceValidator
                   String fileNameField = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));
                   if(StringUtils.hasContent(fileNameField)) // file name isn't required - but if given, must be a field on the table.
                   {
-                     assertNoException(() -> table.getField(fileNameField), adornmentPrefix + "specifies an unrecognized fileNameField [" + fileNameField + "]");
+                     if(assertCondition(table.isPresent(), adornmentPrefix + "with fileNameField cannot be used outside of the context of a table"))
+                     {
+                        //noinspection OptionalGetWithoutIsPresent - is checked in the assertCondition line
+                        assertNoException(() -> table.get().getField(fileNameField), adornmentPrefix + "specifies an unrecognized fileNameField [" + fileNameField + "]");
+                     }
                   }
 
                   if(adornmentValues.containsKey(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS))
@@ -1170,7 +1197,11 @@ public class QInstanceValidator
                         List<String> formatFieldNames = (List<String>) adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS);
                         for(String formatFieldName : CollectionUtils.nonNullList(formatFieldNames))
                         {
-                           assertNoException(() -> table.getField(formatFieldName), adornmentPrefix + "specifies an unrecognized field name in fileNameFormatFields [" + formatFieldName + "]");
+                           if(assertCondition(table.isPresent(), adornmentPrefix + "with formatFieldNames cannot be used outside of the context of a table"))
+                           {
+                              //noinspection OptionalGetWithoutIsPresent - is checked in the assertCondition line
+                              assertNoException(() -> table.get().getField(formatFieldName), adornmentPrefix + "specifies an unrecognized field name in fileNameFormatFields [" + formatFieldName + "]");
+                           }
                         }
                      }
                      catch(Exception e)
