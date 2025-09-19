@@ -41,6 +41,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
@@ -172,6 +173,7 @@ public class QJavalinImplementation
 
    private static Supplier<QInstance> qInstanceHotSwapSupplier;
    private static long                lastQInstanceHotSwapMillis;
+   private static AtomicBoolean       insideHotSwap = new AtomicBoolean(false);
 
    private static      long MILLIS_BETWEEN_HOT_SWAPS = 2500;
    public static final long SLOW_LOG_THRESHOLD_MS    = 1000;
@@ -299,6 +301,15 @@ public class QJavalinImplementation
             return;
          }
 
+         if(!insideHotSwap.compareAndSet(false, true))
+         {
+            ///////////////////////////////////////////////
+            // someone else is already running a hotswap //
+            ///////////////////////////////////////////////
+            LOG.debug("Caught attempted parallel hotswap - exiting this one.");
+            return;
+         }
+
          lastQInstanceHotSwapMillis = now;
 
          try
@@ -332,6 +343,10 @@ public class QJavalinImplementation
          catch(Exception e)
          {
             LOG.error("Error hot-swapping QInstance", e);
+         }
+         finally
+         {
+            insideHotSwap.set(false);
          }
       }
    }
