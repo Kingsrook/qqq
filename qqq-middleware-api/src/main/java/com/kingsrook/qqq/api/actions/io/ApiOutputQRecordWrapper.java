@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.actions.output;
+package com.kingsrook.qqq.api.actions.io;
 
 
 import java.io.Serializable;
@@ -64,10 +64,9 @@ public class ApiOutputQRecordWrapper implements ApiOutputRecordWrapperInterface<
     **
     ***************************************************************************/
    @Override
-   public void putAssociation(String key, List<ApiOutputQRecordWrapper> values)
+   public void putAssociation(String key, List<QRecord> values)
    {
-      List<QRecord> records = values.stream().map(oqr -> oqr.record).toList();
-      record.withAssociatedRecords(key, records);
+      record.withAssociatedRecords(key, values);
    }
 
 
