@@ -180,7 +180,14 @@ public class QRecordApiAdapter
     ** support working in bulk w/ customizers much better.
     *
     * @param input main input wrapper for the action
-    * @param fieldValueMappers map of
+    * @param fieldValueMappers map of field name to ApiFieldCustomValueMapper's
+    * which have had the bulk/pre method ran on them if applicable.
+    * @param outputCollectionElementSupplier supplier of objects that wrap those that
+    * go into the output list (so either wrappers of Maps or QRecords)
+    * @param outputList list that holds the output objects.
+    * @param <C> the type of objects that go into the outputList
+    * @param <O> the type of wrapper object that wraps the objects that go in the
+    * output list.  Provides a common interface for Map.put vs. QRecord.setValue, etc.
     *******************************************************************************/
    private static <C, O extends ApiOutputRecordWrapperInterface<C, O>> void qRecordsToApi(QRecordApiAdapterToApiInput input, Map<String, ApiFieldCustomValueMapper> fieldValueMappers, Supplier<O> outputCollectionElementSupplier, List<C> outputList) throws QException
    {
