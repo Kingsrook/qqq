@@ -247,7 +247,7 @@ public class QMetaDataVariableInterpreter
     * returning the first resolved non-null value (and for Strings, the first
     * non-empty that is not the same literal variable token).
     ***************************************************************************/
-   private Serializable interpretForObjectNullCoalescingScenario(String value, Serializable defaultIfLooksLikeVariableButNotFound )
+   private Serializable interpretForObjectNullCoalescingScenario(String value, Serializable defaultIfLooksLikeVariableButNotFound)
    {
       String[]    split                    = value.split("\\?\\?");
       boolean     anyPartLooksLikeVariable = false;
