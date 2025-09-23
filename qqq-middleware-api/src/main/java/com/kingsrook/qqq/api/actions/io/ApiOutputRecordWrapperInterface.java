@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.actions.output;
+package com.kingsrook.qqq.api.actions.io;
 
 
 import java.io.Serializable;
@@ -44,9 +44,9 @@ public interface ApiOutputRecordWrapperInterface<C, A extends ApiOutputRecordWra
    void putValue(String key, Serializable value);
 
    /***************************************************************************
-    ** put associated wrapper-objects in the wrapped object
+    ** put associated objects in the wrapped object
     ***************************************************************************/
-   void putAssociation(String key, List<A> values);
+   void putAssociation(String key, List<C> values);
 
    /***************************************************************************
     ** create a new "sibling" object to this - e.g., a wrapper around a new

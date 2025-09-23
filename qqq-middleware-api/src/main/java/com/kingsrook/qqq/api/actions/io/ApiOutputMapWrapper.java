@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.actions.output;
+package com.kingsrook.qqq.api.actions.io;
 
 
 import java.io.Serializable;
@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.gson.reflect.TypeToken;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /***************************************************************************
@@ -61,13 +63,13 @@ public class ApiOutputMapWrapper implements ApiOutputRecordWrapperInterface<Map<
 
 
    /***************************************************************************
-    **
+    *
     ***************************************************************************/
    @Override
-   public void putAssociation(String key, List<ApiOutputMapWrapper> values)
+   public void putAssociation(String key, List<Map<String, Serializable>> values)
    {
-      ArrayList<Map<String, Serializable>> associatedMaps = new ArrayList<>(values.stream().map(oqr -> oqr.apiMap).toList());
-      apiMap.put(key, associatedMaps);
+      ArrayList<Map<String, Serializable>> arrayList = CollectionUtils.useOrWrap(values, new TypeToken<>() {});
+      apiMap.put(key, arrayList);
    }
 
 
