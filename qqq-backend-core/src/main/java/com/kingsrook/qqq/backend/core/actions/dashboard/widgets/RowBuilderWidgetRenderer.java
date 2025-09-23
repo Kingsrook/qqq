@@ -286,8 +286,6 @@ public class RowBuilderWidgetRenderer extends AbstractWidgetRenderer
          return (this);
       }
 
-      // Serializable = input.getWidgetMetaData().getDefaultValues().get("defaultValuesForNewRowsFromBaseRecord");
-
 
 
       /*******************************************************************************
@@ -347,7 +345,10 @@ public class RowBuilderWidgetRenderer extends AbstractWidgetRenderer
                   records = CollectionUtils.useOrWrap(associatedRecords, new TypeToken<>() {});
                }
 
-               // if the widget meta data says we need to make values from the parent record available for child records, then
+               ////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if the widget meta data says we need to make values from the parent record available for child //
+               // records, then copy values from the parent record into the defaultValuesForNewRecords map       //
+               ////////////////////////////////////////////////////////////////////////////////////////////////////
                Serializable defaultValuesForNewRowsFromParentRecord = input.getWidgetMetaData().getDefaultValues().get("defaultValuesForNewRowsFromParentRecord");
                if(defaultValuesForNewRowsFromParentRecord instanceof Map defaultValuesForNewRowsFromBaseRecordMap)
                {

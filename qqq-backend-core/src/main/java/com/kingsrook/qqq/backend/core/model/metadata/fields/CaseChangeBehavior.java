@@ -159,7 +159,7 @@ public enum CaseChangeBehavior implements FieldBehavior<CaseChangeBehavior>, Fie
       String       errorSuffix = " field [" + fieldMetaData.getName() + "]";
       if(tableMetaData != null)
       {
-         errorSuffix += "in table [" + tableMetaData.getName() + "]";
+         errorSuffix += " in table [" + tableMetaData.getName() + "]";
       }
 
       if(fieldMetaData.getType() != null)
