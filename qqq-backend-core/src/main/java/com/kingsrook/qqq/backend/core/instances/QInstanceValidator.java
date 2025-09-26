@@ -144,6 +144,8 @@ public class QInstanceValidator
 
    private boolean printWarnings = false;
 
+   private static boolean isValidationDisabled = false;
+
    private static ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> validatorPlugins = new ListingHash<>();
 
    private JoinGraph joinGraph = null;
@@ -199,25 +201,28 @@ public class QInstanceValidator
       //////////////////////////////////////////////////////////////////////////
       try
       {
-         validateInstanceAttributes(qInstance);
-         validateBackends(qInstance);
-         validateAuthentication(qInstance);
-         validateAutomationProviders(qInstance);
-         validateTables(qInstance, joinGraph);
-         validateProcesses(qInstance);
-         validateReports(qInstance);
-         validateApps(qInstance);
-         validateWidgets(qInstance);
-         validatePossibleValueSources(qInstance);
-         validateQueuesAndProviders(qInstance);
-         validateJoins(qInstance);
-         validateSecurityKeyTypes(qInstance);
-         validateSupplementalMetaData(qInstance);
-         validateSupplementalCustomizers(qInstance);
+         if(!isValidationDisabled)
+         {
+            validateInstanceAttributes(qInstance);
+            validateBackends(qInstance);
+            validateAuthentication(qInstance);
+            validateAutomationProviders(qInstance);
+            validateTables(qInstance, joinGraph);
+            validateProcesses(qInstance);
+            validateReports(qInstance);
+            validateApps(qInstance);
+            validateWidgets(qInstance);
+            validatePossibleValueSources(qInstance);
+            validateQueuesAndProviders(qInstance);
+            validateJoins(qInstance);
+            validateSecurityKeyTypes(qInstance);
+            validateSupplementalMetaData(qInstance);
+            validateSupplementalCustomizers(qInstance);
 
-         validateUniqueTopLevelNames(qInstance);
+            validateUniqueTopLevelNames(qInstance);
 
-         runPlugins(QInstance.class, qInstance, qInstance);
+            runPlugins(QInstance.class, qInstance, qInstance);
+         }
 
          long end = System.currentTimeMillis();
          LOG.info("Validation (and enrichment) performance", logPair("millis", (end - start)));
@@ -2517,4 +2522,32 @@ public class QInstanceValidator
    {
       return errors;
    }
+
+   /*******************************************************************************
+    * Getter for isValidationDisabled
+    * @see #setIsValidationDisabled(boolean)
+    *******************************************************************************/
+   public static boolean getIsValidationDisabled()
+   {
+      return (QInstanceValidator.isValidationDisabled);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for isValidationDisabled
+    * <p>Setting this flag to true disables most validation - e.g., of tables, fields,
+    * all plugins, etc.  Instance Enrichment does still run.</p>
+    * <p>This would generally not be recommended, as we find instance validation
+    * to be a useful feature for developers!  But - it can get expensive, so
+    * in environments where the instance can be trusted to be valid, and where
+    * fast startup time is needed, this is an option to consider</p>
+    * <p>Or - in a testing environment, if new instances are being built a lot,
+    * you may speed up your test performance with this option...  Caveat emptor.</p>
+    *******************************************************************************/
+   public static void setIsValidationDisabled(boolean isValidationDisabled)
+   {
+      QInstanceValidator.isValidationDisabled = isValidationDisabled;
+   }
+
 }
