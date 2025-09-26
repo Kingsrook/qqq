@@ -22,7 +22,11 @@
 package com.kingsrook.qqq.api.model;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 
 
 /*******************************************************************************
@@ -34,6 +38,13 @@ public class APIVersion implements Comparable<APIVersion>
    private String   version;
    private String[] parts;
 
+   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // frequent re-validating api table meta data can reveal a hot spot in this class, with the parseInt and regex work //
+   // so, memoize those.                                                                                               //
+   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private static Memoization<String, Integer>  parseIntMemoization = new Memoization<>();
+   private static Memoization<String, String[]> splitMemoization    = new Memoization<>();
+
 
 
    /*******************************************************************************
@@ -43,7 +54,58 @@ public class APIVersion implements Comparable<APIVersion>
    public APIVersion(String version)
    {
       this.version = version;
-      this.parts = version.split("[.-]");
+      this.parts = splitOnDotOrDash(version);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static String[] splitOnDotOrDash(String input)
+   {
+      return (splitMemoization.getResult(input, s ->
+      {
+         List<String> result = new ArrayList<>();
+         int          start  = 0;
+
+         for(int i = 0; i < input.length(); i++)
+         {
+            char c = input.charAt(i);
+            if(c == '.' || c == '-')
+            {
+               if(start != i)
+               {
+                  result.add(input.substring(start, i));
+               }
+               else
+               {
+                  ////////////////////////////////////
+                  // Handles consecutive delimiters //
+                  ////////////////////////////////////
+                  result.add("");
+               }
+               start = i + 1;
+            }
+         }
+
+         /////////////////////////////
+         // Add last segment if any //
+         /////////////////////////////
+         if(start < input.length())
+         {
+            result.add(input.substring(start));
+         }
+         else if(!input.isEmpty() && (input.charAt(input.length() - 1) == '.' || input.charAt(input.length() - 1) == '-'))
+         {
+            ////////////////////////////////
+            // Handles trailing delimiter //
+            ////////////////////////////////
+            result.add("");
+         }
+
+         return result.toArray(new String[0]);
+      })).orElse(null);
    }
 
 
@@ -75,13 +137,17 @@ public class APIVersion implements Comparable<APIVersion>
             String thatPart = that.parts[i];
             if(!Objects.equals(thisPart, thatPart))
             {
-               try
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // parseInt calls can surprisingly be a hotspot, e.g., in tests if there's a lot of instance     //
+               // creation/validation occurring, and the checks for if a field is in a version.  so, memoize it //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               Optional<Integer> thisInt = parseIntMemoization.getResult(thisPart, this::parseIntOrNull);
+               Optional<Integer> thatInt = parseIntMemoization.getResult(thatPart, this::parseIntOrNull);
+               if(thisInt.isPresent() && thatInt.isPresent())
                {
-                  Integer thisInt = Integer.parseInt(thisPart);
-                  Integer thatInt = Integer.parseInt(thatPart);
-                  return (thisInt.compareTo(thatInt));
+                  return (thisInt.get().compareTo(thatInt.get()));
                }
-               catch(Exception e)
+               else
                {
                   //////////////////////////////////////////////////////////////////////////
                   // if either doesn't parse as an integer, then compare them as strings. //
@@ -91,6 +157,23 @@ public class APIVersion implements Comparable<APIVersion>
             }
          }
          i++;
+      }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   Integer parseIntOrNull(String s)
+   {
+      try
+      {
+         return Integer.parseInt(s);
+      }
+      catch(Exception e)
+      {
+         return (null);
       }
    }
 
