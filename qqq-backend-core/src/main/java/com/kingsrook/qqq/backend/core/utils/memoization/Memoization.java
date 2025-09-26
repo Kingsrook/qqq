@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.utils.memoization;
 
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -43,9 +42,14 @@ public class Memoization<K, V>
 
    private final Map<K, MemoizedResult<V>> map = Collections.synchronizedMap(new LinkedHashMap<>());
 
-   private Duration timeout            = Duration.ofSeconds(600);
-   private Integer  maxSize            = 1000;
-   private boolean  mayStoreNullValues = true;
+   ///////////////////////////////////////////////////////////////////////////////////////////////
+   // originally we used a Duration for timeout, and Instants - but - hot-spot profiling showed //
+   // these a little bit worse than just using long millis.                                     //
+   ///////////////////////////////////////////////////////////////////////////////////////////////
+   private long timeoutMillis = 600 * 1000;
+
+   private Integer maxSize            = 1000;
+   private boolean mayStoreNullValues = true;
 
 
 
@@ -76,7 +80,7 @@ public class Memoization<K, V>
     *******************************************************************************/
    public Memoization(Duration timeout)
    {
-      this.timeout = timeout;
+      this.timeoutMillis = timeout.toMillis();
    }
 
 
@@ -87,7 +91,7 @@ public class Memoization<K, V>
     *******************************************************************************/
    public Memoization(Duration timeout, Integer maxSize)
    {
-      this.timeout = timeout;
+      this.timeoutMillis = timeout.toMillis();
       this.maxSize = maxSize;
    }
 
@@ -106,7 +110,8 @@ public class Memoization<K, V>
       MemoizedResult<V> result = map.get(key);
       if(result != null)
       {
-         if(result.getTime().isAfter(Instant.now().minus(timeout)))
+         // if(result.getTime().isAfter(Instant.now().minus(timeout)))
+         if(result.getMillis() > System.currentTimeMillis() - timeoutMillis)
          {
             //////////////////////////////////////////////////////////////////////////////
             // ok, we have a memoized value, and it's not expired, so we can return it. //
@@ -172,7 +177,8 @@ public class Memoization<K, V>
       MemoizedResult<V> result = map.get(key);
       if(result != null)
       {
-         if(result.getTime().isAfter(Instant.now().minus(timeout)))
+         // if(result.getTime().isAfter(Instant.now().minus(timeout)))
+         if(result.getMillis() > System.currentTimeMillis() - timeoutMillis)
          {
             return (Optional.of(result));
          }
@@ -263,7 +269,7 @@ public class Memoization<K, V>
     *******************************************************************************/
    public void setTimeout(Duration timeout)
    {
-      this.timeout = timeout;
+      this.timeoutMillis = timeout.toMillis();
    }
 
 
@@ -295,7 +301,7 @@ public class Memoization<K, V>
     *******************************************************************************/
    public Duration getTimeout()
    {
-      return (this.timeout);
+      return (Duration.ofMillis(timeoutMillis));
    }
 
 
@@ -305,7 +311,7 @@ public class Memoization<K, V>
     *******************************************************************************/
    public Memoization<K, V> withTimeout(Duration timeout)
    {
-      this.timeout = timeout;
+      this.timeoutMillis = timeout.toMillis();
       return (this);
    }
 

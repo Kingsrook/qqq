@@ -26,13 +26,13 @@ import java.time.Instant;
 
 
 /*******************************************************************************
- ** Object stored in the Memoization class.  Shouldn't need to be visible outside
- ** its package.
+ * Object stored in the Memoization class - the memoized result, plus a timestamp
+ * of when it was memoized.
  *******************************************************************************/
 public class MemoizedResult<T>
 {
-   private T       result;
-   private Instant time;
+   private T    result;
+   private long millis;
 
 
 
@@ -43,7 +43,7 @@ public class MemoizedResult<T>
    public MemoizedResult(T result)
    {
       this.result = result;
-      this.time = Instant.now();
+      this.millis = System.currentTimeMillis();
    }
 
 
@@ -65,6 +65,16 @@ public class MemoizedResult<T>
     *******************************************************************************/
    public Instant getTime()
    {
-      return time;
+      return Instant.ofEpochMilli(millis);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public long getMillis()
+   {
+      return millis;
    }
 }
