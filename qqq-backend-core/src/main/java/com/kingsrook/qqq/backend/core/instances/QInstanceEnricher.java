@@ -110,6 +110,7 @@ import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -138,6 +139,7 @@ public class QInstanceEnricher
 
    private static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> enricherPlugins = new ListingHash<>();
 
+   private static Memoization<String, String> nameToLabelMemoization = new Memoization<>(50_000);
 
 
    /*******************************************************************************
@@ -862,41 +864,44 @@ public class QInstanceEnricher
     *******************************************************************************/
    public static String nameToLabel(String name)
    {
-      if(!StringUtils.hasContent(name))
+      return (nameToLabelMemoization.getResultThrowing(name, n ->
       {
-         return (name);
-      }
+         if(!StringUtils.hasContent(name))
+         {
+            return (name);
+         }
 
-      if(name.length() == 1)
-      {
-         return (name.substring(0, 1).toUpperCase(Locale.ROOT));
-      }
+         if(name.length() == 1)
+         {
+            return (name.substring(0, 1).toUpperCase(Locale.ROOT));
+         }
 
-      String suffix = name.substring(1)
+         String suffix = name.substring(1)
 
-         //////////////////////////////////////////////////////////////////////
-         // Put a space before capital letters or numbers embedded in a name //
-         // e.g., omethingElse -> omething Else; umber1 -> umber 1           //
-         //////////////////////////////////////////////////////////////////////
-         .replaceAll("([A-Z0-9]+)", " $1")
+            //////////////////////////////////////////////////////////////////////
+            // Put a space before capital letters or numbers embedded in a name //
+            // e.g., omethingElse -> omething Else; umber1 -> umber 1           //
+            //////////////////////////////////////////////////////////////////////
+            .replaceAll("([A-Z0-9]+)", " $1")
 
-         ////////////////////////////////////////////////////////////////
-         // put a space between numbers and words that come after them //
-         // e.g., umber1dad -> number 1 dad                            //
-         ////////////////////////////////////////////////////////////////
-         .replaceAll("([0-9])([A-Za-z])", "$1 $2");
+            ////////////////////////////////////////////////////////////////
+            // put a space between numbers and words that come after them //
+            // e.g., umber1dad -> number 1 dad                            //
+            ////////////////////////////////////////////////////////////////
+            .replaceAll("([0-9])([A-Za-z])", "$1 $2");
 
-      String label = name.substring(0, 1).toUpperCase(Locale.ROOT) + suffix;
+         String label = name.substring(0, 1).toUpperCase(Locale.ROOT) + suffix;
 
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      // apply any label mappings - e.g., to force app-specific acronyms/initialisms to all-caps //
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      for(Map.Entry<String, String> entry : labelMappings.entrySet())
-      {
-         label = label.replaceAll(entry.getKey(), entry.getValue());
-      }
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // apply any label mappings - e.g., to force app-specific acronyms/initialisms to all-caps //
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         for(Map.Entry<String, String> entry : labelMappings.entrySet())
+         {
+            label = label.replaceAll(entry.getKey(), entry.getValue());
+         }
 
-      return (label);
+         return (label);
+      }).orElse(name));
    }
 
 
@@ -1758,6 +1763,7 @@ public class QInstanceEnricher
    public static void addLabelMapping(String from, String to)
    {
       labelMappings.put(from, to);
+      nameToLabelMemoization.clear();
    }
 
 
@@ -1768,6 +1774,7 @@ public class QInstanceEnricher
    public static void removeLabelMapping(String from)
    {
       labelMappings.remove(from);
+      nameToLabelMemoization.clear();
    }
 
 
@@ -1778,6 +1785,7 @@ public class QInstanceEnricher
    public static void clearLabelMappings()
    {
       labelMappings.clear();
+      nameToLabelMemoization.clear();
    }
 
 
