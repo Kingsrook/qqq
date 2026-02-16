@@ -316,12 +316,15 @@ public class JoinGraph
             // else consider if any flipped joins match this entry - and if so, continue //
             ///////////////////////////////////////////////////////////////////////////////
             QJoinMetaData join = qInstance.getJoin(joinConnection.viaJoinName);
-            List<String> joinNames = joinGraph.flippedJoins.get(new SortedPair<>(join.getLeftTable(), join.getRightTable()));
-            for(String joinName : joinNames)
+            if(join != null)
             {
-               if(joinName.equals(joinPath.get(i)))
+               List<String> joinNames = joinGraph.flippedJoins.get(new SortedPair<>(join.getLeftTable(), join.getRightTable()));
+               for(String joinName : CollectionUtils.nonNullList(joinNames))
                {
-                  continue OUTER;
+                  if(joinName.equals(joinPath.get(i)))
+                  {
+                     continue OUTER;
+                  }
                }
             }
 

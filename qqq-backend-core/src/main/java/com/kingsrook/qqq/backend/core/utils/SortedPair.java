@@ -34,7 +34,31 @@ public class SortedPair<A extends Comparable<A>> extends Pair<A, A>
     *******************************************************************************/
    public SortedPair(A a, A b)
    {
-      super(a.compareTo(b) <= 0 ? a : b, a.compareTo(b) <= 0 ? b : a);
+      super(compare(a, b) <= 0 ? a : b, compare(a, b) <= 0 ? b : a);
+   }
+
+
+   /***************************************************************************
+    * do a null-safe compare that the constructor can use.
+    ***************************************************************************/
+   private static <A extends Comparable<A>> int compare(A a, A b)
+   {
+      if(a == null && b == null)
+      {
+         return (0);
+      }
+      else if(a == null)
+      {
+         return (-1);
+      }
+      else if(b == null)
+      {
+         return (1);
+      }
+      else
+      {
+         return (a.compareTo(b));
+      }
    }
 
 }

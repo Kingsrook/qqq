@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.utils;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -47,6 +48,17 @@ class SortedPairTest extends BaseTest
 
       assertEquals(3, new SortedPair<>(3, 3).getA());
       assertEquals(3, new SortedPair<>(3, 3).getB());
+
+      assertNull(new SortedPair<>(null, null).getA());
+      assertNull(new SortedPair<>(null, null).getB());
+
+      ///////////////////////////////////
+      // null compares before non-null //
+      ///////////////////////////////////
+      assertNull(new SortedPair<>(null, 1).getA());
+      assertEquals(1, new SortedPair<>(null, 1).getB());
+      assertNull(new SortedPair<>(1, null).getA());
+      assertEquals(1, new SortedPair<>(1, null).getB());
    }
 
 }

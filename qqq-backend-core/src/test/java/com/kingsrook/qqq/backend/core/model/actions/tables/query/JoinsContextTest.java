@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.AuthScope;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -98,7 +99,7 @@ class JoinsContextTest extends BaseTest
    private QInstance buildBaseInstance()
    {
       QInstance instance = new QInstance();
-      instance.setAuthentication(new QAuthenticationMetaData().withName("mock").withType(QAuthenticationType.MOCK));
+      instance.registerAuthenticationProvider(AuthScope.instanceDefault(), new QAuthenticationMetaData().withName("mock").withType(QAuthenticationType.MOCK));
       instance.addBackend(new QBackendMetaData().withName(BACKEND_NAME).withBackendType(MemoryBackendModule.class));
 
       ////////////
@@ -301,8 +302,13 @@ class JoinsContextTest extends BaseTest
       // use employee→employeeDetail — only one join between these two tables,   //
       // so metadata auto-resolution is unambiguous.                              //
       /////////////////////////////////////////////////////////////////////////////
-      QueryJoin    detailJoin   = new QueryJoin().withJoinTable(EMPLOYEE_DETAIL_TABLE);
-      JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(detailJoin), new QQueryFilter());
+      QueryJoin detailJoin = new QueryJoin().withJoinTable(EMPLOYEE_DETAIL_TABLE);
+
+      ////////////////////////////////////////////////////////////////////////////////////
+      // constructing this joinsContext has the side-effect of modifying the QueryJoin  //
+      // with its QJoinMetaData (thus, no need to capture the constructed JoinsContext) //
+      ////////////////////////////////////////////////////////////////////////////////////
+      new JoinsContext(instance, EMPLOYEE_TABLE, List.of(detailJoin), new QQueryFilter());
 
       QJoinMetaData resolvedMetaData = detailJoin.getJoinMetaData();
       assertNotNull(resolvedMetaData, "JoinMetaData should have been auto-filled");
