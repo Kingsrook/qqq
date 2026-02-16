@@ -33,16 +33,52 @@ import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.SortedPair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** Object to represent the graph of joins in a QQQ Instance.  e.g., all of the
- ** connections among tables through joins.
+ ** Represents the graph of table-to-table joins in a QQQ Instance, treating
+ ** each join as a non-directional edge between two tables.
+ **
+ ** <p>The primary purpose of this class is to answer the question: "given a
+ ** starting table, what other tables can be reached through joins, and via
+ ** which paths?"  This is used during instance enrichment and validation to
+ ** discover multi-hop join paths (e.g., order → orderLine → item).</p>
+ **
+ ** <p>Key behaviors:</p>
+ ** <ul>
+ **    <li><b>Deduplication:</b> If the instance defines both A → B and B → A
+ **        joins (on the same fields), they are normalized into a single edge
+ **        so the graph does not contain redundant paths.</li>
+ **    <li><b>Flipped-join awareness:</b> Even though duplicate joins are
+ **        collapsed into one edge, the {@code flippedJoins} map remembers all
+ **        original join names for each table pair, so that
+ **        {@link JoinConnectionList#matchesJoinPath(List, JoinGraph, QInstance)}
+ **        can match a path by any equivalent join name, not just the one
+ **        stored in the edge.</li>
+ **    <li><b>Path-length limiting:</b> To keep traversal performant on large
+ **        instances, paths longer than {@code maxPathLength} (default 3) are
+ **        pruned.  This limit is configurable via the system property
+ **        {@code qqq.instance.joinGraph.maxPathLength} or environment variable
+ **        {@code QQQ_INSTANCE_JOIN_GRAPH_MAX_PATH_LENGTH}.</li>
+ ** </ul>
  *******************************************************************************/
 public class JoinGraph
 {
    private Set<Edge> edges = new HashSet<>();
+
+   //////////////////////////////////////////////////////////////////////////////
+   // since the joins are considered non-directional edges, if an instance has //
+   // joins A -> B, and B -> A, only one of them gets built (say, A -> B)      //
+   // But then later, in {@code JoinConnectionList.matchesJoinPath}, a false   //
+   // positive could be returned if the other one (B -> A) was tested for.     //
+   // so - this listing hash keeps track of all joins that are equivalent      //
+   // to one another from this POV, so that any/all can be considered to match //
+   // todo - should this consider join-on fields as part of its key?           //
+   //////////////////////////////////////////////////////////////////////////////
+   private ListingHash<SortedPair<String>, String> flippedJoins = new ListingHash<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // as an instance grows, with the number of joins (say, more than 50?), especially as they may have a lot of connections, //
@@ -155,6 +191,8 @@ public class JoinGraph
       Set<NormalizedJoin> usedJoins = new HashSet<>();
       for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
       {
+         flippedJoins.add(new SortedPair<>(join.getRightTable(), join.getLeftTable()), join.getName());
+
          NormalizedJoin normalizedJoin = new NormalizedJoin(join);
          if(usedJoins.contains(normalizedJoin))
          {
@@ -244,6 +282,53 @@ public class JoinGraph
             {
                return (false);
             }
+         }
+
+         return (true);
+      }
+
+
+
+      /*******************************************************************************
+       * version of matchesJoinPath that considers flippedJoins, rather than only
+       * strictly matching the exact join names in the path.
+       *******************************************************************************/
+      public boolean matchesJoinPath(List<String> joinPath, JoinGraph joinGraph, QInstance qInstance)
+      {
+         if(list.size() != joinPath.size())
+         {
+            return (false);
+         }
+
+         OUTER:
+         for(int i = 0; i < list.size(); i++)
+         {
+            JoinConnection joinConnection = list.get(i);
+            if(joinConnection.viaJoinName().equals(joinPath.get(i)))
+            {
+               /////////////////////////////////////////////////////////////////////////
+               // if the name is an exact match, move on to the next join in the path //
+               /////////////////////////////////////////////////////////////////////////
+               continue OUTER;
+            }
+
+            ///////////////////////////////////////////////////////////////////////////////
+            // else consider if any flipped joins match this entry - and if so, continue //
+            ///////////////////////////////////////////////////////////////////////////////
+            QJoinMetaData join = qInstance.getJoin(joinConnection.viaJoinName);
+            List<String> joinNames = joinGraph.flippedJoins.get(new SortedPair<>(join.getLeftTable(), join.getRightTable()));
+            for(String joinName : joinNames)
+            {
+               if(joinName.equals(joinPath.get(i)))
+               {
+                  continue OUTER;
+               }
+            }
+
+            /////////////////////////////////////////////////////////////////
+            // if both checks above fail, then the join path doesn't match //
+            /////////////////////////////////////////////////////////////////
+            return (false);
          }
 
          return (true);
