@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
@@ -34,7 +33,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
-import com.kingsrook.qqq.backend.core.utils.SortedPair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -76,9 +74,8 @@ public class JoinGraph
    // positive could be returned if the other one (B -> A) was tested for.     //
    // so - this listing hash keeps track of all joins that are equivalent      //
    // to one another from this POV, so that any/all can be considered to match //
-   // todo - should this consider join-on fields as part of its key?           //
    //////////////////////////////////////////////////////////////////////////////
-   private ListingHash<SortedPair<String>, String> flippedJoins = new ListingHash<>();
+   private ListingHash<NormalizedJoin, String> flippedJoins = new ListingHash<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // as an instance grows, with the number of joins (say, more than 50?), especially as they may have a lot of connections, //
@@ -102,81 +99,30 @@ public class JoinGraph
 
 
 
-   /*******************************************************************************
+   /***************************************************************************
     ** In this class, we are treating joins as non-directional graph edges - so -
     ** use this class to "normalize" what may otherwise be duplicated joins in the
     ** qInstance (e.g., A -> B and B -> A -- in the instance, those are valid, but
     ** in our graph here, we want to consider those the same).
-    *******************************************************************************/
-   private static class NormalizedJoin
+    ***************************************************************************/
+   private record NormalizedJoin(String tableA, String tableB, List<String> joinFieldA, List<String> joinFieldB)
    {
-      private String tableA;
-      private String tableB;
-      private String joinFieldA;
-      private String joinFieldB;
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      public NormalizedJoin(QJoinMetaData joinMetaData)
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      static NormalizedJoin build(QJoinMetaData joinMetaData)
       {
-         boolean needFlip     = false;
-         int     tableCompare = joinMetaData.getLeftTable().compareTo(joinMetaData.getRightTable());
-         if(tableCompare < 0)
+         List<String> leftFields  = joinMetaData.getJoinOns().stream().map(jo -> jo.getLeftField()).toList();
+         List<String> rightFields = joinMetaData.getJoinOns().stream().map(jo -> jo.getRightField()).toList();
+
+         if(joinMetaData.getLeftTable().compareTo(joinMetaData.getRightTable()) < 0)
          {
-            needFlip = true;
+            return (new NormalizedJoin(joinMetaData.getLeftTable(), joinMetaData.getRightTable(), leftFields, rightFields));
          }
-         else if(tableCompare == 0)
+         else
          {
-            int fieldCompare = joinMetaData.getJoinOns().get(0).getLeftField().compareTo(joinMetaData.getJoinOns().get(0).getRightField());
-            if(fieldCompare < 0)
-            {
-               needFlip = true;
-            }
+            return (new NormalizedJoin(joinMetaData.getRightTable(), joinMetaData.getLeftTable(), rightFields, leftFields));
          }
-
-         if(needFlip)
-         {
-            joinMetaData = joinMetaData.flip();
-         }
-
-         tableA = joinMetaData.getLeftTable();
-         tableB = joinMetaData.getRightTable();
-         joinFieldA = joinMetaData.getJoinOns().get(0).getLeftField();
-         joinFieldB = joinMetaData.getJoinOns().get(0).getRightField();
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public boolean equals(Object o)
-      {
-         if(this == o)
-         {
-            return true;
-         }
-         if(o == null || getClass() != o.getClass())
-         {
-            return false;
-         }
-         NormalizedJoin that = (NormalizedJoin) o;
-         return Objects.equals(tableA, that.tableA) && Objects.equals(tableB, that.tableB) && Objects.equals(joinFieldA, that.joinFieldA) && Objects.equals(joinFieldB, that.joinFieldB);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public int hashCode()
-      {
-         return Objects.hash(tableA, tableB, joinFieldA, joinFieldB);
       }
    }
 
@@ -191,9 +137,9 @@ public class JoinGraph
       Set<NormalizedJoin> usedJoins = new HashSet<>();
       for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
       {
-         flippedJoins.add(new SortedPair<>(join.getRightTable(), join.getLeftTable()), join.getName());
+         NormalizedJoin normalizedJoin = NormalizedJoin.build(join);
+         flippedJoins.add(NormalizedJoin.build(join), join.getName());
 
-         NormalizedJoin normalizedJoin = new NormalizedJoin(join);
          if(usedJoins.contains(normalizedJoin))
          {
             continue;
@@ -318,7 +264,7 @@ public class JoinGraph
             QJoinMetaData join = qInstance.getJoin(joinConnection.viaJoinName);
             if(join != null)
             {
-               List<String> joinNames = joinGraph.flippedJoins.get(new SortedPair<>(join.getLeftTable(), join.getRightTable()));
+               List<String> joinNames = joinGraph.flippedJoins.get(NormalizedJoin.build(join));
                for(String joinName : CollectionUtils.nonNullList(joinNames))
                {
                   if(joinName.equals(joinPath.get(i)))
