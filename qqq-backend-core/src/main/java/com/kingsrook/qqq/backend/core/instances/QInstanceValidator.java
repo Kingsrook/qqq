@@ -1122,7 +1122,7 @@ public class QInstanceValidator
                      boolean foundJoinConnection = false;
                      for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
                      {
-                        if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
+                        if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath(), joinGraph, qInstance))
                         {
                            foundJoinConnection = true;
                         }
@@ -1130,7 +1130,7 @@ public class QInstanceValidator
                      assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
                   }
 
-                  assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one join with the joinPath: " + exposedJoin.getJoinPath());
+                  assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one exposed join with the joinPath: " + exposedJoin.getJoinPath());
                   usedJoinPaths.add(exposedJoin.getJoinPath());
                }
             }

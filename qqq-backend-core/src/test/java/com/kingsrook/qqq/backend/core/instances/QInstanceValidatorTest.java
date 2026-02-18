@@ -2432,13 +2432,30 @@ public class QInstanceValidatorTest extends BaseTest
          qInstance.addTable(newTable("B", "id", "aId"));
          qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
       },
-         "than one join with the joinPath: [AB]");
+         "than one exposed join with the joinPath: [AB]");
 
       assertValidationSuccess(qInstance ->
       {
          qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B").withJoinPath(List.of("AB"))));
          qInstance.addTable(newTable("B", "id", "aId"));
          qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+      });
+
+      assertValidationSuccess(qInstance ->
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // this case helps verify the update (in the corresponding commit) that changes              //
+         // joinConnectionList.matchesJoinPath to allow flipped joins to match.                       //
+         // it isn't entirely a valid use-case (to have essentially the same join exposed twice),     //
+         // but, it makes sure to expose a case that would have failed without the referenced change. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         qInstance.addTable(newTable("A", "id")
+            .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B1").withJoinPath(List.of("AB")))
+            .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B2").withJoinPath(List.of("BA")))
+         );
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("B").withRightTable("A").withName("BA").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("aId", "id")));
       });
    }
 
