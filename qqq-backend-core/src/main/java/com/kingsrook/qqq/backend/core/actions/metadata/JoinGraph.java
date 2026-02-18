@@ -75,7 +75,7 @@ public class JoinGraph
    // since the joins are considered non-directional edges, if an instance has //
    // joins A -> B, and B -> A, only one of them gets built (say, A -> B)      //
    // But then later, in {@code JoinConnectionList.matchesJoinPath}, a false   //
-   // positive could be returned if the other one (B -> A) was tested for.     //
+   // negative could be returned if the other one (B -> A) was tested for.     //
    // so - this listing hash keeps track of all joins that are equivalent      //
    // to one another from this POV, so that any/all can be considered to match //
    //////////////////////////////////////////////////////////////////////////////
@@ -183,7 +183,7 @@ public class JoinGraph
       for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
       {
          NormalizedJoin normalizedJoin = NormalizedJoin.build(join);
-         flippedJoins.add(NormalizedJoin.build(join), join.getName());
+         flippedJoins.add(normalizedJoin, join.getName());
 
          if(usedJoins.contains(normalizedJoin))
          {
@@ -282,7 +282,9 @@ public class JoinGraph
 
       /*******************************************************************************
        * version of matchesJoinPath that considers flippedJoins, rather than only
-       * strictly matching the exact join names in the path.
+       * strictly matching the exact join names in the path (which, given the fact that
+       * the join graph may contain flipped joins, this allows for more flexible
+       * (and probably accurate for what you're looking for) matching).
        *******************************************************************************/
       public boolean matchesJoinPath(List<String> joinPath, JoinGraph joinGraph, QInstance qInstance)
       {
