@@ -29,11 +29,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -65,6 +67,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class JoinGraph
 {
+   private static final QLogger LOG = QLogger.getLogger(JoinGraph.class);
+
    private Set<Edge> edges = new HashSet<>();
 
    //////////////////////////////////////////////////////////////////////////////
@@ -115,7 +119,48 @@ public class JoinGraph
          List<String> leftFields  = joinMetaData.getJoinOns().stream().map(jo -> jo.getLeftField()).toList();
          List<String> rightFields = joinMetaData.getJoinOns().stream().map(jo -> jo.getRightField()).toList();
 
-         if(joinMetaData.getLeftTable().compareTo(joinMetaData.getRightTable()) < 0)
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // to normalize the join, we'll first compare table names.  if they match (a self-join), then we'll compare join fields //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Boolean leftFirst    = null;
+         int     tableCompare = joinMetaData.getLeftTable().compareTo(joinMetaData.getRightTable());
+         if(tableCompare < 0)
+         {
+            leftFirst = true;
+         }
+         else if(tableCompare > 0)
+         {
+            leftFirst = false;
+         }
+         else
+         {
+            for(int i = 0; i < Math.min(leftFields.size(), rightFields.size()); i++)
+            {
+               int fieldCompare = leftFields.get(i).compareTo(rightFields.get(i));
+               if(fieldCompare < 0)
+               {
+                  leftFirst = true;
+                  break;
+               }
+               else if(fieldCompare > 0)
+               {
+                  leftFirst = false;
+                  break;
+               }
+            }
+         }
+
+         if(leftFirst == null)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the sides of the joins were identical (e.g., foo.id -> foo.id), that's probably bad setup. //
+            // so warn the user about it, and choose something...                                            //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            LOG.warn("There appears to be a join between a table and itself, with all matching join-fields.  This could introduce unexpected behavior.", logPair("joinName", joinMetaData.getName()));
+            leftFirst = true;
+         }
+
+         if(leftFirst)
          {
             return (new NormalizedJoin(joinMetaData.getLeftTable(), joinMetaData.getRightTable(), leftFields, rightFields));
          }

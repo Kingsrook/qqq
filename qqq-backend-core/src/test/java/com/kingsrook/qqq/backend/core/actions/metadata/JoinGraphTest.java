@@ -197,6 +197,72 @@ class JoinGraphTest extends BaseTest
 
 
    /*******************************************************************************
+    ** Test that joins between the same table pair are NOT deduplicated when their
+    ** join-on fields are different.
+    *******************************************************************************/
+   @Test
+   void testJoinsWithDifferentJoinOnsAreNotDeduplicated()
+   {
+      QInstance qInstance = new QInstance();
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderToOrderLineByOrderId")
+         .withLeftTable("order")
+         .withRightTable("orderLine")
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("id", "orderId")));
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderToOrderLineByStoreId")
+         .withLeftTable("order")
+         .withRightTable("orderLine")
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("storeId", "storeId")));
+
+      JoinGraph joinGraph = new JoinGraph(qInstance);
+
+      Set<JoinGraph.JoinConnectionList> fromOrder = joinGraph.getJoinConnections("order");
+
+      List<JoinGraph.JoinConnectionList> oneHopToOrderLine = fromOrder.stream()
+         .filter(jcl -> jcl.list().size() == 1 && jcl.list().get(0).joinTable().equals("orderLine"))
+         .toList();
+
+      assertEquals(2, oneHopToOrderLine.size());
+      assertTrue(oneHopToOrderLine.stream().anyMatch(jcl -> jcl.list().get(0).viaJoinName().equals("orderToOrderLineByOrderId")));
+      assertTrue(oneHopToOrderLine.stream().anyMatch(jcl -> jcl.list().get(0).viaJoinName().equals("orderToOrderLineByStoreId")));
+   }
+
+
+
+
+   /*******************************************************************************
+    * test an odd-ball case (probably not supported, nor intended/correct) where
+    * a join breaks the sorting rules (between left & right) in NormalizedJoin.build,
+    * because it has the same table name on bot sides, and the same list of join
+    * fields on both sides (e.g., employee.id -> employee.id).
+    *******************************************************************************/
+   @Test
+   void testIdenticalJoins()
+   {
+      QInstance qInstance = new QInstance();
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("employeeToSelf")
+         .withLeftTable("employee")
+         .withRightTable("employee")
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("id", "id")));
+
+      new JoinGraph(qInstance);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // just make sure we didn't crash (or infinitely loop or some-such) on this unsupported case //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Test
@@ -312,6 +378,48 @@ class JoinGraphTest extends BaseTest
       // a completely unrelated join name should not match either way //
       //////////////////////////////////////////////////////////////////
       assertFalse(connectionList.matchesJoinPath(List.of("bogusJoin"), joinGraph, qInstance));
+   }
+
+
+
+   /*******************************************************************************
+    ** For a self-join, verify flipped definitions normalize to the same key so
+    ** flippedJoins-aware matching treats both names as equivalent.
+    *******************************************************************************/
+   @Test
+   void testMatchesJoinPathWithFlippedSelfJoin()
+   {
+      QInstance qInstance = new QInstance();
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("employeeToManager")
+         .withLeftTable("employee")
+         .withRightTable("employee")
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("managerId", "id")));
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("managerToEmployee")
+         .withLeftTable("employee")
+         .withRightTable("employee")
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("id", "managerId")));
+
+      JoinGraph joinGraph = new JoinGraph(qInstance);
+
+      JoinGraph.JoinConnectionList connectionList = new JoinGraph.JoinConnectionList(List.of(
+         new JoinGraph.JoinConnection("employee", "employeeToManager")));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // the overload of matchesJoinPath that only takes string won't see the 2nd join as matching //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(connectionList.matchesJoinPath(List.of("employeeToManager")));
+      assertFalse(connectionList.matchesJoinPath(List.of("managerToEmployee")));
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // but the overload that takes the graph - it can see flipped joins, so it will see both as matching //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(connectionList.matchesJoinPath(List.of("employeeToManager"), joinGraph, qInstance));
+      assertTrue(connectionList.matchesJoinPath(List.of("managerToEmployee"), joinGraph, qInstance));
    }
 
 
