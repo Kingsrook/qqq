@@ -41,6 +41,8 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface, Cloneable, 
    private String logo;
    private String icon;
    private String accentColor;
+   private String accentColorLight;
+   private String gravatarDefault;
 
    @Deprecated(since = "migrate to use banners map instead")
    private String environmentBannerText;
@@ -423,6 +425,84 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface, Cloneable, 
       }
       this.banners.put(slot, banner);
 
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for accentColorLight
+    * @see #withAccentColorLight(String)
+    *******************************************************************************/
+   public String getAccentColorLight()
+   {
+      return (this.accentColorLight);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for accentColorLight
+    * @see #withAccentColorLight(String)
+    *******************************************************************************/
+   public void setAccentColorLight(String accentColorLight)
+   {
+      this.accentColorLight = accentColorLight;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for accentColorLight
+    *
+    * @param accentColorLight
+    * A lighter shade of the accent color, use for UI elements in an alternate mode,
+    * such as a 'dirty' quick-filter.
+    * @return this
+    *******************************************************************************/
+   public QBrandingMetaData withAccentColorLight(String accentColorLight)
+   {
+      this.accentColorLight = accentColorLight;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for gravatarDefault
+    * @see #withGravatarDefault(String)
+    *******************************************************************************/
+   public String getGravatarDefault()
+   {
+      return (this.gravatarDefault);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for gravatarDefault
+    * @see #withGravatarDefault(String)
+    *******************************************************************************/
+   public void setGravatarDefault(String gravatarDefault)
+   {
+      this.gravatarDefault = gravatarDefault;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for gravatarDefault
+    *
+    * @param gravatarDefault
+    * value to be appended to the gravatar URL as the 'default' parameter.  See
+    * See <a href=https://docs.gravatar.com/sdk/images/>Gravatar docs</a> for details.
+    * The short version is - can be a url-encoded URL to an image, or a keyword
+    * defined by gravatar, like initials, identicon, or blank.
+    * @return this
+    *******************************************************************************/
+   public QBrandingMetaData withGravatarDefault(String gravatarDefault)
+   {
+      this.gravatarDefault = gravatarDefault;
       return (this);
    }
 
