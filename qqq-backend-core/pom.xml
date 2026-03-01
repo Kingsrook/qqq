@@ -243,7 +243,7 @@
       <dependency>
          <groupId>com.mchange</groupId>
          <artifactId>mchange-commons-java</artifactId>
-         <version>0.3.2</version>
+         <version>0.4.0</version>
       </dependency>
 
       <!-- Many of the deps we bring in use slf4j.  This dep maps slf4j to our logger, log4j -->
