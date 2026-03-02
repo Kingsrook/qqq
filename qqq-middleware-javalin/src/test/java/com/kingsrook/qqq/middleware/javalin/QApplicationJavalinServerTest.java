@@ -44,7 +44,6 @@ import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.http.HttpStatus;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -1961,7 +1960,9 @@ class QApplicationJavalinServerTest
 
 
 
-   @NotNull
+   /*******************************************************************************
+    *
+    *******************************************************************************/
    private static String getMainCssHash(HttpResponse<String> deepLinkResponse)
    {
       return deepLinkResponse.getBody().replaceFirst("(?s).*static/css/main.", "").replaceFirst("(?s).css.*", "");
@@ -1969,7 +1970,9 @@ class QApplicationJavalinServerTest
 
 
 
-   @NotNull
+   /*******************************************************************************
+    *
+    *******************************************************************************/
    private static String getMainJsHash(HttpResponse<String> deepLinkResponse)
    {
       return deepLinkResponse.getBody().replaceFirst("(?s).*static/js/main.", "").replaceFirst("(?s).js.*", "");
