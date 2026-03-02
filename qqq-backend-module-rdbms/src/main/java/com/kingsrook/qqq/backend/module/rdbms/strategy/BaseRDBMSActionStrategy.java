@@ -87,6 +87,15 @@ public class BaseRDBMSActionStrategy implements RDBMSActionStrategyInterface
    {
       clause.append(column);
 
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // for some operators, we append the column name a second time, e.g., to do an 'OR' of two //
+      // conditions (NOT_EQUALS_OR_IS_NULL becomes col !=? or col IS NULL).                      //
+      // It's important in these cases to have any bind-params after the duplicated column name  //
+      // - for scenarios where the column name has been replaced by a function, and the function //
+      // has bind-params of its own (so they can be bound all before the 'value' param(s).       //
+      // So we actually make NOT_EQUALS_OR_IS_NULL become col IS NULL or col != ?                //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+
       switch(criterion.getOperator())
       {
          case EQUALS ->
@@ -101,7 +110,7 @@ public class BaseRDBMSActionStrategy implements RDBMSActionStrategyInterface
          }
          case NOT_EQUALS_OR_IS_NULL ->
          {
-            clause.append(" != ? OR ").append(column).append(" IS NULL ");
+            clause.append(" IS NULL OR ").append(column).append(" != ? ");
             return (1);
          }
          case IN ->

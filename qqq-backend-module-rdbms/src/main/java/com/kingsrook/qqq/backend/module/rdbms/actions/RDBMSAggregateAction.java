@@ -90,7 +90,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
-            sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys(), joinsContext);
+            sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys(), joinsContext, params);
          }
 
          if(aggregateInput.getLimit() != null)

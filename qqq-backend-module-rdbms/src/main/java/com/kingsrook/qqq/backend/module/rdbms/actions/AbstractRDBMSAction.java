@@ -28,8 +28,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,7 +40,6 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
@@ -66,6 +63,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -78,6 +79,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSFieldFunctionAdapterInterface;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSFieldMetaData;
@@ -114,8 +116,9 @@ public abstract class AbstractRDBMSAction
    protected QueryStat queryStat;
    protected PreparedStatement statement;
    protected boolean           isCancelled = false;
-   private RDBMSBackendMetaData         backendMetaData;
-   private RDBMSActionStrategyInterface actionStrategy;
+
+   protected RDBMSBackendMetaData         backendMetaData;
+   protected RDBMSActionStrategyInterface actionStrategy;
 
 
 
@@ -249,9 +252,28 @@ public abstract class AbstractRDBMSAction
     *******************************************************************************/
    protected Serializable scrubValue(QFieldMetaData field, Serializable value)
    {
+      return scrubValue(field.getType(), value);
+   }
+
+
+
+   /*******************************************************************************
+    ** Handle obvious problems with values - like empty string for integer should be null,
+    ** and type conversions that we can do "better" than jdbc.
+    **
+    ** Performs type coercion and normalization of values before they are set in
+    ** PreparedStatements. Converts empty strings to null for typed fields, and
+    ** uses ValueUtils for string-to-type conversions that are more forgiving than
+    ** JDBC's default behavior.
+    **
+    ** @param type the expected type of the value
+    ** @param value the raw value to scrub/convert
+    ** @return the scrubbed value, properly typed or null
+    *******************************************************************************/
+   protected Serializable scrubValue(QFieldType type, Serializable value)
+   {
       if("".equals(value))
       {
-         QFieldType type = field.getType();
          if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.LONG) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
          {
             value = null;
@@ -261,27 +283,27 @@ public abstract class AbstractRDBMSAction
       //////////////////////////////////////////////////////////////////////////////
       // value utils is good at making values from strings - jdbc, not as much... //
       //////////////////////////////////////////////////////////////////////////////
-      if(field.getType().equals(QFieldType.INTEGER) && value instanceof String)
+      if(type.equals(QFieldType.INTEGER) && value instanceof String)
       {
          value = ValueUtils.getValueAsInteger(value);
       }
-      else if(field.getType().equals(QFieldType.LONG) && value instanceof String)
+      else if(type.equals(QFieldType.LONG) && value instanceof String)
       {
          value = ValueUtils.getValueAsLong(value);
       }
-      else if(field.getType().equals(QFieldType.DATE) && value instanceof String)
+      else if(type.equals(QFieldType.DATE) && value instanceof String)
       {
          value = ValueUtils.getValueAsLocalDate(value);
       }
-      else if(field.getType().equals(QFieldType.DATE_TIME) && value instanceof String)
+      else if(type.equals(QFieldType.DATE_TIME) && value instanceof String)
       {
          value = ValueUtils.getValueAsInstant(value);
       }
-      else if(field.getType().equals(QFieldType.DECIMAL) && value instanceof String)
+      else if(type.equals(QFieldType.DECIMAL) && value instanceof String)
       {
          value = ValueUtils.getValueAsBigDecimal(value);
       }
-      else if(field.getType().equals(QFieldType.BOOLEAN) && value instanceof String)
+      else if(type.equals(QFieldType.BOOLEAN) && value instanceof String)
       {
          value = ValueUtils.getValueAsBoolean(value);
       }
@@ -583,15 +605,29 @@ public abstract class AbstractRDBMSAction
             continue;
          }
 
-         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName());
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // from the criterion's field name (e.g., lineItem.sku), figure out what field we're actually working with //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName(), true);
+         QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
+         QVirtualFieldMetaData                 virtualField             = null;
 
-         List<Serializable> values = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
-         QFieldMetaData     field  = fieldAndTableNameOrAlias.field();
-         String             column = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
-         StringBuilder      clause = new StringBuilder();
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // if the field is virtual, then capture that virtualField in its own variable, and   //
+         // replace the field variable with the real field that the virtual field is based on. //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         if(field instanceof QVirtualFieldMetaData v)
+         {
+            virtualField = v;
+            String fieldTableName = joinsContext.resolveTableNameOrAliasToTableName(fieldAndTableNameOrAlias.tableNameOrAlias());
+            String realFieldName  = virtualField.getFieldFunction().getFieldName();
+            field = QContext.getQInstance().getTable(fieldTableName).getField(realFieldName);
+         }
 
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the field specifies an action strategy, then use it (to overwrite the one that comes from the backend). //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          RDBMSActionStrategyInterface actionStrategy = getActionStrategy();
-
          RDBMSFieldMetaData rdbmsFieldMetaData = RDBMSFieldMetaData.of(field);
          if(rdbmsFieldMetaData != null)
          {
@@ -602,10 +638,73 @@ public abstract class AbstractRDBMSAction
             }
          }
 
+         /////////////////////////////////////////////////////////////////
+         // figure out if a field function is being used.               //
+         // if one is specified on the criterion, then use it.          //
+         // else, if the field is virtual, then use ITS field function. //
+         /////////////////////////////////////////////////////////////////
+         FieldFunction fieldFunction = criterion.getFieldFunction();
+         if(fieldFunction == null && virtualField != null)
+         {
+            fieldFunction = virtualField.getFieldFunction();
+         }
+
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         // if a field function is being used, then get the adapter for it from the action strategy. //
+         // that's to help accommodate different DB vendors using different function names.          //
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = null;
+         if(fieldFunction != null)
+         {
+            fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+         }
+
+         //////////////////////////////////////////////////////////////////
+         // figure out the column name for the table/alias + field name. //
+         // wrap that string in a function if we have a function adapter //
+         //////////////////////////////////////////////////////////////////
+         String column = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
+         if(fieldFunctionAdapter != null)
+         {
+            column = fieldFunctionAdapter.wrapColumnName(column, fieldFunction);
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // have the action strategy build the SQL string that goes in the where clause, and tell us out how many bind-params are needed. //
+         // it takes the values list so that it can do things like:                                                                       //
+         // - build an always-true or always-false clause for an IN with 0 parameters                                                     //
+         // - edit the string for string contains, starts-with, etc, to work as SQL LIKE                                                  //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         StringBuilder      clause = new StringBuilder();
+         List<Serializable> values = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
          Integer expectedNoOfParams = actionStrategy.appendCriterionToWhereClause(criterion, clause, column, values, field);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if there's a field function adapter being used, see if we need to add any bind params as part of applying the function. //
+         // for example, specifying a time zone, or a length to a substr function, etc.                                             //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(fieldFunctionAdapter != null)
+         {
+            List<Serializable> functionParams = fieldFunctionAdapter.getParams(fieldFunction);
+            if(CollectionUtils.nullSafeHasContents(functionParams))
+            {
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // because some criteria duplicate the field name in the where clause, we need to add the params for each copy //
+               // for examples: (x IS NULL or x IN ...) - or - (x IS NULL OR x = '')                                          //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               int copiesOfParamsNeeded = StringUtils.countSubstringInstances(clause.toString(), column);
+               for(int i = 0; i < copiesOfParamsNeeded; i++)
+               {
+                  params.addAll(functionParams);
+               }
+            }
+         }
 
          if(expectedNoOfParams != null)
          {
+            ////////////////////////////////////////////////////////////////////////////
+            // deal with an 'otherFieldName' being specified instead of a values list //
+            ////////////////////////////////////////////////////////////////////////////
             if(expectedNoOfParams.equals(1) && StringUtils.hasContent(criterion.getOtherFieldName()))
             {
                JoinsContext.FieldAndTableNameOrAlias otherFieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getOtherFieldName());
@@ -620,7 +719,7 @@ public abstract class AbstractRDBMSAction
             }
             else if(!expectedNoOfParams.equals(values.size()))
             {
-               throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "] (expected " + expectedNoOfParams + ", received " + values.size() + ")");
+               throw new IllegalArgumentException("Incorrect number of values given for criteria [" + fieldAndTableNameOrAlias.field().getName() + "] (expected " + expectedNoOfParams + ", received " + values.size() + ")");
             }
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -635,7 +734,7 @@ public abstract class AbstractRDBMSAction
                {
                   try
                   {
-                     valueListIterator.set(expression.evaluate(field));
+                     valueListIterator.set(expression.evaluate(Objects.requireNonNullElse(virtualField, field)));
                   }
                   catch(QException qe)
                   {
@@ -644,21 +743,25 @@ public abstract class AbstractRDBMSAction
                }
                else
                {
-                  Serializable scrubbedValue = scrubValue(field, value);
+                  Serializable scrubbedValue;
+                  if(fieldFunction != null)
+                  {
+                     FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+                     scrubbedValue = scrubValue(fieldFunctionType.getReturnType(), value);
+                  }
+                  else
+                  {
+                     scrubbedValue = scrubValue(field, value);
+                  }
                   valueListIterator.set(scrubbedValue);
                }
             }
          }
 
+         /////////////////////////////////////////////////////////////////////////////////
+         // finally, wrap the whole clause in ()'s and append it to the list of clauses //
+         /////////////////////////////////////////////////////////////////////////////////
          clauses.add("(" + clause + ")");
-
-         /* not ready for this at this time - would be needed when "parsing" of values (instead of expressions for relative date-times) is ready*/
-         /*
-         if(field.getType().equals(QFieldType.DATE_TIME))
-         {
-            values = evaluateDateTimeParamValues(values);
-         }
-         */
 
          params.addAll(values);
       }
@@ -673,89 +776,6 @@ public abstract class AbstractRDBMSAction
       }
 
       return (Optional.of(String.join(" " + booleanOperator.toString() + " ", clauses)));
-   }
-
-
-
-   /*******************************************************************************
-    ** Evaluate and normalize date/time parameter values for SQL queries.
-    **
-    ** Converts various date/time representations (strings, LocalDate, Instant) into
-    ** proper types that JDBC can handle. Uses ValueUtils for flexible parsing of
-    ** string representations. Returns null-safe list of normalized values.
-    **
-    ** Note: Currently not fully implemented for relative date parsing (see inline TODOs).
-    **
-    ** @param values list of raw parameter values to normalize
-    ** @return list of normalized date/time values suitable for PreparedStatement
-    *******************************************************************************/
-   private List<Serializable> evaluateDateTimeParamValues(List<Serializable> values)
-   {
-      if(CollectionUtils.nullSafeIsEmpty(values))
-      {
-         return (values);
-      }
-
-      List<Serializable> rs = new ArrayList<>();
-      for(Serializable value : values)
-      {
-         if(value instanceof Instant)
-         {
-            rs.add(value);
-         }
-         else
-         {
-            try
-            {
-               Instant valueAsInstant = ValueUtils.getValueAsInstant(value);
-               rs.add(valueAsInstant);
-            }
-            catch(Exception e)
-            {
-               try
-               {
-                  LocalDate valueAsLocalDate = ValueUtils.getValueAsLocalDate(value);
-                  rs.add(valueAsLocalDate);
-                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  // Optional<Instant> valueAsRelativeInstant = parseValueAsRelativeInstant(value); rs.add(valueAsRelativeInstant.orElseThrow()); //
-                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               }
-               catch(Exception e2)
-               {
-                  throw (new QValueException("Parameter value [" + value + "] could not be evaluated as an absolute or relative Instant"));
-               }
-            }
-         }
-      }
-      return (rs);
-   }
-
-
-
-   /*******************************************************************************
-    ** Parse a value as a relative Instant (e.g., "now", "today", "+1d").
-    **
-    ** Placeholder implementation for parsing relative date/time expressions.
-    ** Currently returns Instant.now() as a stub. Intended to support expressions
-    ** like "now-1d", "today+2h", etc. for dynamic query filters.
-    **
-    ** TODO: Implement full parser for relative date/time expressions.
-    **
-    ** @param value the value to parse as a relative Instant
-    ** @return Optional containing parsed Instant, or empty if value cannot be parsed
-    *******************************************************************************/
-   private Optional<Instant> parseValueAsRelativeInstant(Serializable value)
-   {
-      String valueString = ValueUtils.getValueAsString(value);
-      if(valueString == null)
-      {
-         return (Optional.empty());
-      }
-
-      /////////////////////////
-      // todo - use parser!! //
-      /////////////////////////
-      return Optional.of(Instant.now());
    }
 
 
@@ -871,9 +891,11 @@ public abstract class AbstractRDBMSAction
     ** @param table the main table metadata (used for aggregate field resolution)
     ** @param orderBys list of order-by specifications to convert to SQL
     ** @param joinsContext context for resolving field names to table aliases
-    ** @return comma-separated ORDER BY clause string
+    ** @param params bind-params for the query - which may get appended to in here
+    *                for fieldFunctions (e.g., substr(x, ?, ?))
+    * @return comma-separated ORDER BY clause string
     *******************************************************************************/
-   protected String makeOrderByClause(QTableMetaData table, List<QFilterOrderBy> orderBys, JoinsContext joinsContext)
+   protected String makeOrderByClause(QTableMetaData table, List<QFilterOrderBy> orderBys, JoinsContext joinsContext, List<Serializable> params)
    {
       List<String> clauses = new ArrayList<>();
 
@@ -892,13 +914,31 @@ public abstract class AbstractRDBMSAction
          }
          else
          {
-            JoinsContext.FieldAndTableNameOrAlias otherFieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(orderBy.getFieldName());
+            JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(orderBy.getFieldName(), true);
+            QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
 
-            QFieldMetaData field  = otherFieldAndTableNameOrAlias.field();
-            String         column = getColumnName(field);
-            clauses.add(escapeIdentifier(otherFieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(column) + " " + ascOrDesc);
+            String column         = getColumnName(field);
+            String tableDotColumn = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(column);
+
+            if(field instanceof QVirtualFieldMetaData virtualField)
+            {
+               String         fieldTableName = joinsContext.resolveTableNameOrAliasToTableName(fieldAndTableNameOrAlias.tableNameOrAlias());
+               String         realFieldName  = virtualField.getFieldFunction().getFieldName();
+               QFieldMetaData realField      = QContext.getQInstance().getTable(fieldTableName).getField(realFieldName);
+               tableDotColumn = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(realField));
+
+               FieldFunction                      fieldFunction        = virtualField.getFieldFunction();
+               RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+               tableDotColumn = fieldFunctionAdapter.wrapColumnNameForOrderBy(tableDotColumn, fieldFunction);
+
+               fieldFunctionAdapter.getParams(fieldFunction);
+               CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
+            }
+
+            clauses.add(tableDotColumn + " " + ascOrDesc);
          }
       }
+
       return (String.join(", ", clauses));
    }
 

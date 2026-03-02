@@ -34,10 +34,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -50,7 +52,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.Now
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.ThisOrLastPeriod;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
@@ -1142,6 +1150,146 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       assertFalse(record.getValues().containsKey("firstName"));
       assertFalse(record.getValues().containsKey("createDate"));
       assertEquals(1, record.getValues().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterByNameLengthAsCriteriaWithFieldFunction() throws Exception
+   {
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_PERSON).withQueryFilter(new QQueryFilter()));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "-").withValue("firstName", "Darin").withValue("lastName", "K"),
+         new QRecord().withValue("email", "-").withValue("firstName", "Who").withValue("lastName", "Dr.")
+      )));
+
+      List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, 5)
+            .withFieldFunction(new FieldFunction().withFieldName("firstName").withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER))));
+      assertEquals(1, records.size());
+      assertEquals("Darin", records.get(0).getValue("firstName"));
+
+      records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstName", QCriteriaOperator.LESS_THAN, 7)
+            .withFieldFunction(new FieldFunction().withFieldName("firstName").withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER))));
+      assertEquals(2, records.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterBySubStringAsVirtualField() throws Exception
+   {
+      //////////////////////////////////////
+      // add a virtual field to the table //
+      //////////////////////////////////////
+      QVirtualFieldMetaData firstNameSubString2Field = new QVirtualFieldMetaData("firstNameSubString2", QFieldType.STRING)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER)
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 2)));
+
+      QVirtualFieldMetaData firstNameSubString3For2Field = new QVirtualFieldMetaData("firstNameSubString3For2", QFieldType.STRING)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER)
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 3, SubStringFunction.LENGTH_PARAM, 2)));
+
+      QTableMetaData personTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .withVirtualField(firstNameSubString2Field)
+         .withVirtualField(firstNameSubString3For2Field);
+
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_PERSON).withQueryFilter(new QQueryFilter()));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "-").withValue("firstName", "Darin").withValue("lastName", "K").withValue("modifyDate", Instant.parse("2026-02-23T15:08:51Z")),
+         new QRecord().withValue("email", "-").withValue("firstName", "Timothy").withValue("lastName", "Dr.")
+      )));
+
+      {
+         List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+            new QFilterCriteria(firstNameSubString2Field.getName(), QCriteriaOperator.EQUALS, "arin")));
+         assertEquals(1, records.size());
+         assertEquals("Darin", records.get(0).getValue("firstName"));
+         assertEquals("arin", records.get(0).getValue(firstNameSubString2Field.getName()));
+      }
+
+      {
+         List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter()
+            .withOrderBy(new QFilterOrderBy(firstNameSubString2Field.getName(), false)));
+         assertEquals(2, records.size());
+         assertEquals("imothy", records.get(0).getValue(firstNameSubString2Field.getName()));
+         assertEquals("arin", records.get(1).getValue(firstNameSubString2Field.getName()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterByNameLengthAsVirtualField() throws Exception
+   {
+      //////////////////////////////////////
+      // add a virtual field to the table //
+      //////////////////////////////////////
+      QVirtualFieldMetaData firstNameLengthField = new QVirtualFieldMetaData("firstNameLength", QFieldType.INTEGER)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER));
+
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .withVirtualField(firstNameLengthField);
+
+      //////////////////////
+      // manage test data //
+      //////////////////////
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_PERSON).withQueryFilter(new QQueryFilter()));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "-").withValue("firstName", "Darin").withValue("lastName", "K"),
+         new QRecord().withValue("email", "-").withValue("firstName", "Who").withValue("lastName", "Dr.")
+      )));
+
+      //////////////////////////////////////////
+      // filter by virtual field equals value //
+      //////////////////////////////////////////
+      List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstNameLength", QCriteriaOperator.EQUALS, 5)));
+      assertEquals(1, records.size());
+      assertEquals("Darin", records.get(0).getValue("firstName"));
+      assertEquals(5, records.get(0).getValue("firstNameLength"));
+
+      ///////////////////////////////////////////////////////////////////////
+      // just for test, use a different operator against the virtual field //
+      ///////////////////////////////////////////////////////////////////////
+      records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstNameLength", QCriteriaOperator.LESS_THAN, 7))
+         .withOrderBy(new QFilterOrderBy("id")));
+      assertEquals(2, records.size());
+      assertEquals(5, records.get(0).getValue("firstNameLength"));
+      assertEquals(3, records.get(1).getValue("firstNameLength"));
+
+      /////////////////////////////////////
+      // next order by the virtual field //
+      /////////////////////////////////////
+      records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstNameLength", QCriteriaOperator.LESS_THAN, 7))
+         .withOrderBy(new QFilterOrderBy("firstNameLength")));
+      assertEquals(2, records.size());
+      assertEquals(3, records.get(0).getValue("firstNameLength"));
+      assertEquals(5, records.get(1).getValue("firstNameLength"));
    }
 
 }
