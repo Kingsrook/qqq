@@ -618,7 +618,7 @@ public class QJavalinProcessHandler
       /////////////////////////////////////////////////////////////
       // deal with params that specify an initial-records filter //
       /////////////////////////////////////////////////////////////
-      QQueryFilter initialRecordsFilter = buildProcessInitRecordsFilter(context, runProcessInput);
+      QQueryFilter initialRecordsFilter = buildProcessInitRecordsFilter(runProcessInput);
       if(initialRecordsFilter != null)
       {
          runProcessInput.setCallback(new QProcessCallback()
@@ -645,7 +645,7 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QQueryFilter buildProcessInitRecordsFilter(Context context, RunProcessInput runProcessInput) throws IOException
+   private static QQueryFilter buildProcessInitRecordsFilter(RunProcessInput runProcessInput) throws IOException
    {
       QInstance        instance = QContext.getQInstance();
       QProcessMetaData process  = instance.getProcess(runProcessInput.getProcessName());
@@ -658,11 +658,11 @@ public class QJavalinProcessHandler
       }
       String primaryKeyField = table.getPrimaryKeyField();
 
-      String recordsParam = context.queryParam("recordsParam");
+      String recordsParam = runProcessInput.getValueString("recordsParam");
       if(StringUtils.hasContent(recordsParam))
       {
          @SuppressWarnings("ConstantConditions")
-         String paramValue = context.queryParam(recordsParam);
+         String paramValue = runProcessInput.getValueString(recordsParam);
          if(!StringUtils.hasContent(paramValue))
          {
             throw (new IllegalArgumentException("Missing value in query parameter: " + recordsParam + " (which was specified as the recordsParam)"));
