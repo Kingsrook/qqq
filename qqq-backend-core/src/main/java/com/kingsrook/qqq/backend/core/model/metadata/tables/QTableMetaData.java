@@ -176,6 +176,33 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
 
 
+   /***************************************************************************
+    * Return either a field, or virtual field, for a given name.
+    *
+    ***************************************************************************/
+   public QFieldMetaData getFieldOrVirtualField(String fieldName)
+   {
+      if(fields == null)
+      {
+         throw (new IllegalArgumentException("Table [" + name + "] does not have its fields defined."));
+      }
+
+      QFieldMetaData field = getFields().get(fieldName);
+      if(field == null)
+      {
+         field = getVirtualField(fieldName);
+      }
+
+      if(field == null)
+      {
+         throw (new IllegalArgumentException("Field [" + fieldName + "] was not found in table [" + name + "]."));
+      }
+
+      return (field);
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/

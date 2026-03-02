@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.QFilterCriteriaDeserializer;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -55,6 +56,8 @@ public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
    // todo - probably implement this as a type of expression - though would require a little special handling i think when evaluating... //
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private String otherFieldName;
+
+   private FieldFunction fieldFunction;
 
    private Set<CriteriaOptionInterface> options = null;
 
@@ -470,5 +473,44 @@ public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
 
       return (options.contains(option));
    }
+
+
+
+   /*******************************************************************************
+    * Getter for fieldFunction
+    * @see #withFieldFunction(FieldFunction)
+    *******************************************************************************/
+   public FieldFunction getFieldFunction()
+   {
+      return (this.fieldFunction);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for fieldFunction
+    * @see #withFieldFunction(FieldFunction)
+    *******************************************************************************/
+   public void setFieldFunction(FieldFunction fieldFunction)
+   {
+      this.fieldFunction = fieldFunction;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for fieldFunction
+    *
+    * @param fieldFunction
+    * An optional FieldFunction to apply to this criterion's field before comparison
+    * (e.g., extract the weekday from a date field and compare against a day-of-week value).
+    * @return this
+    *******************************************************************************/
+   public QFilterCriteria withFieldFunction(FieldFunction fieldFunction)
+   {
+      this.fieldFunction = fieldFunction;
+      return (this);
+   }
+
 
 }

@@ -81,6 +81,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -1004,6 +1007,7 @@ public class QInstanceValidator
                usedVirtualFieldNames.add(fieldName);
 
                validateTableField(qInstance, tableName, fieldName, table, entry.getValue());
+               validateTableVirtualField(qInstance, tableName, fieldName, table, entry.getValue());
             }
 
             //////////////////////////////////////////
@@ -1090,6 +1094,31 @@ public class QInstanceValidator
 
             runPlugins(QTableMetaData.class, table, qInstance);
          });
+      }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void validateTableVirtualField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QVirtualFieldMetaData virtualFieldMetaData)
+   {
+      String prefix = "Table [" + tableName + "], Virtual field [" + fieldName + "]: ";
+      if(virtualFieldMetaData.getIsQueryCriteria() || virtualFieldMetaData.getIsQuerySelectable())
+      {
+         if(assertCondition(virtualFieldMetaData.getFieldFunction() != null, prefix + "To be used in queries, a virtual field must have a field function defined"))
+         {
+            FieldFunction fieldFunction = virtualFieldMetaData.getFieldFunction();
+            if(assertCondition(fieldFunction.getFunctionTypeIdentifier() != null, "fieldFunction is missing a function type"))
+            {
+               FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(qInstance).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+               if(assertCondition(fieldFunctionType != null, prefix + "Unrecognized field function type: " + fieldFunction.getFunctionTypeIdentifier()))
+               {
+                  assertCondition(fieldFunctionType.getAllowedFieldTypes().contains(virtualFieldMetaData.getType()), prefix + "does not have a type [" + virtualFieldMetaData.getType() + "] that matches its field function's allowed types [" + fieldFunctionType.getAllowedFieldTypes() + "]");
+               }
+            }
+         }
       }
    }
 
@@ -1919,7 +1948,10 @@ public class QInstanceValidator
                      {
                         assertCondition(!matchedExposedJoins.get(0).getIsMany(qInstance), sectionPrefix + "join-field " + fieldName + " references an is-many join, which is not supported.");
                      }
-                     assertCondition(qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName), sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
+
+                     boolean foreignTableHasField = qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName);
+                     boolean foreignTableHasVirtualField = CollectionUtils.nonNullMap(qInstance.getTable(otherTableName).getVirtualFields()).containsKey(foreignFieldName);
+                     assertCondition(foreignTableHasField || foreignTableHasVirtualField, sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
                   }
                }
                else

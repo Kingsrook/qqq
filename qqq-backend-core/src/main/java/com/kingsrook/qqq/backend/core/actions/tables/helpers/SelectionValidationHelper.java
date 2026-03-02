@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
@@ -156,7 +157,7 @@ public class SelectionValidationHelper
                else
                {
                   QTableMetaData joinTable = queryJoinsByNameOrAlias.get(tableOrAlias);
-                  if(!joinTable.getFields().containsKey(fieldNamePart))
+                  if(!isSelectableField(joinTable, fieldNamePart))
                   {
                      //////////////////////////////////////////////////////////
                      // unrecognized field within the join table is an error //
@@ -170,14 +171,38 @@ public class SelectionValidationHelper
          {
             ///////////////////////////////////////////////////////////////////////
             // non-join fields - just ensure field name is in table's fields map //
+            // (and/or it's a selectable virtual field)                          //
             ///////////////////////////////////////////////////////////////////////
-            if(!input.getTable().getFields().containsKey(fieldName))
+            if(!isSelectableField(input.getTable(), fieldName))
             {
                unrecognizedFieldNames.add(fieldName);
             }
          }
       }
       return unrecognizedFieldNames;
+   }
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static boolean isSelectableField(QTableMetaData tableMetaData, String fieldName)
+   {
+      if(tableMetaData.getFields().containsKey(fieldName))
+      {
+         return (true);
+      }
+
+      if(tableMetaData.getVirtualFields().containsKey(fieldName))
+      {
+         QVirtualFieldMetaData virtualField = tableMetaData.getVirtualField(fieldName);
+         if(virtualField.getIsQuerySelectable())
+         {
+            return (true);
+         }
+      }
+
+      return (false);
    }
 
 }

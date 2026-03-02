@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
@@ -37,14 +38,23 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
  * fields which don't exist in the backend system, but may instead be the result
  * of calculations or other non-stored data.
  *
- * <p>This type is expected to gain attributes in the future to enable more
- * built-in functionality, but for now it's empty.</p>
+ * <p>Optionally carries a {@link FieldFunction} that specifies a transformation
+ * applied to a source field's value (e.g., extracting the weekday from a date).</p>
+ *
+ * <p>The {@code isQueryCriteria} and {@code isQuerySelectable} flags control whether
+ * the virtual field may be used as a filter criterion and if it is included in query
+ * output, respectively.</p>
  *******************************************************************************/
 public class QVirtualFieldMetaData extends QFieldMetaData implements Cloneable
 {
+   private FieldFunction fieldFunction;
+
+   private boolean isQueryCriteria   = false;
+   private boolean isQuerySelectable = false;
+
 
    /***************************************************************************
-    *
+    * Returns a clone of this virtual field metadata.
     ***************************************************************************/
    @Override
    public QVirtualFieldMetaData clone()
@@ -55,7 +65,7 @@ public class QVirtualFieldMetaData extends QFieldMetaData implements Cloneable
 
 
    /***************************************************************************
-    *
+    * Default no-arg constructor.
     ***************************************************************************/
    public QVirtualFieldMetaData()
    {
@@ -64,7 +74,7 @@ public class QVirtualFieldMetaData extends QFieldMetaData implements Cloneable
 
 
    /***************************************************************************
-    *
+    * Constructs a QVirtualFieldMetaData with the given field name and type.
     ***************************************************************************/
    public QVirtualFieldMetaData(String name, QFieldType type)
    {
@@ -74,7 +84,8 @@ public class QVirtualFieldMetaData extends QFieldMetaData implements Cloneable
 
 
    /*******************************************************************************
-    **
+    * Fluent setter for name; overridden to return {@link QVirtualFieldMetaData}
+    * for method chaining.
     *******************************************************************************/
    @Override
    public QVirtualFieldMetaData withName(String name)
@@ -370,5 +381,120 @@ public class QVirtualFieldMetaData extends QFieldMetaData implements Cloneable
       super.withGridColumns(gridColumns);
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    * Getter for fieldFunction
+    * @see #withFieldFunction(FieldFunction)
+    *******************************************************************************/
+   public FieldFunction getFieldFunction()
+   {
+      return (this.fieldFunction);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for fieldFunction
+    * @see #withFieldFunction(FieldFunction)
+    *******************************************************************************/
+   public void setFieldFunction(FieldFunction fieldFunction)
+   {
+      this.fieldFunction = fieldFunction;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for fieldFunction
+    *
+    * @param fieldFunction
+    * The FieldFunction that transforms a source field's value to produce this
+    * virtual field's value.
+    * @return this
+    *******************************************************************************/
+   public QVirtualFieldMetaData withFieldFunction(FieldFunction fieldFunction)
+   {
+      this.fieldFunction = fieldFunction;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for isQueryCriteria
+    * @see #withIsQueryCriteria(boolean)
+    *******************************************************************************/
+   public boolean getIsQueryCriteria()
+   {
+      return (this.isQueryCriteria);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for isQueryCriteria
+    * @see #withIsQueryCriteria(boolean)
+    *******************************************************************************/
+   public void setIsQueryCriteria(boolean isQueryCriteria)
+   {
+      this.isQueryCriteria = isQueryCriteria;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for isQueryCriteria
+    *
+    * @param isQueryCriteria
+    * Whether this virtual field may be used as a filter criterion in queries;
+    * defaults to false.
+    * @return this
+    *******************************************************************************/
+   public QVirtualFieldMetaData withIsQueryCriteria(boolean isQueryCriteria)
+   {
+      this.isQueryCriteria = isQueryCriteria;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for isQuerySelectable
+    * @see #withIsQuerySelectable(boolean)
+    *******************************************************************************/
+   public boolean getIsQuerySelectable()
+   {
+      return (this.isQuerySelectable);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for isQuerySelectable
+    * @see #withIsQuerySelectable(boolean)
+    *******************************************************************************/
+   public void setIsQuerySelectable(boolean isQuerySelectable)
+   {
+      this.isQuerySelectable = isQuerySelectable;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for isQuerySelectable
+    *
+    * @param isQuerySelectable
+    * Whether this virtual field may be included in query output (i.e., selected);
+    * defaults to false.
+    * @return this
+    *******************************************************************************/
+   public QVirtualFieldMetaData withIsQuerySelectable(boolean isQuerySelectable)
+   {
+      this.isQuerySelectable = isQuerySelectable;
+      return (this);
+   }
+
 
 }

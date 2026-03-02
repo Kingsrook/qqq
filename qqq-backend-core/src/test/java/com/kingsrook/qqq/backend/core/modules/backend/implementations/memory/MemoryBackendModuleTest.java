@@ -23,9 +23,11 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
@@ -61,11 +63,16 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import com.kingsrook.qqq.backend.core.model.common.DayOfWeekPossibleValueSourceMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -767,6 +774,74 @@ class MemoryBackendModuleTest extends BaseTest
          .withIncludeDistinctCount(true));
       assertEquals(3, countOutput.getCount());
       assertEquals(2, countOutput.getDistinctCount());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryVirtualFields() throws Exception
+   {
+      QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+
+      QVirtualFieldMetaData firstInitialField = new QVirtualFieldMetaData("firstInitial", QFieldType.STRING)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction().withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER).withFieldName("firstName")
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 1, SubStringFunction.LENGTH_PARAM, 1)));
+      table.addVirtualField(firstInitialField);
+
+      QVirtualFieldMetaData birthWeekday = new QVirtualFieldMetaData("birthWeekday", QFieldType.INTEGER)
+         .withPossibleValueSourceName(DayOfWeekPossibleValueSourceMetaDataProducer.NAME)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction().withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER).withFieldName("birthDate")
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 1, SubStringFunction.LENGTH_PARAM, 1)));
+      table.addVirtualField(birthWeekday);
+
+      QRecord darinRecord     = new QRecord().withValue("firstName", "Darin").withValue("birthDate", LocalDate.of(2026, Month.FEBRUARY, 28)); // Saturday
+      QRecord timRecord       = new QRecord().withValue("firstName", "Tim").withValue("birthDate", LocalDate.of(2026, Month.FEBRUARY, 23)); // Monday
+      QRecord jamesRecord     = new QRecord().withValue("firstName", "James").withValue("birthDate", LocalDate.of(2026, Month.FEBRUARY, 22)); // Sunday
+      QRecord anonymousRecord = new QRecord();
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(darinRecord, timRecord, jamesRecord, anonymousRecord)));
+
+      ////////////////////////////////////////////////
+      // filter by first-initial (virtual field) IN //
+      // sort by birthWeekday (virtual field)       //
+      ////////////////////////////////////////////////
+      assertEquals(List.of("Tim", "Darin"), QueryAction.execute(TestUtils.TABLE_NAME_PERSON_MEMORY,
+            new QQueryFilter(new QFilterCriteria("firstInitial", QCriteriaOperator.IN, "T", "D"))
+               .withOrderBy(new QFilterOrderBy("birthWeekday", true)))
+         .stream().map(r -> r.getValueString("firstName"))
+         .toList());
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // select the Monday & Sunday birth weekdays - confirm that Local controls sort order (Sun first or Mon) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      Locale initialLocale = Locale.getDefault();
+      try
+      {
+         Locale.setDefault(Locale.US);
+         assertEquals(List.of(DayOfWeek.SUNDAY.getValue(), DayOfWeek.MONDAY.getValue()), QueryAction.execute(TestUtils.TABLE_NAME_PERSON_MEMORY,
+               new QQueryFilter(new QFilterCriteria("birthWeekday", QCriteriaOperator.IN, DayOfWeek.SUNDAY.getValue(), DayOfWeek.MONDAY.getValue()))
+                  .withOrderBy(new QFilterOrderBy("birthWeekday", true)))
+            .stream().map(r -> r.getValueInteger("birthWeekday"))
+            .toList());
+
+         Locale.setDefault(Locale.FRANCE);
+         assertEquals(List.of(DayOfWeek.MONDAY.getValue(), DayOfWeek.SUNDAY.getValue()), QueryAction.execute(TestUtils.TABLE_NAME_PERSON_MEMORY,
+               new QQueryFilter(new QFilterCriteria("birthWeekday", QCriteriaOperator.IN, DayOfWeek.SUNDAY.getValue(), DayOfWeek.MONDAY.getValue()))
+                  .withOrderBy(new QFilterOrderBy("birthWeekday", true)))
+            .stream().map(r -> r.getValueInteger("birthWeekday"))
+            .toList());
+
+      }
+      finally
+      {
+         Locale.setDefault(initialLocale);
+      }
    }
 
 

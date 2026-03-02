@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -110,32 +111,60 @@ public class ExportAction
       {
          Map<String, QTableMetaData> joinTableMap = getJoinTableMap(exportInput, table);
 
-         List<String> badFieldNames = new ArrayList<>();
+         List<String> notFoundFieldNames     = new ArrayList<>();
+         List<String> notQueryableFieldNames = new ArrayList<>();
          for(String fieldName : exportInput.getFieldNames())
          {
             try
             {
+               QFieldMetaData fieldMetaData;
                if(fieldName.contains("."))
                {
                   String[] parts = fieldName.split("\\.", 2);
-                  joinTableMap.get(parts[0]).getField(parts[1]);
+                  fieldMetaData = joinTableMap.get(parts[0]).getFieldOrVirtualField(parts[1]);
                }
                else
                {
-                  table.getField(fieldName);
+                  fieldMetaData = table.getFieldOrVirtualField(fieldName);
+               }
+
+               if(fieldMetaData instanceof QVirtualFieldMetaData virtualFieldMetaData)
+               {
+                  if(!virtualFieldMetaData.getIsQuerySelectable())
+                  {
+                     notQueryableFieldNames.add(fieldName);
+                  }
                }
             }
             catch(Exception e)
             {
-               badFieldNames.add(fieldName);
+               notFoundFieldNames.add(fieldName);
             }
          }
 
-         if(!badFieldNames.isEmpty())
+         if(!notFoundFieldNames.isEmpty() || !notQueryableFieldNames.isEmpty())
          {
-            throw (new QUserFacingException(badFieldNames.size() == 1
-               ? ("Field name " + badFieldNames.get(0) + " was not found on the " + table.getLabel() + " table.")
-               : ("Fields names " + StringUtils.joinWithCommasAndAnd(badFieldNames) + " were not found on the " + table.getLabel() + " table.")));
+            List<String> errorParts = new ArrayList<>();
+
+            if(notFoundFieldNames.size() == 1)
+            {
+               errorParts.add("Field name " + notFoundFieldNames.get(0) + " was not found on the " + table.getLabel() + " table.");
+            }
+            else if(notFoundFieldNames.size() > 1)
+            {
+               errorParts.add("Fields names " + StringUtils.joinWithCommasAndAnd(notFoundFieldNames) + " were not found on the " + table.getLabel() + " table.");
+            }
+
+            if(notQueryableFieldNames.size() == 1)
+            {
+               errorParts.add("Field name " + notQueryableFieldNames.get(0) + " is not queryable on the " + table.getLabel() + " table.");
+            }
+            else if(notQueryableFieldNames.size() > 1)
+            {
+               errorParts.add("Fields names " + StringUtils.joinWithCommasAndAnd(notQueryableFieldNames) + " are not queryable on the " + table.getLabel() + " table.");
+            }
+
+            throw new QUserFacingException(String.join(" ", errorParts));
          }
       }
 
@@ -398,14 +427,14 @@ public class ExportAction
             {
                String[]       parts     = fieldName.split("\\.", 2);
                QTableMetaData joinTable = joinTableMap.get(parts[0]);
-               QFieldMetaData field     = joinTable.getField(parts[1]).clone();
+               QFieldMetaData field     = joinTable.getFieldOrVirtualField(parts[1]).clone();
                field.setName(fieldName);
                field.setLabel(joinTable.getLabel() + ": " + field.getLabel());
                fieldList.add(field);
             }
             else
             {
-               fieldList.add(table.getField(fieldName));
+               fieldList.add(table.getFieldOrVirtualField(fieldName));
             }
          }
       }
