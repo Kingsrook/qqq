@@ -661,7 +661,6 @@ public class QJavalinProcessHandler
       String recordsParam = runProcessInput.getValueString("recordsParam");
       if(StringUtils.hasContent(recordsParam))
       {
-         @SuppressWarnings("ConstantConditions")
          String paramValue = runProcessInput.getValueString(recordsParam);
          if(!StringUtils.hasContent(paramValue))
          {
@@ -671,7 +670,6 @@ public class QJavalinProcessHandler
          switch(recordsParam)
          {
             case "recordIds":
-               @SuppressWarnings("ConstantConditions")
                Serializable[] idStrings = paramValue.split(",");
                return (new QQueryFilter().withCriteria(new QFilterCriteria()
                   .withFieldName(primaryKeyField)

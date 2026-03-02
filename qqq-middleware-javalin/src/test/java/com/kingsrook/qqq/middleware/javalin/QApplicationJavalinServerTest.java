@@ -1965,7 +1965,9 @@ class QApplicationJavalinServerTest
     *******************************************************************************/
    private static String getMainCssHash(HttpResponse<String> deepLinkResponse)
    {
-      return deepLinkResponse.getBody().replaceFirst("(?s).*static/css/main.", "").replaceFirst("(?s).css.*", "");
+      String hash = deepLinkResponse.getBody().replaceFirst("(?s).*static/css/main.", "").replaceFirst("(?s)\\.css.*", "");
+      assertThat(hash).describedAs("extracted hash for main.x.css").matches("[a-f0-9]+");
+      return hash;
    }
 
 
@@ -1975,7 +1977,9 @@ class QApplicationJavalinServerTest
     *******************************************************************************/
    private static String getMainJsHash(HttpResponse<String> deepLinkResponse)
    {
-      return deepLinkResponse.getBody().replaceFirst("(?s).*static/js/main.", "").replaceFirst("(?s).js.*", "");
+      String hash = deepLinkResponse.getBody().replaceFirst("(?s).*static/js/main.", "").replaceFirst("(?s)\\.js.*", "");
+      assertThat(hash).describedAs("extracted hash for main.x.js").matches("[a-f0-9]+");
+      return hash;
    }
 
 
