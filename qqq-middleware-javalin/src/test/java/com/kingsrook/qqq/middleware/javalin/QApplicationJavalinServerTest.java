@@ -1931,28 +1931,55 @@ class QApplicationJavalinServerTest
          .as("HTML should contain relative ./static/js path")
          .contains("./static/js/main.");
 
+      String mainJsHash  = getMainJsHash(deepLinkResponse);
+      String mainCssHash = getMainCssHash(deepLinkResponse);
+
       /////////////////////////////////////////////////////////////
       // 2. The CORRECT path: /static/js/main.xxx.js should work //
       // With <base href="/">, the browser resolves ./ from root //
       /////////////////////////////////////////////////////////////
-      HttpResponse<String> correctJsPath = Unirest.get("http://localhost:" + PORT + "/static/js/main.723fb195.js").asString();
+      HttpResponse<String> correctJsPath = Unirest.get("http://localhost:" + PORT + "/static/js/main." + mainJsHash + ".js").asString();
       assertEquals(200, correctJsPath.getStatus(), "CORRECT: /static/js/main.xxx.js should return 200");
 
       //////////////////////////////////////////////////////////////
       // 3. The WRONG path: /someApp/static/js/... should 404     //
       // This is what the browser would request WITHOUT base href //
       //////////////////////////////////////////////////////////////
-      HttpResponse<String> wrongJsPath = Unirest.get("http://localhost:" + PORT + "/someApp/static/js/main.723fb195.js").asString();
+      HttpResponse<String> wrongJsPath = Unirest.get("http://localhost:" + PORT + "/someApp/static/js/main." + mainJsHash + ".js").asString();
       assertEquals(404, wrongJsPath.getStatus(), "WRONG: /someApp/static/js/main.xxx.js should 404");
 
       ////////////////////////////////
       // 4. Same test for CSS files //
       ////////////////////////////////
-      HttpResponse<String> correctCssPath = Unirest.get("http://localhost:" + PORT + "/static/css/main.bb7af874.css").asString();
+      HttpResponse<String> correctCssPath = Unirest.get("http://localhost:" + PORT + "/static/css/main." + mainCssHash + ".css").asString();
       assertEquals(200, correctCssPath.getStatus(), "CORRECT: /static/css/main.xxx.css should return 200");
 
-      HttpResponse<String> wrongCssPath = Unirest.get("http://localhost:" + PORT + "/someApp/static/css/main.bb7af874.css").asString();
+      HttpResponse<String> wrongCssPath = Unirest.get("http://localhost:" + PORT + "/someApp/static/css/main." + mainCssHash + ".css").asString();
       assertEquals(404, wrongCssPath.getStatus(), "WRONG: /someApp/static/css/main.xxx.css should 404");
+   }
+
+
+
+   /*******************************************************************************
+    *
+    *******************************************************************************/
+   private static String getMainCssHash(HttpResponse<String> deepLinkResponse)
+   {
+      String hash = deepLinkResponse.getBody().replaceFirst("(?s).*static/css/main.", "").replaceFirst("(?s)\\.css.*", "");
+      assertThat(hash).describedAs("extracted hash for main.x.css").matches("[a-f0-9]+");
+      return hash;
+   }
+
+
+
+   /*******************************************************************************
+    *
+    *******************************************************************************/
+   private static String getMainJsHash(HttpResponse<String> deepLinkResponse)
+   {
+      String hash = deepLinkResponse.getBody().replaceFirst("(?s).*static/js/main.", "").replaceFirst("(?s)\\.js.*", "");
+      assertThat(hash).describedAs("extracted hash for main.x.js").matches("[a-f0-9]+");
+      return hash;
    }
 
 
@@ -1983,10 +2010,17 @@ class QApplicationJavalinServerTest
          .contains("name")
          .doesNotContain("<!doctype");
 
+      //////////////////////////////////////////////////////////////////
+      // fetch the index page, to get the main js file's current hash //
+      //////////////////////////////////////////////////////////////////
+      HttpResponse<String> indexResponse = Unirest.get("http://localhost:" + PORT + "/").asString();
+      assertEquals(200, indexResponse.getStatus());
+      String mainJsHash = getMainJsHash(indexResponse);
+
       /////////////////////////////////////////////////
       // 2. Static JS files should return JavaScript //
       /////////////////////////////////////////////////
-      HttpResponse<String> jsFile = Unirest.get("http://localhost:" + PORT + "/static/js/main.723fb195.js").asString();
+      HttpResponse<String> jsFile = Unirest.get("http://localhost:" + PORT + "/static/js/main." + mainJsHash + ".js").asString();
       assertEquals(200, jsFile.getStatus());
       // Check Content-Type header if present
       String contentType = jsFile.getHeaders().getFirst("Content-Type");
@@ -2033,10 +2067,13 @@ class QApplicationJavalinServerTest
          .as("HTML should have text/html content type")
          .containsIgnoringCase("text/html");
 
+      String mainJsHash  = getMainJsHash(htmlResponse);
+      String mainCssHash = getMainCssHash(htmlResponse);
+
       ////////////////////////////////////////////////////////
       // 2. JavaScript should have appropriate content type //
       ////////////////////////////////////////////////////////
-      HttpResponse<String> jsResponse = Unirest.get("http://localhost:" + PORT + "/static/js/main.723fb195.js").asString();
+      HttpResponse<String> jsResponse = Unirest.get("http://localhost:" + PORT + "/static/js/main." + mainJsHash + ".js").asString();
       assertThat(jsResponse.getHeaders().getFirst("Content-Type"))
          .as("JS should have javascript content type")
          .containsIgnoringCase("javascript");
@@ -2044,7 +2081,7 @@ class QApplicationJavalinServerTest
       //////////////////////////////////////////////
       // 3. CSS should have text/css content type //
       //////////////////////////////////////////////
-      HttpResponse<String> cssResponse = Unirest.get("http://localhost:" + PORT + "/static/css/main.bb7af874.css").asString();
+      HttpResponse<String> cssResponse = Unirest.get("http://localhost:" + PORT + "/static/css/main." + mainCssHash + ".css").asString();
       assertThat(cssResponse.getHeaders().getFirst("Content-Type"))
          .as("CSS should have text/css content type")
          .containsIgnoringCase("text/css");
