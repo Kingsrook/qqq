@@ -37,7 +37,9 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMap
 
 
 /***************************************************************************
- **
+ * API response component for full table metadata, extending
+ * {@link TableMetaDataLight} with fields, sections, exposed joins,
+ * supplemental metadata, sharing configuration, and virtual fields.
  ***************************************************************************/
 @OpenAPIIncludeProperties(ancestorClasses = TableMetaDataLight.class)
 public class TableMetaData extends TableMetaDataLight implements ToSchema
@@ -154,5 +156,19 @@ public class TableMetaData extends TableMetaDataLight implements ToSchema
    {
       return (wrapped.getShareableTableMetaData());
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @OpenAPIDescription("Virtual fields in this table")
+   @OpenAPIMapValueType(value = VirtualFieldMetaData.class, useRef = true)
+   public Map<String, VirtualFieldMetaData> getVirtualFields()
+   {
+      return (CollectionUtils.nonNullMap(this.wrapped.getVirtualFields()).values().stream()
+         .collect(Collectors.toMap(f -> f.getName(), f -> new VirtualFieldMetaData(f))));
+   }
+
 
 }

@@ -1741,7 +1741,7 @@ public class QJavalinImplementation
          QFieldMetaData field;
          try
          {
-            field = table.getField(fieldName);
+            field = table.getFieldOrVirtualField(fieldName);
          }
          catch(Exception e)
          {
