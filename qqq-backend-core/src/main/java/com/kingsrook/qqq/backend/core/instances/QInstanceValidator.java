@@ -1105,21 +1105,52 @@ public class QInstanceValidator
    private void validateTableVirtualField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QVirtualFieldMetaData virtualFieldMetaData)
    {
       String prefix = "Table [" + tableName + "], Virtual field [" + fieldName + "]: ";
-      if(virtualFieldMetaData.getIsQueryCriteria() || virtualFieldMetaData.getIsQuerySelectable())
+
+      boolean requireFieldFunction = false;
+      String requireFieldFunctionReason = null;
+      if(virtualFieldMetaData.getIsQueryCriteria())
       {
-         if(assertCondition(virtualFieldMetaData.getFieldFunction() != null, prefix + "To be used in queries, a virtual field must have a field function defined"))
+         requireFieldFunction = true;
+         requireFieldFunctionReason = "To be a queryCriteria";
+      }
+      else if(virtualFieldMetaData.getIsQuerySelectable())
+      {
+         if(table.getCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole()).isEmpty())
          {
-            FieldFunction fieldFunction = virtualFieldMetaData.getFieldFunction();
-            if(assertCondition(fieldFunction.getFunctionTypeIdentifier() != null, "fieldFunction is missing a function type"))
+            requireFieldFunction = true;
+            requireFieldFunctionReason = "To be querySelectable (since its table does not not have a POST_QUERY_RECORD customizer)";
+         }
+      }
+
+      FieldFunction fieldFunction = virtualFieldMetaData.getFieldFunction();
+      if(requireFieldFunction)
+      {
+         assertCondition(fieldFunction != null, prefix + requireFieldFunctionReason + " this virtual field must have a field function defined");
+      }
+
+      if(fieldFunction != null)
+      {
+         if(assertCondition(fieldFunction.getFunctionTypeIdentifier() != null, "fieldFunction is missing a function type"))
+         {
+            FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(qInstance).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+            if(assertCondition(fieldFunctionType != null, prefix + "Unrecognized field function type: " + fieldFunction.getFunctionTypeIdentifier()))
             {
-               FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(qInstance).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
-               if(assertCondition(fieldFunctionType != null, prefix + "Unrecognized field function type: " + fieldFunction.getFunctionTypeIdentifier()))
+               if(CollectionUtils.nullSafeHasContents(fieldFunctionType.getAllowedFieldTypes()))
                {
-                  assertCondition(fieldFunctionType.getAllowedFieldTypes().contains(virtualFieldMetaData.getType()), prefix + "does not have a type [" + virtualFieldMetaData.getType() + "] that matches its field function's allowed types [" + fieldFunctionType.getAllowedFieldTypes() + "]");
+                  String sourceFieldName = virtualFieldMetaData.getFieldFunction().getFieldName();
+                  if(assertCondition(StringUtils.hasContent(sourceFieldName), "fieldFunction is missing a source field name"))
+                  {
+                     if(assertCondition(table.getFields().containsKey(sourceFieldName), "fieldFunction's referenced source field name is not a defined field on this table"))
+                     {
+                        QFieldMetaData sourceField = table.getField(sourceFieldName);
+                        assertCondition(fieldFunctionType.getAllowedFieldTypes().contains(sourceField.getType()), prefix + "source field [" + sourceFieldName + "]'s type [" + sourceField.getType() + "] is not amoung the the specified field function's allowed types [" + fieldFunctionType.getAllowedFieldTypes() + "]");
+                     }
+                  }
                }
             }
          }
       }
+
    }
 
 
