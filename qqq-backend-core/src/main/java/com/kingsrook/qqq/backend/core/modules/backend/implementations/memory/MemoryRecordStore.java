@@ -303,7 +303,7 @@ public class MemoryRecordStore
    {
       for(QVirtualFieldMetaData virtualField : CollectionUtils.nonNullMap(table.getVirtualFields()).values())
       {
-         if(virtualField.getIsQuerySelectable())
+         if(virtualField.getIsQuerySelectable() && virtualField.getFieldFunction() != null)
          {
             FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(virtualField.getFieldFunction().getFunctionTypeIdentifier());
 
