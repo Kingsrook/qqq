@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
@@ -44,6 +45,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
  * <p>The {@code isQueryCriteria} and {@code isQuerySelectable} flags control whether
  * the virtual field may be used as a filter criterion and if it is included in query
  * output, respectively.</p>
+ *
+ * <p>For a field to be {@code isQueryCriteria}, it MUST use a {@code fieldFunction}.
+ * However, to be {@code isQuerySelectable}, it MAY either use a  {@code fieldFunction},
+ * or alternatively, its table can have a {@link TableCustomizers#POST_QUERY_RECORD}.</p>
  *******************************************************************************/
 public class QVirtualFieldMetaData extends QFieldMetaData implements Cloneable
 {

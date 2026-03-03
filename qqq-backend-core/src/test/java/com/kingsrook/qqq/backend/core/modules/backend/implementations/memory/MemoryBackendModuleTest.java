@@ -82,6 +82,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -842,6 +843,42 @@ class MemoryBackendModuleTest extends BaseTest
       {
          Locale.setDefault(initialLocale);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Verify that a querySelectable virtual field with no fieldFunction (relying
+    ** on a POST_QUERY_RECORD customizer) does not NPE during query in memory backend.
+    *******************************************************************************/
+   @Test
+   void testQuerySelectableVirtualFieldWithoutFieldFunction() throws QException
+   {
+      QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_SHAPE);
+
+      ////////////////////////////////////////////////////////////
+      // set up a querySelectable virtual field with NO function //
+      // but WITH a post-query customizer (to satisfy validator) //
+      ////////////////////////////////////////////////////////////
+      table.withVirtualField(new QVirtualFieldMetaData("customComputed", QFieldType.STRING)
+         .withIsQuerySelectable(true));
+      table.withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(ShapeTestCustomizer.class));
+
+      //////////////////
+      // do an insert //
+      //////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(getTestRecords(table));
+      new InsertAction().execute(insertInput);
+
+      /////////////////////////////////////////////////////////////////
+      // query should succeed without NPE - the virtual field won't  //
+      // be populated by the backend (no fieldFunction), but that's  //
+      // okay - the post-query customizer would handle it in reality //
+      /////////////////////////////////////////////////////////////////
+      QueryOutput queryOutput = new QueryAction().execute(new QueryInput().withTableName(table.getName()));
+      assertFalse(queryOutput.getRecords().isEmpty());
    }
 
 

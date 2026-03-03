@@ -193,7 +193,7 @@ public class SelectionValidationHelper
          return (true);
       }
 
-      if(tableMetaData.getVirtualFields().containsKey(fieldName))
+      if(CollectionUtils.nonNullMap(tableMetaData.getVirtualFields()).containsKey(fieldName))
       {
          QVirtualFieldMetaData virtualField = tableMetaData.getVirtualField(fieldName);
          if(virtualField.getIsQuerySelectable())

@@ -167,4 +167,71 @@ class WeekdayOfDateTimeFunctionTest extends BaseTest
       assertEquals(7, function.applyForSorting(ff, new QRecord().withValue("timestamp", sundayNoonUtc)));
    }
 
+
+
+   /***************************************************************************
+    ** Test that zoneIdFromFieldName reads the timezone from another field
+    ** on the record, overriding the static timeZoneId argument.
+    ***************************************************************************/
+   @Test
+   void testZoneIdFromFieldName() throws Exception
+   {
+      ///////////////////////////////////////////////////////////////////////////////
+      // 23:00 UTC on Monday 2026-02-23 = 01:00 Tuesday in Europe/Athens (UTC+2) //
+      ///////////////////////////////////////////////////////////////////////////////
+      Instant mondayLateUtc = LocalDateTime.of(2026, 2, 23, 23, 0, 0)
+         .toInstant(ZoneOffset.UTC);
+
+      FieldFunction ff = new FieldFunction()
+         .withFunctionTypeIdentifier(WeekdayOfDateTimeFunction.IDENTIFIER)
+         .withFieldName("timestamp")
+         .withArguments(Map.of(
+            WeekdayOfDateTimeFunction.PARAM_ZONE_ID_FROM_FIELD_NAME, "timeZone",
+            WeekdayOfDateTimeFunction.PARAM_USE_SESSION_ZONE_ID, false));
+
+      ///////////////////////////////////////////////////////////////////////////
+      // with timeZone field = "Europe/Athens", should cross into Tuesday (2) //
+      ///////////////////////////////////////////////////////////////////////////
+      QRecord athensRecord = new QRecord()
+         .withValue("timestamp", mondayLateUtc)
+         .withValue("timeZone", "Europe/Athens");
+      assertEquals(2, function.apply(ff, athensRecord));
+
+      ///////////////////////////////////////////////
+      // with timeZone field = "UTC", stays Monday //
+      ///////////////////////////////////////////////
+      QRecord utcRecord = new QRecord()
+         .withValue("timestamp", mondayLateUtc)
+         .withValue("timeZone", "UTC");
+      assertEquals(1, function.apply(ff, utcRecord));
+   }
+
+
+
+   /***************************************************************************
+    ** When zoneIdFromFieldName is set but the field value on the record is
+    ** null, should fall back to the resolved default timezone.
+    ***************************************************************************/
+   @Test
+   void testZoneIdFromFieldNameFallsBackWhenNull() throws Exception
+   {
+      Instant mondayLateUtc = LocalDateTime.of(2026, 2, 23, 23, 0, 0)
+         .toInstant(ZoneOffset.UTC);
+
+      FieldFunction ff = new FieldFunction()
+         .withFunctionTypeIdentifier(WeekdayOfDateTimeFunction.IDENTIFIER)
+         .withFieldName("timestamp")
+         .withArguments(Map.of(
+            WeekdayOfDateTimeFunction.PARAM_ZONE_ID_FROM_FIELD_NAME, "timeZone",
+            WeekdayOfDateTimeFunction.PARAM_TIME_ZONE_ID, "UTC"));
+
+      ///////////////////////////////////////////////////////////
+      // null timeZone field — should fall back to "UTC" param //
+      ///////////////////////////////////////////////////////////
+      QRecord record = new QRecord()
+         .withValue("timestamp", mondayLateUtc)
+         .withValue("timeZone", null);
+      assertEquals(1, function.apply(ff, record), "null timezone should fall back to UTC → Monday");
+   }
+
 }

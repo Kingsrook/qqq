@@ -741,6 +741,11 @@ public class BackendQueryFilterUtils
       {
          for(QFilterOrderBy orderBy : filter.getOrderBys())
          {
+            if(orderBy.getFieldName() == null)
+            {
+               continue;
+            }
+
             JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(orderBy.getFieldName(), true);
             if(fieldAndTableNameOrAlias.field() instanceof QVirtualFieldMetaData virtualField)
             {
@@ -759,6 +764,11 @@ public class BackendQueryFilterUtils
       {
          for(QFilterOrderBy orderBy : filter.getOrderBys())
          {
+            if(orderBy.getFieldName() == null)
+            {
+               continue;
+            }
+
             Serializable valueA = a.getValue(orderBy.getFieldName());
             Serializable valueB = b.getValue(orderBy.getFieldName());
 

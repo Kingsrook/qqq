@@ -31,6 +31,7 @@ import java.time.temporal.WeekFields;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -39,6 +40,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunct
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionParameter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeIdentifier;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /***************************************************************************
@@ -51,9 +55,10 @@ public class WeekdayOfDateTimeFunction implements FieldFunctionType
 {
    public static final FieldFunctionTypeIdentifier IDENTIFIER = () -> "WeekdayOfDateTime";
 
-   public static final String PARAM_SORT_SUNDAY_FIRST   = "sortSundayFirst";
-   public static final String PARAM_TIME_ZONE_ID        = "timeZoneId";
-   public static final String PARAM_USE_SESSION_ZONE_ID = "useSessionZoneId";
+   public static final String PARAM_SORT_SUNDAY_FIRST       = "sortSundayFirst";
+   public static final String PARAM_TIME_ZONE_ID            = "timeZoneId";
+   public static final String PARAM_ZONE_ID_FROM_FIELD_NAME = "zoneIdFromFieldName";
+   public static final String PARAM_USE_SESSION_ZONE_ID     = "useSessionZoneId";
 
 
 
@@ -88,6 +93,7 @@ public class WeekdayOfDateTimeFunction implements FieldFunctionType
 
       return List.of(
          new FieldFunctionParameter().withName(PARAM_TIME_ZONE_ID).withType(QFieldType.STRING).withIsRequired(false),
+         new FieldFunctionParameter().withName(PARAM_ZONE_ID_FROM_FIELD_NAME).withType(QFieldType.STRING).withIsRequired(false),
          new FieldFunctionParameter().withName(PARAM_SORT_SUNDAY_FIRST).withType(QFieldType.BOOLEAN).withIsRequired(false).withDefaultValue(DayOfWeek.SUNDAY.equals(firstDay)),
          new FieldFunctionParameter().withName(PARAM_USE_SESSION_ZONE_ID).withType(QFieldType.BOOLEAN).withIsRequired(false).withDefaultValue(true)
       );
@@ -119,7 +125,42 @@ public class WeekdayOfDateTimeFunction implements FieldFunctionType
          return (null);
       }
 
-      String timeZoneId = fieldFunction.getArgumentValueOrDefault(String.class, PARAM_TIME_ZONE_ID);
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // start by assuming we'll use either the instance default time zone or else the session's //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      Boolean useSessionZoneId = fieldFunction.getArgumentValueOrDefault(Boolean.class, WeekdayOfDateTimeFunction.PARAM_USE_SESSION_ZONE_ID);
+      String  timeZoneId;
+      if(useSessionZoneId)
+      {
+         timeZoneId = ObjectUtils.tryElse(() -> ValueUtils.getSessionOrInstanceZoneId().toString(), ZoneId.systemDefault().getId());
+      }
+      else
+      {
+         timeZoneId = QContext.getQInstance().getDefaultTimeZoneId();
+      }
+
+      ////////////////////////////////////////////////////////////////
+      // but - if a param of time zone id is present, then use that //
+      ////////////////////////////////////////////////////////////////
+      String timeZoneIdArg = fieldFunction.getArgumentValueOrDefault(String.class, PARAM_TIME_ZONE_ID);
+      if(StringUtils.hasContent(timeZoneIdArg))
+      {
+         timeZoneId = ValueUtils.getValueAsString(timeZoneIdArg);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // but (again) - if a zoneIdFromFieldName is listed, and such a value exist, then use THAT //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      String zoneIdFromFieldName = fieldFunction.getArgumentValueOrDefault(String.class, PARAM_ZONE_ID_FROM_FIELD_NAME);
+      if(StringUtils.hasContent(zoneIdFromFieldName))
+      {
+         String fieldValue = record.getValueString(zoneIdFromFieldName);
+         if(StringUtils.hasContent(fieldValue))
+         {
+            timeZoneId = fieldValue;
+         }
+      }
+
       ZonedDateTime zonedDateTime = sourceValue.atZone(ZoneId.of(timeZoneId));
 
       return zonedDateTime.getDayOfWeek().getValue();
