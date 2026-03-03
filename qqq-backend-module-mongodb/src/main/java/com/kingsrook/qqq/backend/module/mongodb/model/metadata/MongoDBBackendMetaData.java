@@ -22,9 +22,23 @@
 package com.kingsrook.qqq.backend.module.mongodb.model.metadata;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.BackendFieldFunctionAdapterInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.BackendFieldFunctionAdapterRegistry;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeIdentifier;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
 import com.kingsrook.qqq.backend.module.mongodb.MongoDBBackendModule;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBFieldFunctionAdapterInterface;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBStringLengthFunction;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBSubStringFunction;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBWeekdayOfDateFunction;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBWeekdayOfDateTimeFunction;
 
 
 /*******************************************************************************
@@ -41,6 +55,8 @@ public class MongoDBBackendMetaData extends QBackendMetaData
    private String  urlSuffix;
 
    private boolean transactionsSupported = true;
+
+   private BackendFieldFunctionAdapterRegistry backendFieldFunctionAdapterRegistry = new BackendFieldFunctionAdapterRegistry();
 
 
 
@@ -214,6 +230,60 @@ public class MongoDBBackendMetaData extends QBackendMetaData
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
       username = interpreter.interpret(username);
       password = interpreter.interpret(password);
+
+      doRegisterFieldFunctionAdapters();
+   }
+
+
+
+   /*******************************************************************************
+    ** Register BackendFieldFunctionAdapterInterface classes to be used
+    ** in this backend for known FieldFunctionTypes.
+    **
+    ** If a subclass needs different adapters, it can override this method,
+    ** should call super to register the base functions first, then register
+    ** its own override implementations via registerBackendFieldFunctionAdapter.
+    *******************************************************************************/
+   public void doRegisterFieldFunctionAdapters()
+   {
+      registerBackendFieldFunctionAdapter(StringLengthFunction.IDENTIFIER, MongoDBStringLengthFunction.class);
+      registerBackendFieldFunctionAdapter(SubStringFunction.IDENTIFIER, MongoDBSubStringFunction.class);
+      registerBackendFieldFunctionAdapter(WeekdayOfDateFunction.IDENTIFIER, MongoDBWeekdayOfDateFunction.class);
+      registerBackendFieldFunctionAdapter(WeekdayOfDateTimeFunction.IDENTIFIER, MongoDBWeekdayOfDateTimeFunction.class);
+   }
+
+
+
+   /*******************************************************************************
+    ** Register a BackendFieldFunctionAdapterInterface class to be used
+    ** in this backend for a specific FieldFunctionType.
+    *******************************************************************************/
+   protected void registerBackendFieldFunctionAdapter(FieldFunctionTypeIdentifier fieldFunctionTypeIdentifier, Class<? extends MongoDBFieldFunctionAdapterInterface> adapterClass)
+   {
+      backendFieldFunctionAdapterRegistry.register(fieldFunctionTypeIdentifier, getBackendType(), new QCodeReference(adapterClass));
+   }
+
+
+
+   /*******************************************************************************
+    ** Get an instance of a MongoDBFieldFunctionAdapterInterface for a
+    ** specific FieldFunctionType.
+    *******************************************************************************/
+   public MongoDBFieldFunctionAdapterInterface getFieldFunctionAdapter(FieldFunctionTypeIdentifier fieldFunctionTypeIdentifier)
+   {
+      BackendFieldFunctionAdapterInterface fieldFunctionAdapter = backendFieldFunctionAdapterRegistry.getFieldFunctionAdapter(fieldFunctionTypeIdentifier);
+      if(fieldFunctionAdapter != null)
+      {
+         if(fieldFunctionAdapter instanceof MongoDBFieldFunctionAdapterInterface mongoDBAdapter)
+         {
+            return mongoDBAdapter;
+         }
+         else
+         {
+            throw new QRuntimeException("The registered adapter does not implement the MongoDBFieldFunctionAdapterInterface (adapterType=" + fieldFunctionAdapter.getClass().getName() + ")");
+         }
+      }
+      return (null);
    }
 
 

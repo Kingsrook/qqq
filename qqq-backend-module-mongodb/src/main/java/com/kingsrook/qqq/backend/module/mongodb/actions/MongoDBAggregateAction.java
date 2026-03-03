@@ -42,9 +42,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBFieldFunctionAdapterInterface;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
@@ -116,8 +119,22 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
          {
             for(GroupBy groupBy : aggregateInput.getGroupBys())
             {
-               String name = getFieldBackendName(table.getField(groupBy.getFieldName()));
-               groupValueDocument.append(name, "$" + name);
+               QVirtualFieldMetaData virtualField = table.getVirtualField(groupBy.getFieldName());
+               if(virtualField != null)
+               {
+                  FieldFunction fieldFunction = virtualField.getFieldFunction();
+                  MongoDBFieldFunctionAdapterInterface adapter = backend.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+                  if(adapter != null)
+                  {
+                     String fieldReference = getFieldReference(table, fieldFunction.getFieldName());
+                     groupValueDocument.append(virtualField.getName(), adapter.getExpression(fieldReference, fieldFunction));
+                  }
+               }
+               else
+               {
+                  String name = getFieldBackendName(table.getField(groupBy.getFieldName()));
+                  groupValueDocument.append(name, "$" + name);
+               }
             }
          }
 
@@ -127,8 +144,31 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
          List<BsonField> bsonFields = new ArrayList<>();
          for(Aggregate aggregate : aggregateInput.getAggregates())
          {
-            String fieldName  = aggregate.getFieldName() + "_" + aggregate.getOperator().toString().toLowerCase();
-            String expression = "$" + getFieldBackendName(table.getField(aggregate.getFieldName()));
+            String fieldName = aggregate.getFieldName() + "_" + aggregate.getOperator().toString().toLowerCase();
+
+            /////////////////////////////////////////////////////////////////////
+            // determine the expression - for virtual fields, use the adapter //
+            /////////////////////////////////////////////////////////////////////
+            Object expression;
+            QVirtualFieldMetaData virtualField = table.getVirtualField(aggregate.getFieldName());
+            if(virtualField != null)
+            {
+               FieldFunction fieldFunction = virtualField.getFieldFunction();
+               MongoDBFieldFunctionAdapterInterface adapter = backend.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+               if(adapter != null)
+               {
+                  String fieldReference = getFieldReference(table, fieldFunction.getFieldName());
+                  expression = adapter.getExpression(fieldReference, fieldFunction);
+               }
+               else
+               {
+                  expression = "$" + virtualField.getName();
+               }
+            }
+            else
+            {
+               expression = "$" + getFieldBackendName(table.getField(aggregate.getFieldName()));
+            }
 
             bsonFields.add(switch(aggregate.getOperator())
             {
@@ -162,7 +202,15 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
                }
                else if(orderBy instanceof QFilterOrderByGroupBy orderByGroupBy)
                {
-                  fieldName = "_id." + getFieldBackendName(table.getField(orderByGroupBy.getGroupBy().getFieldName()));
+                  QVirtualFieldMetaData vf = table.getVirtualField(orderByGroupBy.getGroupBy().getFieldName());
+                  if(vf != null)
+                  {
+                     fieldName = "_id." + vf.getName();
+                  }
+                  else
+                  {
+                     fieldName = "_id." + getFieldBackendName(table.getField(orderByGroupBy.getGroupBy().getFieldName()));
+                  }
                }
                else
                {
@@ -211,7 +259,23 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
             for(GroupBy groupBy : CollectionUtils.nonNullList(aggregateInput.getGroupBys()))
             {
                Document idDocument = (Document) document.get("_id");
-               Object   value      = idDocument.get(groupBy.getFieldName());
+
+               ///////////////////////////////////////////////////////////////////////////////////////////////
+               // for virtual fields, the key in _id is the virtual field name;                             //
+               // for regular fields, the key is the field's backend name (which may differ from the name). //
+               ///////////////////////////////////////////////////////////////////////////////////////////////
+               QVirtualFieldMetaData vf = table.getVirtualField(groupBy.getFieldName());
+               String idKey;
+               if(vf != null)
+               {
+                  idKey = vf.getName();
+               }
+               else
+               {
+                  idKey = getFieldBackendName(table.getField(groupBy.getFieldName()));
+               }
+
+               Object value = idDocument.get(idKey);
                result.withGroupByValue(groupBy, ValueUtils.getValueAsFieldType(groupBy.getType(), value));
             }
 
@@ -220,7 +284,7 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
             //////////////////////////////////////////
             for(Aggregate aggregate : aggregateInput.getAggregates())
             {
-               QFieldMetaData field     = table.getField(aggregate.getFieldName());
+               QFieldMetaData field     = table.getFieldOrVirtualField(aggregate.getFieldName());
                QFieldType     fieldType = aggregate.getFieldType();
                if(fieldType == null)
                {

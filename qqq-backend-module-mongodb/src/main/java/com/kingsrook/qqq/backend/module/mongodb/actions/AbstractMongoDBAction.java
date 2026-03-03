@@ -48,6 +48,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.security.NullValueBehaviorUtil;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -58,6 +60,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBFieldFunctionAdapterInterface;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBTableBackendDetails;
 import com.mongodb.ConnectionString;
@@ -165,6 +168,92 @@ public class AbstractMongoDBAction
 
 
    /*******************************************************************************
+    ** Get a MongoDB aggregation field reference for a field in the table.
+    ** Returns "$" + the field's backend name.
+    *******************************************************************************/
+   protected String getFieldReference(QTableMetaData table, String fieldName)
+   {
+      return "$" + getFieldBackendName(table.getField(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Build an $addFields document for virtual fields on a table.
+    ** Each virtual field that is querySelectable or queryCriteria will have an
+    ** entry mapping its name to the appropriate MongoDB aggregation expression.
+    **
+    ** Also handles fieldFunction on criteria for non-virtual fields.
+    *******************************************************************************/
+   protected Document buildAddFieldsDocument(QTableMetaData table, MongoDBBackendMetaData backend, QQueryFilter filter)
+   {
+      Document addFieldsDocument = new Document();
+
+      //////////////////////////////////////////
+      // add expressions for virtual fields  //
+      //////////////////////////////////////////
+      for(QVirtualFieldMetaData virtualField : CollectionUtils.nonNullMap(table.getVirtualFields()).values())
+      {
+         if(virtualField.getIsQuerySelectable() || virtualField.getIsQueryCriteria())
+         {
+            FieldFunction fieldFunction = virtualField.getFieldFunction();
+            if(fieldFunction != null)
+            {
+               MongoDBFieldFunctionAdapterInterface adapter = backend.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+               if(adapter != null)
+               {
+                  String fieldReference = getFieldReference(table, fieldFunction.getFieldName());
+                  addFieldsDocument.append(virtualField.getName(), adapter.getExpression(fieldReference, fieldFunction));
+               }
+            }
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // handle criteria-level fieldFunction on non-virtual fields (inline computed fields) //
+      /////////////////////////////////////////////////////////////////////////////////////
+      addFieldFunctionFieldsFromFilter(addFieldsDocument, table, backend, filter);
+
+      return addFieldsDocument;
+   }
+
+
+
+   /*******************************************************************************
+    ** Recursively scan a filter for criteria that have a fieldFunction,
+    ** and add corresponding computed fields to the addFields document.
+    *******************************************************************************/
+   private void addFieldFunctionFieldsFromFilter(Document addFieldsDocument, QTableMetaData table, MongoDBBackendMetaData backend, QQueryFilter filter)
+   {
+      if(filter == null)
+      {
+         return;
+      }
+
+      for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
+      {
+         if(criteria.getFieldFunction() != null)
+         {
+            FieldFunction fieldFunction = criteria.getFieldFunction();
+            MongoDBFieldFunctionAdapterInterface adapter = backend.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+            if(adapter != null)
+            {
+               String computedFieldName = criteria.getFieldName() + "_" + fieldFunction.getFunctionTypeIdentifierName();
+               String fieldReference    = getFieldReference(table, criteria.getFieldName());
+               addFieldsDocument.append(computedFieldName, adapter.getExpression(fieldReference, fieldFunction));
+            }
+         }
+      }
+
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(filter.getSubFilters()))
+      {
+         addFieldFunctionFieldsFromFilter(addFieldsDocument, table, backend, subFilter);
+      }
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    protected int getPageSize()
@@ -240,6 +329,18 @@ public class AbstractMongoDBAction
          {
             Object value = document.remove(fieldBackendName);
             setValue(values, fieldName, value);
+         }
+      }
+
+      ////////////////////////////////////////////////////////////
+      // extract virtual field values computed by $addFields  //
+      ////////////////////////////////////////////////////////////
+      for(QVirtualFieldMetaData virtualField : CollectionUtils.nonNullMap(table.getVirtualFields()).values())
+      {
+         if(virtualField.getIsQuerySelectable())
+         {
+            Object value = document.remove(virtualField.getName());
+            setValue(values, virtualField.getName(), value);
          }
       }
 
@@ -553,9 +654,27 @@ public class AbstractMongoDBAction
 
       for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
       {
-         List<Serializable> values           = criteria.getValues() == null ? new ArrayList<>() : new ArrayList<>(criteria.getValues());
-         QFieldMetaData     field            = table.getField(criteria.getFieldName());
-         String             fieldBackendName = getFieldBackendName(field);
+         List<Serializable> values = criteria.getValues() == null ? new ArrayList<>() : new ArrayList<>(criteria.getValues());
+         QFieldMetaData     field  = table.getFieldOrVirtualField(criteria.getFieldName());
+
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // determine the field backend name - for virtual fields, use the virtual field's name     //
+         // (since $addFields computed it under that name). for criteria with a fieldFunction,      //
+         // use the computed field name pattern.                                                    //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         String fieldBackendName;
+         if(field instanceof QVirtualFieldMetaData)
+         {
+            fieldBackendName = field.getName();
+         }
+         else if(criteria.getFieldFunction() != null)
+         {
+            fieldBackendName = criteria.getFieldName() + "_" + criteria.getFieldFunction().getFunctionTypeIdentifierName();
+         }
+         else
+         {
+            fieldBackendName = getFieldBackendName(field);
+         }
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // replace any expression-type values with their evaluation                                                                         //
