@@ -23,7 +23,11 @@ package com.kingsrook.qqq.backend.module.postgres.model.metadata;
 
 
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
 import com.kingsrook.qqq.backend.module.postgres.PostgreSQLBackendModule;
+import com.kingsrook.qqq.backend.module.postgres.fieldfunctions.PostgreSQLRDBMSWeekdayOfDateFunction;
+import com.kingsrook.qqq.backend.module.postgres.fieldfunctions.PostgreSQLRDBMSWeekdayOfDateTimeFunction;
 import com.kingsrook.qqq.backend.module.postgres.strategy.PostgreSQLRDBMSActionStrategy;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterface;
@@ -53,6 +57,19 @@ public class PostgreSQLBackendMetaData extends RDBMSBackendMetaData
       super();
       setVendor("postgres");
       setBackendType(PostgreSQLBackendModule.class);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public void doRegisterFieldFunctionAdapters()
+   {
+      super.doRegisterFieldFunctionAdapters();
+      registerBackendFieldFunctionAdapter(WeekdayOfDateFunction.IDENTIFIER, PostgreSQLRDBMSWeekdayOfDateFunction.class);
+      registerBackendFieldFunctionAdapter(WeekdayOfDateTimeFunction.IDENTIFIER, PostgreSQLRDBMSWeekdayOfDateTimeFunction.class);
    }
 
 
