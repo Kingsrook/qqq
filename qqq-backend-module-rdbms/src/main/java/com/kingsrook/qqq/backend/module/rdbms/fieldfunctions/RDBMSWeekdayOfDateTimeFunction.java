@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.fieldfunctions;
 import java.io.Serializable;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
@@ -50,15 +51,25 @@ public class RDBMSWeekdayOfDateTimeFunction implements RDBMSFieldFunctionAdapter
     * {@link #getParams}.
     ***************************************************************************/
    @Override
-   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction)
+   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction, Function<String, String> fieldNameToColumnReference)
    {
+      String zoneIdFromFieldName = fieldFunction.getArgumentValueOrDefault(String.class, WeekdayOfDateTimeFunction.PARAM_ZONE_ID_FROM_FIELD_NAME);
+
       ////////////////////////////////////////////////////////////////////
       // Mysql WEEKDAY returns values Monday=0, Sunday=6.               //
       // QQQ attempts to standardize on ISO-8601 (Monday=1, Sunday=7).  //
       // simplest way to map this is just adding 1 to WEEKDAY's output. //
       // this works for both a SELECT clause or a WHERE clause          //
       ////////////////////////////////////////////////////////////////////
-      return "WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, ?)) + 1";
+      if(StringUtils.hasContent(zoneIdFromFieldName))
+      {
+         String columnRef = fieldNameToColumnReference.apply(zoneIdFromFieldName);
+         return "WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, NVL(" + columnRef + ", ?))) + 1";
+      }
+      else
+      {
+         return "WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, ?)) + 1";
+      }
    }
 
 
@@ -98,12 +109,23 @@ public class RDBMSWeekdayOfDateTimeFunction implements RDBMSFieldFunctionAdapter
     * {@code % 7} so Sunday (value 7) sorts as 0 before Monday.
     ***************************************************************************/
    @Override
-   public String wrapColumnNameForOrderBy(String escapedColumnName, FieldFunction fieldFunction)
+   public String wrapColumnNameForOrderBy(String escapedColumnName, FieldFunction fieldFunction, Function<String, String> fieldNameToColumnReference)
    {
+      String zoneIdFromFieldName = fieldFunction.getArgumentValueOrDefault(String.class, WeekdayOfDateTimeFunction.PARAM_ZONE_ID_FROM_FIELD_NAME);
+
       //////////////////////////////////////////////////////////////////////////////////////////////
       // to sort Sunday first, do a % 7, which puts Sunday(7) = 0, and leaves Monday(1) = 1, etc. //
       //////////////////////////////////////////////////////////////////////////////////////////////
       Boolean sundayFirst = fieldFunction.getArgumentValueOrDefault(Boolean.class, WeekdayOfDateTimeFunction.PARAM_SORT_SUNDAY_FIRST);
-      return "(WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, ?)) + 1)" + (BooleanUtils.isTrue(sundayFirst) ? " % 7" : "");
+
+      if(StringUtils.hasContent(zoneIdFromFieldName))
+      {
+         String columnRef = fieldNameToColumnReference.apply(zoneIdFromFieldName);
+         return "(WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, NVL(" + columnRef + ", ?))) + 1)" + (BooleanUtils.isTrue(sundayFirst) ? " % 7" : "");
+      }
+      else
+      {
+         return "(WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, ?)) + 1)" + (BooleanUtils.isTrue(sundayFirst) ? " % 7" : "");
+      }
    }
 }

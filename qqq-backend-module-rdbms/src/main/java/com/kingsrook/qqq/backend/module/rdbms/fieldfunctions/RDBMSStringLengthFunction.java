@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms.fieldfunctions;
 
 
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
 
@@ -38,7 +39,7 @@ public class RDBMSStringLengthFunction implements RDBMSFieldFunctionAdapterInter
     * Returns a CHAR_LENGTH(col) SQL expression for the given escaped column name.
     ***************************************************************************/
    @Override
-   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction)
+   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction, Function<String, String> fieldNameToColumnReference)
    {
       ///////////////////////////////////////////////////////////////////
       // note:  CHAR_LENGTH returns # of chars - LENGTH is # of bytes! //

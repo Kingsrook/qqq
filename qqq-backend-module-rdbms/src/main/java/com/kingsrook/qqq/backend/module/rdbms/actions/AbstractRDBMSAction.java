@@ -37,6 +37,7 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -616,7 +617,7 @@ public abstract class AbstractRDBMSAction
          // if the field is virtual, then capture that virtualField in its own variable, and   //
          // replace the field variable with the real field that the virtual field is based on. //
          ////////////////////////////////////////////////////////////////////////////////////////
-         if(field instanceof QVirtualFieldMetaData v)
+         if(field instanceof QVirtualFieldMetaData v && v.getFieldFunction() != null)
          {
             virtualField = v;
             String fieldTableName = joinsContext.resolveTableNameOrAliasToTableName(fieldAndTableNameOrAlias.tableNameOrAlias());
@@ -666,7 +667,10 @@ public abstract class AbstractRDBMSAction
          String column = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
          if(fieldFunctionAdapter != null)
          {
-            column = fieldFunctionAdapter.wrapColumnName(column, fieldFunction);
+            String         tableNameOrAlias = fieldAndTableNameOrAlias.tableNameOrAlias();
+            String         fieldTableName   = joinsContext.resolveTableNameOrAliasToTableName(tableNameOrAlias);
+            QTableMetaData fieldTable       = QContext.getQInstance().getTable(fieldTableName);
+            column = fieldFunctionAdapter.wrapColumnName(column, fieldFunction, makeFieldNameToColumnReferenceFunction(tableNameOrAlias, fieldTable));
          }
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -776,6 +780,19 @@ public abstract class AbstractRDBMSAction
       }
 
       return (Optional.of(String.join(" " + booleanOperator.toString() + " ", clauses)));
+   }
+
+
+
+   /***************************************************************************
+    * Build a function that maps a QQQ field name to its fully-qualified,
+    * escaped SQL column reference (e.g., {@code "timeZone"} →
+    * {@code `t1`.`time_zone`}).  Useful when a field-function adapter needs
+    * to reference additional columns on the same row.
+    ***************************************************************************/
+   protected Function<String, String> makeFieldNameToColumnReferenceFunction(String tableNameOrAlias, QTableMetaData table)
+   {
+      return fieldName -> escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(table.getField(fieldName)));
    }
 
 
@@ -910,7 +927,7 @@ public abstract class AbstractRDBMSAction
          }
          else if(orderBy instanceof QFilterOrderByGroupBy orderByGroupBy)
          {
-            clauses.add(getSingleGroupByClause(orderByGroupBy.getGroupBy(), joinsContext) + " " + ascOrDesc);
+            clauses.add(getSingleGroupByClause(orderByGroupBy.getGroupBy(), joinsContext, params, true) + " " + ascOrDesc);
          }
          else
          {
@@ -920,7 +937,7 @@ public abstract class AbstractRDBMSAction
             String column         = getColumnName(field);
             String tableDotColumn = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(column);
 
-            if(field instanceof QVirtualFieldMetaData virtualField)
+            if(field instanceof QVirtualFieldMetaData virtualField && virtualField.getFieldFunction() != null)
             {
                String         fieldTableName = joinsContext.resolveTableNameOrAliasToTableName(fieldAndTableNameOrAlias.tableNameOrAlias());
                String         realFieldName  = virtualField.getFieldFunction().getFieldName();
@@ -929,7 +946,8 @@ public abstract class AbstractRDBMSAction
 
                FieldFunction                      fieldFunction        = virtualField.getFieldFunction();
                RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
-               tableDotColumn = fieldFunctionAdapter.wrapColumnNameForOrderBy(tableDotColumn, fieldFunction);
+               QTableMetaData                     fieldTable           = QContext.getQInstance().getTable(fieldTableName);
+               tableDotColumn = fieldFunctionAdapter.wrapColumnNameForOrderBy(tableDotColumn, fieldFunction, makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable));
 
                fieldFunctionAdapter.getParams(fieldFunction);
                CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
@@ -955,10 +973,35 @@ public abstract class AbstractRDBMSAction
     ** @param joinsContext context for resolving field names to table aliases
     ** @return the GROUP BY clause element (e.g., "table.field" or "DATE(table.field)")
     *******************************************************************************/
-   protected String getSingleGroupByClause(GroupBy groupBy, JoinsContext joinsContext)
+   protected String getSingleGroupByClause(GroupBy groupBy, JoinsContext joinsContext, List<Serializable> params, boolean isForOrderBy)
    {
-      JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupBy.getFieldName());
-      String                                fullFieldName            = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field()));
+      JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupBy.getFieldName(), true /* allowVirtualFields */);
+      QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
+
+      String fullFieldName;
+      if(field instanceof QVirtualFieldMetaData virtualField && virtualField.getFieldFunction() != null)
+      {
+         String         fieldTableName = joinsContext.resolveTableNameOrAliasToTableName(fieldAndTableNameOrAlias.tableNameOrAlias());
+         String         realFieldName  = virtualField.getFieldFunction().getFieldName();
+         QFieldMetaData realField      = QContext.getQInstance().getTable(fieldTableName).getField(realFieldName);
+         String         columnName     = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(realField));
+
+         FieldFunction                      fieldFunction                = virtualField.getFieldFunction();
+         RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter          = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+         QTableMetaData                     fieldTable                    = QContext.getQInstance().getTable(fieldTableName);
+         Function<String, String>           fieldNameToColumnReference    = makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable);
+
+         fullFieldName = false // todo wip - should use this, but then the column maybe needs selected too... isForOrderBy
+            ? fieldFunctionAdapter.wrapColumnNameForOrderBy(columnName, fieldFunction, fieldNameToColumnReference)
+            : fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, fieldNameToColumnReference);
+
+         CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
+      }
+      else
+      {
+         fullFieldName = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
+      }
+
       if(groupBy.getFormatString() == null)
       {
          return (fullFieldName);

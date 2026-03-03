@@ -45,9 +45,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSFieldFunctionAdapterInterface;
 
 
 /*******************************************************************************
@@ -74,10 +77,13 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
          QQueryFilter filter       = clonedOrNewFilter(aggregateInput.getFilter());
          JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), table.getName(), aggregateInput.getQueryJoins(), filter);
 
-         List<Serializable> params = new ArrayList<>();
+         List<Serializable> selectParams = new ArrayList<>();
+         List<String>       selectClauses = buildSelectClauses(aggregateInput, joinsContext, selectParams);
 
-         String       fromClause    = makeFromClause(QContext.getQInstance(), table.getName(), joinsContext, params);
-         List<String> selectClauses = buildSelectClauses(aggregateInput, joinsContext);
+         List<Serializable> params = new ArrayList<>();
+         params.addAll(selectParams);
+
+         String fromClause = makeFromClause(QContext.getQInstance(), table.getName(), joinsContext, params);
 
          String sql = "SELECT " + StringUtils.join(", ", selectClauses)
             + " FROM " + fromClause
@@ -85,7 +91,9 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
          if(CollectionUtils.nullSafeHasContents(aggregateInput.getGroupBys()))
          {
-            sql += " GROUP BY " + makeGroupByClause(aggregateInput, joinsContext);
+            List<Serializable> groupByParams = new ArrayList<>();
+            sql += " GROUP BY " + makeGroupByClause(aggregateInput, joinsContext, groupByParams);
+            params.addAll(groupByParams);
          }
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
@@ -99,6 +107,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
          }
 
          // todo sql customization - can edit sql and/or param list
+         System.out.println(sql);
 
          setSqlAndJoinsInQueryStat(sql, joinsContext);
 
@@ -161,7 +170,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
                   for(Aggregate aggregate : aggregateInput.getAggregates())
                   {
-                     JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
+                     JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName(), true /* allowVirtualFields */);
                      QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
 
                      QFieldType fieldType = aggregate.getFieldType();
@@ -239,19 +248,40 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<String> buildSelectClauses(AggregateInput aggregateInput, JoinsContext joinsContext)
+   private List<String> buildSelectClauses(AggregateInput aggregateInput, JoinsContext joinsContext, List<Serializable> params)
    {
       List<String> rs = new ArrayList<>();
 
       for(GroupBy groupBy : CollectionUtils.nonNullList(aggregateInput.getGroupBys()))
       {
-         rs.add(getSingleGroupByClause(groupBy, joinsContext));
+         rs.add(getSingleGroupByClause(groupBy, joinsContext, params, false));
       }
 
       for(Aggregate aggregate : aggregateInput.getAggregates())
       {
-         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
-         rs.add(aggregate.getOperator().getSqlPrefix() + escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())) + ")");
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName(), true /* allowVirtualFields */);
+         QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
+
+         String columnExpression;
+         if(field instanceof QVirtualFieldMetaData virtualField)
+         {
+            String         fieldTableName = joinsContext.resolveTableNameOrAliasToTableName(fieldAndTableNameOrAlias.tableNameOrAlias());
+            String         realFieldName  = virtualField.getFieldFunction().getFieldName();
+            QFieldMetaData realField      = QContext.getQInstance().getTable(fieldTableName).getField(realFieldName);
+            String         columnName     = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(realField));
+
+            FieldFunction                      fieldFunction        = virtualField.getFieldFunction();
+            RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+            QTableMetaData                     fieldTable           = QContext.getQInstance().getTable(fieldTableName);
+            columnExpression = fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable));
+            CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
+         }
+         else
+         {
+            columnExpression = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
+         }
+
+         rs.add(aggregate.getOperator().getSqlPrefix() + columnExpression + ")");
       }
       return (rs);
    }
@@ -261,12 +291,12 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String makeGroupByClause(AggregateInput aggregateInput, JoinsContext joinsContext)
+   private String makeGroupByClause(AggregateInput aggregateInput, JoinsContext joinsContext, List<Serializable> params)
    {
       List<String> columns = new ArrayList<>();
       for(GroupBy groupBy : CollectionUtils.nonNullList(aggregateInput.getGroupBys()))
       {
-         columns.add(getSingleGroupByClause(groupBy, joinsContext));
+         columns.add(getSingleGroupByClause(groupBy, joinsContext, params, false));
       }
 
       return (StringUtils.join(",", columns));

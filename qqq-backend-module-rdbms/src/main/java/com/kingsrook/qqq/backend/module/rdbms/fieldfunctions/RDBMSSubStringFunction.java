@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.fieldfunctions;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
@@ -44,7 +45,7 @@ public class RDBMSSubStringFunction implements RDBMSFieldFunctionAdapterInterfac
     * length, or {@code FROM ? FOR ?} form when a length argument is present.
     ***************************************************************************/
    @Override
-   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction)
+   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction, Function<String, String> fieldNameToColumnReference)
    {
       Integer length = fieldFunction.getArgumentValueOrDefault(Integer.class, SubStringFunction.LENGTH_PARAM);
       if(length == null)

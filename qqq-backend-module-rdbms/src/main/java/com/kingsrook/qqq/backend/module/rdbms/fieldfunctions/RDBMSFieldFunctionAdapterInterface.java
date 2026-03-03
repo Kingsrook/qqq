@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.fieldfunctions;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.BackendFieldFunctionAdapterInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 
@@ -45,9 +46,20 @@ public interface RDBMSFieldFunctionAdapterInterface extends BackendFieldFunction
 {
    /***************************************************************************
     * Wraps the given escaped SQL column reference in the appropriate SQL
-    * function expression for use in SELECT or WHERE clauses.
+    * function expression for use in SELECT, WHERE, ORDER-BY or GROUP-BY clauses.
+    *
+    * @param escapedColumnName a fully qualified and escaped SQL column name
+    *                          for the 'main' field that this function works with
+    *                          (e.g., {@code FieldFunction#withFieldName(String)}.
+    *                          Looks like:  {@code `my_table`.`my_field`}.
+    * @param fieldFunction the function with arguments, being used.
+    * @param fieldNameToColumnReference resolves a QQQ field name to its fully-
+    *        qualified escaped SQL column reference (e.g., {@code "timeZone"} →
+    *        {@code `t1`.`time_zone`}).  Useful when the function expression
+    *        needs to reference additional columns on the same row.
     ***************************************************************************/
-   String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction);
+   String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction,
+                         Function<String, String> fieldNameToColumnReference);
 
 
    /***************************************************************************
@@ -65,8 +77,8 @@ public interface RDBMSFieldFunctionAdapterInterface extends BackendFieldFunction
     * Defaults to calling {@link #wrapColumnName}; may be overridden when the
     * ORDER BY form differs (e.g., a modulo for Sunday-first sorting).
     ***************************************************************************/
-   default String wrapColumnNameForOrderBy(String escapedColumnName, FieldFunction fieldFunction)
+   default String wrapColumnNameForOrderBy(String escapedColumnName, FieldFunction fieldFunction, Function<String, String> fieldNameToColumnReference)
    {
-      return wrapColumnName(escapedColumnName, fieldFunction);
+      return wrapColumnName(escapedColumnName, fieldFunction, fieldNameToColumnReference);
    }
 }

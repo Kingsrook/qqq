@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms.fieldfunctions;
 
 
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
 import org.apache.commons.lang3.BooleanUtils;
@@ -43,7 +44,7 @@ public class RDBMSWeekdayOfDateFunction implements RDBMSFieldFunctionAdapterInte
     * ISO-8601's 1-based Monday.
     ***************************************************************************/
    @Override
-   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction)
+   public String wrapColumnName(String escapedColumnName, FieldFunction fieldFunction, Function<String, String> fieldNameToColumnReference)
    {
       ////////////////////////////////////////////////////////////////////
       // Mysql WEEKDAY returns values Monday=0, Sunday=6.               //
@@ -61,7 +62,7 @@ public class RDBMSWeekdayOfDateFunction implements RDBMSFieldFunctionAdapterInte
     * {@code % 7} so Sunday (value 7) sorts as 0 before Monday.
     ***************************************************************************/
    @Override
-   public String wrapColumnNameForOrderBy(String escapedColumnName, FieldFunction fieldFunction)
+   public String wrapColumnNameForOrderBy(String escapedColumnName, FieldFunction fieldFunction, Function<String, String> fieldNameToColumnReference)
    {
       //////////////////////////////////////////////////////////////////////////////////////////////
       // to sort Sunday first, do a % 7, which puts Sunday(7) = 0, and leaves Monday(1) = 1, etc. //

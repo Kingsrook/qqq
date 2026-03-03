@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementa
 import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -54,7 +55,7 @@ class RDBMSFieldFunctionAdapterTest extends BaseTest
          .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
          .withFieldName("firstName");
 
-      assertEquals("CHAR_LENGTH(first_name)", adapter.wrapColumnName("first_name", ff));
+      assertEquals("CHAR_LENGTH(first_name)", adapter.wrapColumnName("first_name", ff, s -> s));
    }
 
 
@@ -71,7 +72,7 @@ class RDBMSFieldFunctionAdapterTest extends BaseTest
          .withFieldName("firstName")
          .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 2));
 
-      assertEquals("SUBSTRING(first_name FROM ?)", adapter.wrapColumnName("first_name", ff));
+      assertEquals("SUBSTRING(first_name FROM ?)", adapter.wrapColumnName("first_name", ff, s -> s));
    }
 
 
@@ -88,7 +89,7 @@ class RDBMSFieldFunctionAdapterTest extends BaseTest
          .withFieldName("firstName")
          .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 2, SubStringFunction.LENGTH_PARAM, 3));
 
-      assertEquals("SUBSTRING(first_name FROM ? FOR ?)", adapter.wrapColumnName("first_name", ff));
+      assertEquals("SUBSTRING(first_name FROM ? FOR ?)", adapter.wrapColumnName("first_name", ff, s -> s));
    }
 
 
@@ -143,7 +144,7 @@ class RDBMSFieldFunctionAdapterTest extends BaseTest
          .withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER)
          .withFieldName("birthDate");
 
-      assertEquals("WEEKDAY(birth_date) + 1", adapter.wrapColumnName("birth_date", ff));
+      assertEquals("WEEKDAY(birth_date) + 1", adapter.wrapColumnName("birth_date", ff, s -> s));
    }
 
 
@@ -160,7 +161,7 @@ class RDBMSFieldFunctionAdapterTest extends BaseTest
          .withFieldName("birthDate")
          .withArguments(Map.of(WeekdayOfDateFunction.PARAM_SORT_SUNDAY_FIRST, true));
 
-      String result = adapter.wrapColumnNameForOrderBy("birth_date", ff);
+      String result = adapter.wrapColumnNameForOrderBy("birth_date", ff, s -> s);
       assertTrue(result.contains("% 7"), "Should contain modulo 7 for sunday-first sorting");
    }
 
@@ -178,8 +179,8 @@ class RDBMSFieldFunctionAdapterTest extends BaseTest
          .withFieldName("birthDate")
          .withArguments(Map.of(WeekdayOfDateFunction.PARAM_SORT_SUNDAY_FIRST, false));
 
-      String result = adapter.wrapColumnNameForOrderBy("birth_date", ff);
-      assertTrue(!result.contains("% 7"), "Should NOT contain modulo 7 for monday-first sorting");
+      String result = adapter.wrapColumnNameForOrderBy("birth_date", ff, s -> s);
+      assertFalse(result.contains("% 7"), "Should NOT contain modulo 7 for monday-first sorting");
    }
 
 
@@ -195,7 +196,7 @@ class RDBMSFieldFunctionAdapterTest extends BaseTest
          .withFunctionTypeIdentifier(WeekdayOfDateTimeFunction.IDENTIFIER)
          .withFieldName("createDate");
 
-      assertEquals("WEEKDAY(CONVERT_TZ(create_date, ?, ?)) + 1", adapter.wrapColumnName("create_date", ff));
+      assertEquals("WEEKDAY(CONVERT_TZ(create_date, ?, ?)) + 1", adapter.wrapColumnName("create_date", ff, s -> s));
    }
 
 

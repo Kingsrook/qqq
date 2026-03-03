@@ -490,16 +490,25 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       {
          if(virtualField.getIsQuerySelectable())
          {
+            FieldFunction fieldFunction = virtualField.getFieldFunction();
+            if(fieldFunction == null)
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               // if there's no field function, then we can't get the virtual field's value from the select. //
+               // this means the value will come from a table customizer                                     //
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               continue;
+            }
+
             if(fieldNamesToInclude != null && !fieldNamesToInclude.contains(virtualField.getName()))
             {
                continue;
             }
 
-            FieldFunction                      fieldFunction        = virtualField.getFieldFunction();
             RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
             QFieldMetaData                     sourceField          = table.getField(fieldFunction.getFieldName());
             String                             columnName           = escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(sourceField));
-            String                             wrappedColumnName    = fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction);
+            String                             wrappedColumnName    = fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, makeFieldNameToColumnReferenceFunction(tableNameOrAlias, table));
 
             CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
 
