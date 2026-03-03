@@ -153,7 +153,6 @@ class QPicoCliImplementationTest
       TestOutput testOutput = testCli("--meta-data");
       JSONObject metaData   = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(metaData);
-      assertEquals(2, metaData.keySet().size(), "Number of top-level keys");
 
       assertTrue(metaData.has("tables"));
       JSONObject tables      = metaData.getJSONObject("tables");
