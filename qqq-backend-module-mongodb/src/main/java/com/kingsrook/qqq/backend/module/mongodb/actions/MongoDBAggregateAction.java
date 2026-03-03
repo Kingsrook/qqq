@@ -127,7 +127,7 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
                   if(adapter != null)
                   {
                      String fieldReference = getFieldReference(table, fieldFunction.getFieldName());
-                     groupValueDocument.append(virtualField.getName(), adapter.getExpression(fieldReference, fieldFunction));
+                     groupValueDocument.append(virtualField.getName(), adapter.getExpression(fieldReference, fieldFunction, fn -> getFieldReference(table, fn)));
                   }
                }
                else
@@ -158,7 +158,7 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
                if(adapter != null)
                {
                   String fieldReference = getFieldReference(table, fieldFunction.getFieldName());
-                  expression = adapter.getExpression(fieldReference, fieldFunction);
+                  expression = adapter.getExpression(fieldReference, fieldFunction, fn -> getFieldReference(table, fn));
                }
                else
                {

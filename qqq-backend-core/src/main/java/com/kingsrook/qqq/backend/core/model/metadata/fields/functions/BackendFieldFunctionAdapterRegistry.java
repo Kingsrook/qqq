@@ -22,17 +22,21 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields.functions;
 
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
  * Registry of {@link BackendFieldFunctionAdapterInterface} implementations, keyed
- * by function type identifier name and backend type name.
+ * by function type identifier name.  These objects are, by design, stored as
+ * properties of {@link QBackendMetaData} subclasses (which is why the keys inside
+ * the registry are just function identifiers - each backend has 1 adapter
+ * implementation per function type).
  *
  * <p>Backend modules (e.g., RDBMS) register adapters here so that when a query
  * is executed, the appropriate backend-specific adapter can be retrieved by
@@ -45,7 +49,7 @@ public class BackendFieldFunctionAdapterRegistry
    /////////////////////////////////////////////////////////////
    // map of:  FieldFunctionIdentifier.name -> code reference //
    /////////////////////////////////////////////////////////////
-   private Map<String, QCodeReference> registry = new HashMap<>();
+   private Map<String, QCodeReference> registry = new ConcurrentHashMap<>();
 
 
 

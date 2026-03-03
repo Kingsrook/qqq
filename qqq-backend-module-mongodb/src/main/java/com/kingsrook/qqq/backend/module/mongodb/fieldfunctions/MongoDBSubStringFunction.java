@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.mongodb.fieldfunctions;
 
 
 import java.util.List;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
 import org.bson.Document;
@@ -38,7 +39,7 @@ public class MongoDBSubStringFunction implements MongoDBFieldFunctionAdapterInte
 {
 
    @Override
-   public Object getExpression(String fieldReference, FieldFunction fieldFunction)
+   public Object getExpression(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
       Integer fromIndex = fieldFunction.getArgumentValueOrDefault(Integer.class, SubStringFunction.FROM_INDEX_PARAM);
       Integer length    = fieldFunction.getArgumentValueOrDefault(Integer.class, SubStringFunction.LENGTH_PARAM);

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.mongodb.fieldfunctions;
 
 
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.BackendFieldFunctionAdapterInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 
@@ -39,8 +40,15 @@ public interface MongoDBFieldFunctionAdapterInterface extends BackendFieldFuncti
    /*******************************************************************************
     ** Returns a MongoDB aggregation expression for the given field reference.
     ** The fieldReference is a "$"-prefixed field name (e.g., "$firstName").
+    **
+    ** @param fieldReference "$"-prefixed field name for the function's source field.
+    ** @param fieldFunction the function with arguments.
+    ** @param fieldNameToFieldReference resolves a QQQ field name to its "$"-prefixed
+    **        MongoDB field reference (e.g., "timeZone" → "$time_zone"). Useful when
+    **        the function expression needs to reference additional fields on the same
+    **        document (e.g., a per-row timezone field).
     *******************************************************************************/
-   Object getExpression(String fieldReference, FieldFunction fieldFunction);
+   Object getExpression(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference);
 
 
    /*******************************************************************************
@@ -48,9 +56,9 @@ public interface MongoDBFieldFunctionAdapterInterface extends BackendFieldFuncti
     ** Defaults to getExpression(); may be overridden when the sort form differs
     ** (e.g., a modulo for Sunday-first weekday sorting).
     *******************************************************************************/
-   default Object getExpressionForOrderBy(String fieldReference, FieldFunction fieldFunction)
+   default Object getExpressionForOrderBy(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
-      return getExpression(fieldReference, fieldFunction);
+      return getExpression(fieldReference, fieldFunction, fieldNameToFieldReference);
    }
 
 }

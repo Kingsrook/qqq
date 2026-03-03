@@ -1118,7 +1118,7 @@ public class QInstanceValidator
          if(table.getCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole()).isEmpty())
          {
             requireFieldFunction = true;
-            requireFieldFunctionReason = "To be querySelectable (since its table does not not have a POST_QUERY_RECORD customizer)";
+            requireFieldFunctionReason = "To be querySelectable (since its table does not have a POST_QUERY_RECORD customizer)";
          }
       }
 
@@ -1143,7 +1143,7 @@ public class QInstanceValidator
                      if(assertCondition(table.getFields().containsKey(sourceFieldName), "fieldFunction's referenced source field name is not a defined field on this table"))
                      {
                         QFieldMetaData sourceField = table.getField(sourceFieldName);
-                        assertCondition(fieldFunctionType.getAllowedFieldTypes().contains(sourceField.getType()), prefix + "source field [" + sourceFieldName + "]'s type [" + sourceField.getType() + "] is not amoung the the specified field function's allowed types [" + fieldFunctionType.getAllowedFieldTypes() + "]");
+                        assertCondition(fieldFunctionType.getAllowedFieldTypes().contains(sourceField.getType()), prefix + "source field [" + sourceFieldName + "]'s type [" + sourceField.getType() + "] is not among the specified field function's allowed types [" + fieldFunctionType.getAllowedFieldTypes() + "]");
                      }
                   }
                }

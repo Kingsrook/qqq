@@ -77,6 +77,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
@@ -658,6 +659,7 @@ public abstract class AbstractRDBMSAction
          if(fieldFunction != null)
          {
             fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+            requireFieldFunctionAdapterNotNull(fieldFunctionAdapter, fieldFunction);
          }
 
          //////////////////////////////////////////////////////////////////
@@ -780,6 +782,20 @@ public abstract class AbstractRDBMSAction
       }
 
       return (Optional.of(String.join(" " + booleanOperator.toString() + " ", clauses)));
+   }
+
+
+
+   /***************************************************************************
+    * do an {@code Objects.requireNonNull} check on a fieldFunctionAdapter -
+    * throwing {@code NullPointerException} with a detailed message if it is null.
+    ***************************************************************************/
+   protected void requireFieldFunctionAdapterNotNull(RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter, FieldFunction fieldFunction)
+   {
+      Objects.requireNonNull(fieldFunctionAdapter, "Missing field function adapter for function "
+         + ObjectUtils.tryElse(() -> fieldFunction.getFunctionTypeIdentifier().getName(), "unknown")
+         + "] in backend ["
+         + ObjectUtils.tryElse(() -> backendMetaData.getName(), "unknown") + "]");
    }
 
 
@@ -944,12 +960,13 @@ public abstract class AbstractRDBMSAction
                QFieldMetaData realField      = QContext.getQInstance().getTable(fieldTableName).getField(realFieldName);
                tableDotColumn = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(realField));
 
+               QTableMetaData                     fieldTable           = QContext.getQInstance().getTable(fieldTableName);
                FieldFunction                      fieldFunction        = virtualField.getFieldFunction();
                RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
-               QTableMetaData                     fieldTable           = QContext.getQInstance().getTable(fieldTableName);
+               requireFieldFunctionAdapterNotNull(fieldFunctionAdapter, fieldFunction);
+
                tableDotColumn = fieldFunctionAdapter.wrapColumnNameForOrderBy(tableDotColumn, fieldFunction, makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable));
 
-               fieldFunctionAdapter.getParams(fieldFunction);
                CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
             }
 
@@ -986,10 +1003,11 @@ public abstract class AbstractRDBMSAction
          QFieldMetaData realField      = QContext.getQInstance().getTable(fieldTableName).getField(realFieldName);
          String         columnName     = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(realField));
 
-         FieldFunction                      fieldFunction                = virtualField.getFieldFunction();
-         RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter          = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
-         QTableMetaData                     fieldTable                    = QContext.getQInstance().getTable(fieldTableName);
-         Function<String, String>           fieldNameToColumnReference    = makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable);
+         FieldFunction                      fieldFunction              = virtualField.getFieldFunction();
+         RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter       = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+         QTableMetaData                     fieldTable                 = QContext.getQInstance().getTable(fieldTableName);
+         Function<String, String>           fieldNameToColumnReference = makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable);
+         requireFieldFunctionAdapterNotNull(fieldFunctionAdapter, fieldFunction);
 
          fullFieldName = false // todo wip - should use this, but then the column maybe needs selected too... isForOrderBy
             ? fieldFunctionAdapter.wrapColumnNameForOrderBy(columnName, fieldFunction, fieldNameToColumnReference)

@@ -30,8 +30,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.FieldFunctionDeserializer;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /***************************************************************************
@@ -45,6 +47,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 @JsonDeserialize(using = FieldFunctionDeserializer.class)
 public class FieldFunction implements Serializable, Cloneable
 {
+   private static final QLogger LOG = QLogger.getLogger(FieldFunction.class);
+
    private String                      fieldName;
    private FieldFunctionTypeIdentifier functionTypeIdentifier;
    private Map<String, Serializable>   arguments;
@@ -63,8 +67,19 @@ public class FieldFunction implements Serializable, Cloneable
          return (ValueUtils.getValueAsType(type, argumentValue));
       }
 
-      FieldFunctionType                fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(getFunctionTypeIdentifier());
-      Optional<FieldFunctionParameter> parameter         = fieldFunctionType.getParameters().stream().filter(p -> p.getName().equals(name)).findFirst();
+      FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(getFunctionTypeIdentifier());
+      if(fieldFunctionType == null)
+      {
+         LOG.warn("No fieldFunctionType is registered for the specified identifier", logPair("identifier", getFunctionTypeIdentifierName()));
+         return (null);
+      }
+
+      if(fieldFunctionType.getParameters() == null)
+      {
+         return (null);
+      }
+
+      Optional<FieldFunctionParameter> parameter = fieldFunctionType.getParameters().stream().filter(p -> p.getName().equals(name)).findFirst();
       if(parameter.isPresent() && parameter.get().getDefaultValue() != null)
       {
          return (ValueUtils.getValueAsType(type, parameter.get().getDefaultValue()));
@@ -125,7 +140,8 @@ public class FieldFunction implements Serializable, Cloneable
 
          if(arguments != null)
          {
-            clone.arguments = new HashMap<>(arguments);
+            clone.arguments = new HashMap<>();
+            clone.arguments.putAll(arguments);
          }
 
          return clone;

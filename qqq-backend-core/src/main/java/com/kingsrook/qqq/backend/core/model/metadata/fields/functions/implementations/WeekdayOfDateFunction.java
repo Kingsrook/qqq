@@ -56,6 +56,7 @@ public class WeekdayOfDateFunction implements FieldFunctionType
    /***************************************************************************
     * Returns this function's identifier (WeekdayOfDate).
     ***************************************************************************/
+   @Override
    public FieldFunctionTypeIdentifier getIdentifier()
    {
       return (IDENTIFIER);

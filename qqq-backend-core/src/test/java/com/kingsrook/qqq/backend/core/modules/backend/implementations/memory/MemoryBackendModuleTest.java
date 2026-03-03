@@ -798,8 +798,7 @@ class MemoryBackendModuleTest extends BaseTest
          .withPossibleValueSourceName(DayOfWeekPossibleValueSourceMetaDataProducer.NAME)
          .withIsQueryCriteria(true)
          .withIsQuerySelectable(true)
-         .withFieldFunction(new FieldFunction().withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER).withFieldName("birthDate")
-            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 1, SubStringFunction.LENGTH_PARAM, 1)));
+         .withFieldFunction(new FieldFunction().withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER).withFieldName("birthDate"));
       table.addVirtualField(birthWeekday);
 
       QRecord darinRecord     = new QRecord().withValue("firstName", "Darin").withValue("birthDate", LocalDate.of(2026, Month.FEBRUARY, 28)); // Saturday

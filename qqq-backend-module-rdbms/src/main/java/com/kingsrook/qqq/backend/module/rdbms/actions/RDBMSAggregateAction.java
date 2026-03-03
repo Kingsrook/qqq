@@ -106,9 +106,6 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             sql += " LIMIT " + aggregateInput.getLimit();
          }
 
-         // todo sql customization - can edit sql and/or param list
-         System.out.println(sql);
-
          setSqlAndJoinsInQueryStat(sql, joinsContext);
 
          AggregateOutput       rs      = new AggregateOutput();
@@ -270,9 +267,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             QFieldMetaData realField      = QContext.getQInstance().getTable(fieldTableName).getField(realFieldName);
             String         columnName     = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(realField));
 
+            QTableMetaData                     fieldTable           = QContext.getQInstance().getTable(fieldTableName);
             FieldFunction                      fieldFunction        = virtualField.getFieldFunction();
             RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
-            QTableMetaData                     fieldTable           = QContext.getQInstance().getTable(fieldTableName);
+            requireFieldFunctionAdapterNotNull(fieldFunctionAdapter, fieldFunction);
+
             columnExpression = fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable));
             CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
          }

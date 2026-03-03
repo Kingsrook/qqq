@@ -478,6 +478,7 @@ class ExportActionTest extends BaseTest
       String csv = reportOutputStream.toString(StandardCharsets.UTF_8);
       assertThat(csv).contains("First Name Length");
       assertThat(csv).contains("Homer");
+      assertThat(csv).contains("5");
    }
 
 }

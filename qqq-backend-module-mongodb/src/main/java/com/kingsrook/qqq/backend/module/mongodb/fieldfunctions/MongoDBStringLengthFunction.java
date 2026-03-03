@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.mongodb.fieldfunctions;
 
 
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import org.bson.Document;
 
@@ -35,7 +36,7 @@ public class MongoDBStringLengthFunction implements MongoDBFieldFunctionAdapterI
 {
 
    @Override
-   public Object getExpression(String fieldReference, FieldFunction fieldFunction)
+   public Object getExpression(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
       return new Document("$strLenCP", fieldReference);
    }

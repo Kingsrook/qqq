@@ -27,6 +27,7 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
@@ -116,6 +117,53 @@ class SelectionValidationHelperTest extends BaseTest
       List<String> unrecognized = SelectionValidationHelper.getUnrecognizedFieldNames(queryInput, Set.of("noSuchField"));
       assertEquals(1, unrecognized.size());
       assertEquals("noSuchField", unrecognized.get(0));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoinTableVirtualFieldWithQuerySelectableIsAccepted() throws Exception
+   {
+      QTableMetaData lineItemTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      lineItemTable.withVirtualField(new QVirtualFieldMetaData("skuLength", QFieldType.INTEGER)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+            .withFieldName("sku")));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setQueryJoins(List.of(new QueryJoin().withJoinTable(TestUtils.TABLE_NAME_LINE_ITEM).withSelect(true)));
+
+      List<String> unrecognized = SelectionValidationHelper.getUnrecognizedFieldNames(queryInput, Set.of(TestUtils.TABLE_NAME_LINE_ITEM + ".skuLength"));
+      assertTrue(unrecognized.isEmpty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoinTableVirtualFieldWithoutQuerySelectableIsRejected() throws Exception
+   {
+      QTableMetaData lineItemTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      lineItemTable.withVirtualField(new QVirtualFieldMetaData("skuLength", QFieldType.INTEGER)
+         .withIsQuerySelectable(false)
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+            .withFieldName("sku")));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setQueryJoins(List.of(new QueryJoin().withJoinTable(TestUtils.TABLE_NAME_LINE_ITEM).withSelect(true)));
+
+      List<String> unrecognized = SelectionValidationHelper.getUnrecognizedFieldNames(queryInput, Set.of(TestUtils.TABLE_NAME_LINE_ITEM + ".skuLength"));
+      assertEquals(1, unrecognized.size());
+      assertEquals(TestUtils.TABLE_NAME_LINE_ITEM + ".skuLength", unrecognized.get(0));
    }
 
 }

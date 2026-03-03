@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
@@ -115,6 +116,52 @@ class FilterValidationHelperTest extends BaseTest
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("noSuchField", QCriteriaOperator.EQUALS, "x")));
+
+      assertThrows(QUserFacingException.class, () -> FilterValidationHelper.validateFieldNamesInFilter(queryInput));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoinTableVirtualFieldWithQueryCriteriaAllowedInFilter()
+   {
+      QTableMetaData lineItemTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      lineItemTable.withVirtualField(new QVirtualFieldMetaData("skuLength", QFieldType.INTEGER)
+         .withIsQueryCriteria(true)
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+            .withFieldName("sku")));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setQueryJoins(List.of(new QueryJoin().withJoinTable(TestUtils.TABLE_NAME_LINE_ITEM).withSelect(true)));
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_LINE_ITEM + ".skuLength", QCriteriaOperator.EQUALS, List.of(5))));
+
+      assertDoesNotThrow(() -> FilterValidationHelper.validateFieldNamesInFilter(queryInput));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoinTableVirtualFieldWithoutQueryCriteriaRejectedInFilter()
+   {
+      QTableMetaData lineItemTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      lineItemTable.withVirtualField(new QVirtualFieldMetaData("skuLength", QFieldType.INTEGER)
+         .withIsQueryCriteria(false)
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+            .withFieldName("sku")));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setQueryJoins(List.of(new QueryJoin().withJoinTable(TestUtils.TABLE_NAME_LINE_ITEM).withSelect(true)));
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_LINE_ITEM + ".skuLength", QCriteriaOperator.EQUALS, List.of(5))));
 
       assertThrows(QUserFacingException.class, () -> FilterValidationHelper.validateFieldNamesInFilter(queryInput));
    }

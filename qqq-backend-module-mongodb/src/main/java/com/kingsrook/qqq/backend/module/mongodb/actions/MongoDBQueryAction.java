@@ -52,7 +52,13 @@ import org.bson.conversions.Bson;
 
 
 /*******************************************************************************
- **
+ * Execute a Query action against a MongoDB backend.
+ * 
+ * <p>Note that this a {@code collection.aggregate()} even if it could maybe do
+ * a {@code collection.find()}, to keep the code paths simpler in here, and to
+ * support {@link FieldFunction}s (which require {@code aggregate}).  The performance
+ * difference is hopefully not so bad, but this could potentially be a future
+ * optimization if it was found to be worthwhile.</p>
  *******************************************************************************/
 public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryInterface
 {
@@ -137,8 +143,8 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
                   MongoDBFieldFunctionAdapterInterface adapter = backend.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
                   if(adapter != null)
                   {
-                     Object orderByExpression = adapter.getExpressionForOrderBy(getFieldReference(table, fieldFunction.getFieldName()), fieldFunction);
-                     Object selectExpression  = adapter.getExpression(getFieldReference(table, fieldFunction.getFieldName()), fieldFunction);
+                     Object orderByExpression = adapter.getExpressionForOrderBy(getFieldReference(table, fieldFunction.getFieldName()), fieldFunction, fieldName -> getFieldReference(table, fieldName));
+                     Object selectExpression  = adapter.getExpression(getFieldReference(table, fieldFunction.getFieldName()), fieldFunction, fieldName -> getFieldReference(table, fieldName));
 
                      if(!orderByExpression.equals(selectExpression))
                      {

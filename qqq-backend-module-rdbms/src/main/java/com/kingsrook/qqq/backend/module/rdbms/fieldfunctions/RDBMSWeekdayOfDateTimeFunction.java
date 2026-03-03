@@ -64,7 +64,7 @@ public class RDBMSWeekdayOfDateTimeFunction implements RDBMSFieldFunctionAdapter
       if(StringUtils.hasContent(zoneIdFromFieldName))
       {
          String columnRef = fieldNameToColumnReference.apply(zoneIdFromFieldName);
-         return "WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, NVL(" + columnRef + ", ?))) + 1";
+         return "WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, COALESCE(" + columnRef + ", ?))) + 1";
       }
       else
       {
@@ -121,7 +121,7 @@ public class RDBMSWeekdayOfDateTimeFunction implements RDBMSFieldFunctionAdapter
       if(StringUtils.hasContent(zoneIdFromFieldName))
       {
          String columnRef = fieldNameToColumnReference.apply(zoneIdFromFieldName);
-         return "(WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, NVL(" + columnRef + ", ?))) + 1)" + (BooleanUtils.isTrue(sundayFirst) ? " % 7" : "");
+         return "(WEEKDAY(CONVERT_TZ(" + escapedColumnName + ", ?, COALESCE(" + columnRef + ", ?))) + 1)" + (BooleanUtils.isTrue(sundayFirst) ? " % 7" : "");
       }
       else
       {

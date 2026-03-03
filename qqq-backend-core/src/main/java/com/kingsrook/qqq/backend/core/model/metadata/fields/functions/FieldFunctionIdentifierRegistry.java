@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields.functions;
 
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -60,7 +60,7 @@ public class FieldFunctionIdentifierRegistry
    //////////////////////////////////////////
    // keys here are names from identifiers //
    //////////////////////////////////////////
-   private Map<String, FieldFunctionTypeIdentifier> identifierRegistry = new LinkedHashMap<>();
+   private Map<String, FieldFunctionTypeIdentifier> identifierRegistry = new ConcurrentHashMap<>();
 
 
 
@@ -137,6 +137,16 @@ public class FieldFunctionIdentifierRegistry
       // put the code reference into the registry //
       //////////////////////////////////////////////
       identifierRegistry.put(key, identifier);
+   }
+
+
+
+   /***************************************************************************
+    * Removes the identifier registered under the given name, if any.
+    ***************************************************************************/
+   public void unregister(String name)
+   {
+      identifierRegistry.remove(name);
    }
 
 

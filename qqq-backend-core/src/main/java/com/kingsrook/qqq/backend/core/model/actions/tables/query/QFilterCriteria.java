@@ -84,6 +84,11 @@ public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
             clone.options.addAll(options);
          }
 
+         if(fieldFunction != null)
+         {
+            clone.fieldFunction = fieldFunction.clone();
+         }
+
          return clone;
       }
       catch(CloneNotSupportedException e)

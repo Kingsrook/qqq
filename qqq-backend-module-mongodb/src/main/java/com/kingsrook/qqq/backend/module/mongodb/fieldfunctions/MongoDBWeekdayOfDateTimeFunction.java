@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.mongodb.fieldfunctions;
 
 import java.time.ZoneId;
 import java.util.List;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
@@ -39,27 +40,29 @@ import org.bson.Document;
  ** Same ISO conversion as WeekdayOfDate, but uses timezone-aware
  ** form of $dayOfWeek: {$dayOfWeek: {date: "$field", timezone: "tz"}}.
  **
- ** Timezone resolution follows the same priority as the RDBMS version:
- **   1. Explicit timeZoneId argument
- **   2. Session zone ID (if useSessionZoneId is true)
- **   3. Instance default time zone
+ ** Timezone resolution follows the same priority as the RDBMS version
+ ** and the core WeekdayOfDateTimeFunction:
+ **   1. Per-row field value (zoneIdFromFieldName), falling back to static tz via $ifNull
+ **   2. Explicit timeZoneId argument
+ **   3. Session zone ID (if useSessionZoneId is true)
+ **   4. Instance default time zone
  *******************************************************************************/
 public class MongoDBWeekdayOfDateTimeFunction implements MongoDBFieldFunctionAdapterInterface
 {
 
    @Override
-   public Object getExpression(String fieldReference, FieldFunction fieldFunction)
+   public Object getExpression(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
-      return buildIsoExpression(fieldReference, fieldFunction);
+      return buildIsoExpression(fieldReference, fieldFunction, fieldNameToFieldReference);
    }
 
 
 
    @Override
-   public Object getExpressionForOrderBy(String fieldReference, FieldFunction fieldFunction)
+   public Object getExpressionForOrderBy(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
       Boolean sundayFirst = fieldFunction.getArgumentValueOrDefault(Boolean.class, WeekdayOfDateTimeFunction.PARAM_SORT_SUNDAY_FIRST);
-      Object  isoExpr     = buildIsoExpression(fieldReference, fieldFunction);
+      Object  isoExpr     = buildIsoExpression(fieldReference, fieldFunction, fieldNameToFieldReference);
 
       if(BooleanUtils.isTrue(sundayFirst))
       {
@@ -74,11 +77,11 @@ public class MongoDBWeekdayOfDateTimeFunction implements MongoDBFieldFunctionAda
    /*******************************************************************************
     ** Build the ISO-8601 weekday expression with timezone awareness.
     *******************************************************************************/
-   private Object buildIsoExpression(String fieldReference, FieldFunction fieldFunction)
+   private Object buildIsoExpression(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
-      String timeZoneId = resolveTimeZoneId(fieldFunction);
+      Object timezone = resolveTimezone(fieldFunction, fieldNameToFieldReference);
 
-      Object mongoDow = new Document("$dayOfWeek", new Document("date", fieldReference).append("timezone", timeZoneId));
+      Object mongoDow = new Document("$dayOfWeek", new Document("date", fieldReference).append("timezone", timezone));
       Object plus5    = new Document("$add", List.of(mongoDow, 5));
       Object mod7     = new Document("$mod", List.of(plus5, 7));
       return new Document("$add", List.of(mod7, 1));
@@ -87,9 +90,37 @@ public class MongoDBWeekdayOfDateTimeFunction implements MongoDBFieldFunctionAda
 
 
    /*******************************************************************************
-    ** Resolve the timezone ID using the same priority as the RDBMS adapter.
+    ** Resolve the timezone value using the same priority as the RDBMS adapter
+    ** and the core WeekdayOfDateTimeFunction.
+    **
+    ** Returns either a String (static timezone) or a Document containing an
+    ** $ifNull expression (when zoneIdFromFieldName is set, to try the per-document
+    ** field value first, falling back to the static timezone).
     *******************************************************************************/
-   private String resolveTimeZoneId(FieldFunction fieldFunction)
+   private Object resolveTimezone(FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
+   {
+      String staticTimeZoneId = resolveStaticTimeZoneId(fieldFunction);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // if a zoneIdFromFieldName is specified, use $ifNull to try the per-document field value  //
+      // first, falling back to the static timezone when the field is null.                      //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      String zoneIdFromFieldName = fieldFunction.getArgumentValueOrDefault(String.class, WeekdayOfDateTimeFunction.PARAM_ZONE_ID_FROM_FIELD_NAME);
+      if(StringUtils.hasContent(zoneIdFromFieldName) && fieldNameToFieldReference != null)
+      {
+         String fieldRef = fieldNameToFieldReference.apply(zoneIdFromFieldName);
+         return new Document("$ifNull", List.of(fieldRef, staticTimeZoneId));
+      }
+
+      return staticTimeZoneId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Resolve the static timezone ID from arguments and context (session/instance).
+    *******************************************************************************/
+   private String resolveStaticTimeZoneId(FieldFunction fieldFunction)
    {
       Boolean useSessionZoneId = fieldFunction.getArgumentValueOrDefault(Boolean.class, WeekdayOfDateTimeFunction.PARAM_USE_SESSION_ZONE_ID);
       String  timeZoneId;
@@ -106,7 +137,7 @@ public class MongoDBWeekdayOfDateTimeFunction implements MongoDBFieldFunctionAda
       String timeZoneIdArg = fieldFunction.getArgumentValueOrDefault(String.class, WeekdayOfDateTimeFunction.PARAM_TIME_ZONE_ID);
       if(StringUtils.hasContent(timeZoneIdArg))
       {
-         timeZoneId = ValueUtils.getValueAsString(timeZoneIdArg);
+         timeZoneId = timeZoneIdArg;
       }
 
       return timeZoneId;

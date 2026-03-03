@@ -203,7 +203,7 @@ public class AbstractMongoDBAction
                if(adapter != null)
                {
                   String fieldReference = getFieldReference(table, fieldFunction.getFieldName());
-                  addFieldsDocument.append(virtualField.getName(), adapter.getExpression(fieldReference, fieldFunction));
+                  addFieldsDocument.append(virtualField.getName(), adapter.getExpression(fieldReference, fieldFunction, fieldName -> getFieldReference(table, fieldName)));
                }
             }
          }
@@ -240,7 +240,7 @@ public class AbstractMongoDBAction
             {
                String computedFieldName = criteria.getFieldName() + "_" + fieldFunction.getFunctionTypeIdentifierName();
                String fieldReference    = getFieldReference(table, criteria.getFieldName());
-               addFieldsDocument.append(computedFieldName, adapter.getExpression(fieldReference, fieldFunction));
+               addFieldsDocument.append(computedFieldName, adapter.getExpression(fieldReference, fieldFunction, fieldName -> getFieldReference(table, fieldName)));
             }
          }
       }

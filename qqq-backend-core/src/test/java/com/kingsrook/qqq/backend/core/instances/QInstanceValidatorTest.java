@@ -2774,7 +2774,7 @@ public class QInstanceValidatorTest extends BaseTest
             qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
                .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
                   .withIsQuerySelectable(true)),
-         "To be querySelectable (since its table does not not have a POST_QUERY_RECORD customizer) this virtual field must have a field function defined");
+         "To be querySelectable (since its table does not have a POST_QUERY_RECORD customizer) this virtual field must have a field function defined");
    }
 
 
@@ -2854,7 +2854,7 @@ public class QInstanceValidatorTest extends BaseTest
                   .withFieldFunction(new FieldFunction()
                      .withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER)
                      .withFieldName("firstName"))),
-         "is not amoung the the specified field function's allowed types");
+         "is not among the specified field function's allowed types");
    }
 
 

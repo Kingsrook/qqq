@@ -49,6 +49,7 @@ public class StringLengthFunction implements FieldFunctionType
    /***************************************************************************
     * Returns this function's identifier (StringLength).
     ***************************************************************************/
+   @Override
    public FieldFunctionTypeIdentifier getIdentifier()
    {
       return (IDENTIFIER);

@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.module.postgres.fieldfunctions;
 
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
 import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSFieldFunctionAdapterInterface;
 import org.apache.commons.lang3.BooleanUtils;
 
@@ -63,7 +63,7 @@ public class PostgreSQLRDBMSWeekdayOfDateFunction implements RDBMSFieldFunctionA
       //////////////////////////////////////////////////////////////////////////////////////////////
       // to sort Sunday first, do a % 7, which puts Sunday(7) = 0, and leaves Monday(1) = 1, etc. //
       //////////////////////////////////////////////////////////////////////////////////////////////
-      Boolean sundayFirst = fieldFunction.getArgumentValueOrDefault(Boolean.class, WeekdayOfDateTimeFunction.PARAM_SORT_SUNDAY_FIRST);
+      Boolean sundayFirst = fieldFunction.getArgumentValueOrDefault(Boolean.class, WeekdayOfDateFunction.PARAM_SORT_SUNDAY_FIRST);
       return "EXTRACT(ISODOW FROM " + escapedColumnName + ")" + (BooleanUtils.isTrue(sundayFirst) ? " % 7" : "");
    }
 }

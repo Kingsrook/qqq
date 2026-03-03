@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunct
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -331,14 +332,17 @@ public class BackendQueryFilterUtils
 
       if(fieldFunction != null)
       {
+         FieldFunction finalFieldFunction = fieldFunction;
+
          try
          {
             FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+            Objects.requireNonNull(fieldFunctionType, "Missing field function type for identifier [" + ObjectUtils.tryElse(() -> finalFieldFunction.getFunctionTypeIdentifier().getName(), "unknown") + "]");
             value = fieldFunctionType.apply(fieldFunction, qRecord);
          }
          catch(QException e)
          {
-            throw new QRuntimeException("Error applying fieldFunction [" + fieldFunction.getFunctionTypeIdentifier().getName() + "]", e);
+            throw new QRuntimeException("Error applying fieldFunction [" + ObjectUtils.tryElse(() -> finalFieldFunction.getFunctionTypeIdentifier().getName(), "unknown") + "]", e);
          }
       }
 
@@ -753,6 +757,7 @@ public class BackendQueryFilterUtils
                if(fieldFunction != null)
                {
                   FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+                  Objects.requireNonNull(fieldFunctionType, "Missing field function type for identifier [" + ObjectUtils.tryElse(() -> fieldFunction.getFunctionTypeIdentifier().getName(), "unknown") + "]");
                   fieldFunctionTypes.put(orderBy.getFieldName(), fieldFunctionType);
                   fieldFunctions.put(orderBy.getFieldName(), fieldFunction);
                }
@@ -786,7 +791,7 @@ public class BackendQueryFilterUtils
                }
                catch(Exception e)
                {
-                  throw new QRuntimeException("Error applying fieldFunction [" + fieldFunctionType.getIdentifier() + "] for sorting", e);
+                  throw new QRuntimeException("Error applying fieldFunction [" + ObjectUtils.tryElse(() -> fieldFunctionType.getIdentifier().getName(), "unknown") + "] for sorting", e);
                }
             }
 

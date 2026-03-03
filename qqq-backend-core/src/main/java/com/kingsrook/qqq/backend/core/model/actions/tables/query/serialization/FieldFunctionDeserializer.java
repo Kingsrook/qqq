@@ -45,6 +45,8 @@ public class FieldFunctionDeserializer extends StdDeserializer<FieldFunction>
 {
    private static final QLogger LOG = QLogger.getLogger(FieldFunctionDeserializer.class);
 
+   private static final ObjectMapper objectMapper = new ObjectMapper();
+
 
 
    /*******************************************************************************
@@ -75,8 +77,7 @@ public class FieldFunctionDeserializer extends StdDeserializer<FieldFunction>
    @Override
    public FieldFunction deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException
    {
-      JsonNode     node         = jsonParser.getCodec().readTree(jsonParser);
-      ObjectMapper objectMapper = new ObjectMapper();
+      JsonNode node = jsonParser.getCodec().readTree(jsonParser);
 
       /////////////////////////////////
       // get values out of json node //

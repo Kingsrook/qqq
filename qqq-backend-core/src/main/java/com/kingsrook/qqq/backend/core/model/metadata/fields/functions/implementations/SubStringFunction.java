@@ -55,6 +55,7 @@ public class SubStringFunction implements FieldFunctionType
    /***************************************************************************
     * Returns this function's identifier (SubString).
     ***************************************************************************/
+   @Override
    public FieldFunctionTypeIdentifier getIdentifier()
    {
       return (IDENTIFIER);

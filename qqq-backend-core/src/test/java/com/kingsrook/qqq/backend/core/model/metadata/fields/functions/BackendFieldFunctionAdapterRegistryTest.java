@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -40,6 +41,15 @@ class BackendFieldFunctionAdapterRegistryTest extends BaseTest
     * A minimal test adapter to verify registration works.
     ****************************************************************************/
    public static class TestAdapter implements BackendFieldFunctionAdapterInterface
+   {
+   }
+
+
+
+   /****************************************************************************
+    * A second test adapter to verify replacement registration.
+    ****************************************************************************/
+   public static class ReplacementAdapter implements BackendFieldFunctionAdapterInterface
    {
    }
 
@@ -82,10 +92,11 @@ class BackendFieldFunctionAdapterRegistryTest extends BaseTest
    {
       BackendFieldFunctionAdapterRegistry registry = new BackendFieldFunctionAdapterRegistry();
       registry.register(StringLengthFunction.IDENTIFIER, "testBackend", new QCodeReference(TestAdapter.class));
-      registry.register(StringLengthFunction.IDENTIFIER, "testBackend", new QCodeReference(TestAdapter.class));
+      registry.register(StringLengthFunction.IDENTIFIER, "testBackend", new QCodeReference(ReplacementAdapter.class));
 
       BackendFieldFunctionAdapterInterface adapter = registry.getFieldFunctionAdapter(StringLengthFunction.IDENTIFIER);
       assertNotNull(adapter);
+      assertInstanceOf(ReplacementAdapter.class, adapter, "Should return the replacement adapter, not the original");
    }
 
 }

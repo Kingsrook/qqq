@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.mongodb.fieldfunctions;
 
 
 import java.util.List;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
 import org.apache.commons.lang3.BooleanUtils;
@@ -42,7 +43,7 @@ public class MongoDBWeekdayOfDateFunction implements MongoDBFieldFunctionAdapter
 {
 
    @Override
-   public Object getExpression(String fieldReference, FieldFunction fieldFunction)
+   public Object getExpression(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
       return buildIsoExpression(fieldReference);
    }
@@ -50,7 +51,7 @@ public class MongoDBWeekdayOfDateFunction implements MongoDBFieldFunctionAdapter
 
 
    @Override
-   public Object getExpressionForOrderBy(String fieldReference, FieldFunction fieldFunction)
+   public Object getExpressionForOrderBy(String fieldReference, FieldFunction fieldFunction, Function<String, String> fieldNameToFieldReference)
    {
       Boolean sundayFirst = fieldFunction.getArgumentValueOrDefault(Boolean.class, WeekdayOfDateFunction.PARAM_SORT_SUNDAY_FIRST);
       Object  isoExpr     = buildIsoExpression(fieldReference);

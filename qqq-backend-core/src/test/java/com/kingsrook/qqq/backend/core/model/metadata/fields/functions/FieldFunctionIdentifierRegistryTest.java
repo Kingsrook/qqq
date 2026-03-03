@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields.functions;
 
 
 import com.kingsrook.qqq.backend.core.BaseTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,6 +36,17 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  *******************************************************************************/
 class FieldFunctionIdentifierRegistryTest extends BaseTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   void afterEach()
+   {
+      FieldFunctionIdentifierRegistry.getInstance().unregister("CustomTestFunction");
+   }
+
+
 
    /*******************************************************************************
     **

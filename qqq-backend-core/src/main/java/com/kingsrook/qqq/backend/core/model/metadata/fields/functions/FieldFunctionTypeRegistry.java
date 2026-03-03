@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields.functions;
 
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -57,7 +57,7 @@ public class FieldFunctionTypeRegistry implements QSupplementalInstanceMetaData,
    //////////////////////////////////////////
    // keys here are names from identifiers //
    //////////////////////////////////////////
-   private Map<String, FieldFunctionType> functionTypeRegistry = new LinkedHashMap<>();
+   private Map<String, FieldFunctionType> functionTypeRegistry = new ConcurrentHashMap<>();
 
 
 
@@ -90,11 +90,12 @@ public class FieldFunctionTypeRegistry implements QSupplementalInstanceMetaData,
          // if a different value is already registered under this key, then log about it //
          //////////////////////////////////////////////////////////////////////////////////
          String key = identifier.getName();
-         if(functionTypeRegistry.get(key) != null)
+         FieldFunctionType existingRegisteredType = functionTypeRegistry.get(key);
+         if(existingRegisteredType != null)
          {
-            if(!functionTypeRegistry.get(key).equals(fieldFunctionTypeCodeReference))
+            if(!existingRegisteredType.getClass().equals(fieldFunctionType.getClass()))
             {
-               LOG.info("Replacing FieldFunction type in registry.", logPair("identifier", key), logPair("old", functionTypeRegistry.get(key)), logPair("new", fieldFunctionTypeCodeReference));
+               LOG.info("Replacing FieldFunction type in registry.", logPair("identifier", key), logPair("old", existingRegisteredType.getClass()), logPair("new", fieldFunctionTypeCodeReference));
             }
          }
 
@@ -118,6 +119,12 @@ public class FieldFunctionTypeRegistry implements QSupplementalInstanceMetaData,
     ***************************************************************************/
    public FieldFunctionType getFieldFunctionType(FieldFunctionTypeIdentifier identifier)
    {
+      if(identifier == null)
+      {
+         LOG.info("Null identifier passed into getFieldFunctionType - returning null.");
+         return (null);
+      }
+
       FieldFunctionType fieldFunctionType = functionTypeRegistry.get(identifier.getName());
       if(fieldFunctionType == null)
       {

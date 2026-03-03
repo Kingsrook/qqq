@@ -1212,7 +1212,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
             .withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER)
             .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 3, SubStringFunction.LENGTH_PARAM, 2)));
 
-      QTableMetaData personTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
          .withVirtualField(firstNameSubString2Field)
          .withVirtualField(firstNameSubString3For2Field);
 

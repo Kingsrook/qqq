@@ -506,9 +506,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             }
 
             RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
-            QFieldMetaData                     sourceField          = table.getField(fieldFunction.getFieldName());
-            String                             columnName           = escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(sourceField));
-            String                             wrappedColumnName    = fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, makeFieldNameToColumnReferenceFunction(tableNameOrAlias, table));
+            requireFieldFunctionAdapterNotNull(fieldFunctionAdapter, fieldFunction);
+
+            QFieldMetaData sourceField       = table.getField(fieldFunction.getFieldName());
+            String         columnName        = escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(sourceField));
+            String         wrappedColumnName = fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, makeFieldNameToColumnReferenceFunction(tableNameOrAlias, table));
 
             CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
 
