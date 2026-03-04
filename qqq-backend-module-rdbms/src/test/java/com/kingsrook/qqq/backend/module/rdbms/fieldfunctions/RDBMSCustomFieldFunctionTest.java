@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOp
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -385,6 +386,48 @@ class RDBMSCustomFieldFunctionTest
          .filter(r -> "lots".equals(r.getGroupByValue(bucketGroupBy)))
          .findFirst().orElseThrow();
       assertEquals(3, lotsRow.getAggregateValue(countOfId));
+   }
+
+
+
+   /*******************************************************************************
+    ** Verify COUNT(*) GROUP BY idBucket, ORDER BY idBucket ASC returns results
+    ** in logical bucket order (one, a couple, lots) — NOT alphabetical order
+    ** (a couple, lots, one).
+    *******************************************************************************/
+   @Test
+   void testAggregateGroupByWithOrderBy() throws Exception
+   {
+      QVirtualFieldMetaData idBucketField = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .getVirtualFields().get("idBucket");
+
+      AggregateInput aggregateInput = new AggregateInput();
+      aggregateInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+
+      Aggregate countOfId = new Aggregate("id", AggregateOperator.COUNT);
+      aggregateInput.withAggregate(countOfId);
+
+      GroupBy bucketGroupBy = new GroupBy(idBucketField);
+      aggregateInput.withGroupBy(bucketGroupBy);
+
+      aggregateInput.setFilter(new QQueryFilter()
+         .withOrderBy(new QFilterOrderByGroupBy(bucketGroupBy, true)));
+
+      AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+      assertEquals(3, aggregateOutput.getResults().size());
+
+      //////////////////////////////////////////////////////////////////////////
+      // results should be in logical bucket order: one, a couple, lots       //
+      // NOT alphabetical: a couple, lots, one                                //
+      //////////////////////////////////////////////////////////////////////////
+      assertEquals("one", aggregateOutput.getResults().get(0).getGroupByValue(bucketGroupBy));
+      assertEquals(1, aggregateOutput.getResults().get(0).getAggregateValue(countOfId));
+
+      assertEquals("a couple", aggregateOutput.getResults().get(1).getGroupByValue(bucketGroupBy));
+      assertEquals(1, aggregateOutput.getResults().get(1).getAggregateValue(countOfId));
+
+      assertEquals("lots", aggregateOutput.getResults().get(2).getGroupByValue(bucketGroupBy));
+      assertEquals(3, aggregateOutput.getResults().get(2).getAggregateValue(countOfId));
    }
 
 }

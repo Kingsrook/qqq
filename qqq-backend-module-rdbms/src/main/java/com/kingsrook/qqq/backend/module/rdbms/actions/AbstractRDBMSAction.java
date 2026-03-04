@@ -980,15 +980,17 @@ public abstract class AbstractRDBMSAction
 
 
    /*******************************************************************************
-    ** Build a single GROUP BY clause element with optional formatting.
-    **
-    ** Constructs a GROUP BY clause for a single field, resolving the field name
-    ** through the joins context and applying any format string (e.g., for date
-    ** truncation functions like DATE_TRUNC).
-    **
-    ** @param groupBy the group-by specification containing field name and optional format
-    ** @param joinsContext context for resolving field names to table aliases
-    ** @return the GROUP BY clause element (e.g., "table.field" or "DATE(table.field)")
+    * Build a single GROUP BY clause element with optional formatting.
+    *
+    * Constructs a GROUP BY clause for a single field, resolving the field name
+    * through the joins context and applying any format string (e.g., for date
+    * truncation functions like DATE_TRUNC).
+    *
+    * @param groupBy the group-by specification containing field name and optional format
+    * @param joinsContext context for resolving field names to table aliases
+    * @param params bind-params for the query - which may get appended to in here (for fieldFunctions)
+    * @param isForOrderBy whether this is for an ORDER BY clause
+    * @return the GROUP BY clause element (e.g., "table.field" or "DATE(table.field)")
     *******************************************************************************/
    protected String getSingleGroupByClause(GroupBy groupBy, JoinsContext joinsContext, List<Serializable> params, boolean isForOrderBy)
    {
@@ -1009,7 +1011,7 @@ public abstract class AbstractRDBMSAction
          Function<String, String>           fieldNameToColumnReference = makeFieldNameToColumnReferenceFunction(fieldAndTableNameOrAlias.tableNameOrAlias(), fieldTable);
          requireFieldFunctionAdapterNotNull(fieldFunctionAdapter, fieldFunction);
 
-         fullFieldName = false // todo wip - should use this, but then the column maybe needs selected too... isForOrderBy
+         fullFieldName = isForOrderBy
             ? fieldFunctionAdapter.wrapColumnNameForOrderBy(columnName, fieldFunction, fieldNameToColumnReference)
             : fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, fieldNameToColumnReference);
 
