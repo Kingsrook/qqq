@@ -894,7 +894,7 @@ public class BackendQueryFilterUtils
 
       for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
       {
-         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getFieldName());
+         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getFieldName(), null, true);
          if(!fieldAndJoinTable.joinTable().getName().equals(mainTableName))
          {
             rs.add(fieldAndJoinTable.joinTable().getName());
@@ -902,7 +902,7 @@ public class BackendQueryFilterUtils
 
          if(StringUtils.hasContent(criteria.getOtherFieldName()))
          {
-            FieldAndJoinTable otherFieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getOtherFieldName());
+            FieldAndJoinTable otherFieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getOtherFieldName(), null, true);
             if(!otherFieldAndJoinTable.joinTable().getName().equals(mainTableName))
             {
                rs.add(otherFieldAndJoinTable.joinTable().getName());

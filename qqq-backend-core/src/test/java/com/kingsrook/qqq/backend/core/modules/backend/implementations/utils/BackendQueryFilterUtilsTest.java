@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaOption;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -632,6 +633,23 @@ class BackendQueryFilterUtilsTest extends BaseTest
          new QQueryFilter()
             .withCriteria(lineItemCriteria)
             .withOrderBy(new QFilterOrderBy(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC + ".id"))));
+
+      //////////////////////////////////////////////////////////////////////////
+      // virtual fields in criteria should not cause an exception (bug fix)   //
+      // previously, identifyJoinTablesInFilter used FieldAndJoinTable.get()  //
+      // without allowVirtualFields=true, so virtual field names would throw. //
+      //////////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER)
+         .withVirtualField(new QVirtualFieldMetaData("firstInitial", QFieldType.STRING)
+            .withIsQueryCriteria(true)
+            .withFieldFunction(new FieldFunction().withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER).withFieldName("orderNo")
+               .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 1, SubStringFunction.LENGTH_PARAM, 1))));
+
+      assertEquals(Set.of(), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter(new QFilterCriteria("firstInitial", QCriteriaOperator.EQUALS, "A"))));
+
+      assertEquals(Set.of(), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter(new QFilterCriteria("orderNo", QCriteriaOperator.EQUALS).withOtherFieldName("firstInitial"))));
 
    }
 
