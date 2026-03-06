@@ -1072,6 +1072,29 @@ public class JoinsContext
     *******************************************************************************/
    public FieldAndTableNameOrAlias getFieldAndTableNameOrAlias(String fieldName)
    {
+      return getFieldAndTableNameOrAlias(fieldName, false);
+   }
+
+
+
+   /***************************************************************************
+    ** Parses a field reference (optionally prefixed with {@code tableOrAlias.})
+    ** and returns the resolved {@link QFieldMetaData} together with the table
+    ** name or alias it belongs to.
+    **
+    ** <p>If {@code fieldName} contains a dot (e.g., {@code "department.name"}),
+    ** the part before the dot is treated as a table name or alias and resolved
+    ** via the alias map.  If there is no dot, the field is looked up on the main
+    ** table.</p>
+    **
+    ** @param fieldName  a field name, optionally qualified as {@code table.field}.
+    ** @param allowVirtualFields  whether to allow virtual fields in the lookup
+    ** @return a {@link FieldAndTableNameOrAlias} record.
+    ** @throws IllegalArgumentException if the name has more than one dot, or the
+    **         table/field cannot be found.
+    ***************************************************************************/
+   public FieldAndTableNameOrAlias getFieldAndTableNameOrAlias(String fieldName, boolean allowVirtualFields)
+   {
       if(fieldName.contains("."))
       {
          String[] parts = fieldName.split("\\.");
@@ -1091,10 +1114,43 @@ public class JoinsContext
             dumpDebug(false, true);
             throw new IllegalArgumentException("Could not find table [" + tableName + "] in instance for query");
          }
-         return new FieldAndTableNameOrAlias(table.getField(baseFieldName), tableOrAlias);
+
+         return getFieldAndTableNameOrAlias(baseFieldName, table, tableOrAlias, allowVirtualFields);
       }
 
-      return new FieldAndTableNameOrAlias(instance.getTable(mainTableName).getField(fieldName), mainTableName);
+      return getFieldAndTableNameOrAlias(fieldName, instance.getTable(mainTableName), mainTableName, allowVirtualFields);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private FieldAndTableNameOrAlias getFieldAndTableNameOrAlias(String fieldName, QTableMetaData tableMetaData, String tableNameOrAlias, boolean allowVirtualFields)
+   {
+      QFieldMetaData field;
+
+      try
+      {
+         field = tableMetaData.getField(fieldName);
+      }
+      catch(IllegalArgumentException e)
+      {
+         if(allowVirtualFields)
+         {
+            field = tableMetaData.getVirtualField(fieldName);
+            if(field == null)
+            {
+               throw e;
+            }
+         }
+         else
+         {
+            throw e;
+         }
+      }
+
+      return new FieldAndTableNameOrAlias(field, tableNameOrAlias);
    }
 
 

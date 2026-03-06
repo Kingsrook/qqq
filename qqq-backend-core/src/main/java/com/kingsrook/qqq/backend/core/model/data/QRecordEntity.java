@@ -60,8 +60,9 @@ public abstract class QRecordEntity
 {
    private static final QLogger LOG = QLogger.getLogger(QRecordEntity.class);
 
-   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityField>       fieldMapping       = new ListingHash<>();
-   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityAssociation> associationMapping = new ListingHash<>();
+   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityField>       fieldMapping        = new ListingHash<>();
+   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityField>       virtualFieldMapping = new ListingHash<>();
+   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityAssociation> associationMapping  = new ListingHash<>();
 
    private Map<String, Serializable> originalRecordValues;
 
@@ -153,6 +154,14 @@ public abstract class QRecordEntity
             originalRecordValues.put(qRecordEntityField.getFieldName(), value);
          }
 
+         for(QRecordEntityField qRecordEntityField : getVirtualFieldList(this.getClass()))
+         {
+            Serializable value      = qRecord.getValue(fieldNamePrefix + qRecordEntityField.getFieldName());
+            Object       typedValue = qRecordEntityField.convertValueType(value);
+            qRecordEntityField.getSetter().invoke(this, typedValue);
+            originalRecordValues.put(qRecordEntityField.getFieldName(), value);
+         }
+
          for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
          {
             List<QRecord> associatedRecords = qRecord.getAssociatedRecords().get(qRecordEntityAssociation.getAssociationAnnotation().name());
@@ -212,6 +221,11 @@ public abstract class QRecordEntity
          qRecord.setTableName(tableName());
 
          for(QRecordEntityField qRecordEntityField : getFieldList(this.getClass()))
+         {
+            qRecord.setValue(qRecordEntityField.getFieldName(), (Serializable) qRecordEntityField.getGetter().invoke(this));
+         }
+
+         for(QRecordEntityField qRecordEntityField : getVirtualFieldList(this.getClass()))
          {
             qRecord.setValue(qRecordEntityField.getFieldName(), (Serializable) qRecordEntityField.getGetter().invoke(this));
          }
@@ -342,10 +356,11 @@ public abstract class QRecordEntity
                   }
                   else
                   {
-                     Optional<QIgnore>      ignoreAnnotation      = getQIgnoreAnnotation(c, fieldName);
-                     Optional<QAssociation> associationAnnotation = getQAssociationAnnotation(c, fieldName);
+                     Optional<QIgnore>       ignoreAnnotation       = getQIgnoreAnnotation(c, fieldName);
+                     Optional<QVirtualField> virtualFieldAnnotation = getQVirtualFieldAnnotation(c, fieldName);
+                     Optional<QAssociation>  associationAnnotation  = getQAssociationAnnotation(c, fieldName);
 
-                     if(ignoreAnnotation.isPresent() || associationAnnotation.isPresent())
+                     if(ignoreAnnotation.isPresent() || virtualFieldAnnotation.isPresent() || associationAnnotation.isPresent())
                      {
                         ////////////////////////////////////////////////////////////
                         // silently skip if marked as an association or an ignore //
@@ -366,6 +381,43 @@ public abstract class QRecordEntity
          fieldMapping.put(c, fieldList);
       }
       return (fieldMapping.get(c));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<QRecordEntityField> getVirtualFieldList(Class<? extends QRecordEntity> c)
+   {
+      if(!virtualFieldMapping.containsKey(c))
+      {
+         List<QRecordEntityField> fieldList = new ArrayList<>();
+         for(Method possibleGetter : c.getMethods())
+         {
+            if(ReflectiveBeanLikeClassUtils.isGetter(possibleGetter, true))
+            {
+               Optional<Method> setter = ReflectiveBeanLikeClassUtils.getSetterForGetter(c, possibleGetter);
+
+               if(setter.isPresent())
+               {
+                  String                  fieldName              = ReflectiveBeanLikeClassUtils.getFieldNameFromGetter(possibleGetter);
+                  Optional<QVirtualField> virtualFieldAnnotation = getQVirtualFieldAnnotation(c, fieldName);
+
+                  if(virtualFieldAnnotation.isPresent())
+                  {
+                     fieldList.add(new QRecordEntityField(fieldName, possibleGetter, setter.get(), possibleGetter.getReturnType(), null));
+                  }
+               }
+               else
+               {
+                  LOG.info("Getter method [" + possibleGetter.getName() + "] does not have a corresponding setter.");
+               }
+            }
+         }
+         virtualFieldMapping.put(c, fieldList);
+      }
+      return (virtualFieldMapping.get(c));
    }
 
 
@@ -417,6 +469,15 @@ public abstract class QRecordEntity
       return (getAnnotationOnField(c, QField.class, fieldName));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Optional<QVirtualField> getQVirtualFieldAnnotation(Class<? extends QRecordEntity> c, String ignoreName)
+   {
+      return (getAnnotationOnField(c, QVirtualField.class, ignoreName));
+   }
 
 
    /*******************************************************************************

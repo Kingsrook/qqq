@@ -27,14 +27,28 @@ import java.util.List;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.instances.assessment.Assessable;
 import com.kingsrook.qqq.backend.core.instances.assessment.QInstanceAssessor;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.BackendFieldFunctionAdapterInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.BackendFieldFunctionAdapterRegistry;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeIdentifier;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSFieldFunctionAdapterInterface;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSStringLengthFunction;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSSubStringFunction;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSWeekdayOfDateFunction;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSWeekdayOfDateTimeFunction;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterface;
 
@@ -72,6 +86,7 @@ public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
    public static final String VENDOR_H2           = "h2";
    public static final String VENDOR_AURORA_MYSQL = "aurora-mysql";
 
+   private BackendFieldFunctionAdapterRegistry backendFieldFunctionAdapterRegistry = new BackendFieldFunctionAdapterRegistry();
 
 
    /*******************************************************************************
@@ -81,6 +96,63 @@ public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
    {
       super();
       setBackendType(RDBMSBackendModule.class);
+   }
+
+
+
+   /***************************************************************************
+    * Register {@link BackendFieldFunctionAdapterInterface} classes to be used
+    * in this backend for known {@link FieldFunctionType}s
+    *
+    * <p>If a subclass of this module needs different adapters, it can override
+    * this method, and it should call super to register the base functions first,
+    * then register its own override implementations via
+    * {@link #registerBackendFieldFunctionAdapter(FieldFunctionTypeIdentifier, Class)}.</p>
+    ***************************************************************************/
+   public void doRegisterFieldFunctionAdapters()
+   {
+      registerBackendFieldFunctionAdapter(StringLengthFunction.IDENTIFIER, RDBMSStringLengthFunction.class);
+      registerBackendFieldFunctionAdapter(SubStringFunction.IDENTIFIER, RDBMSSubStringFunction.class);
+      registerBackendFieldFunctionAdapter(WeekdayOfDateFunction.IDENTIFIER, RDBMSWeekdayOfDateFunction.class);
+      registerBackendFieldFunctionAdapter(WeekdayOfDateTimeFunction.IDENTIFIER, RDBMSWeekdayOfDateTimeFunction.class);
+   }
+
+
+
+   /***************************************************************************
+    * Register a {@link BackendFieldFunctionAdapterInterface} class to be used
+    * in this backend for a specific {@link FieldFunctionType}
+    ***************************************************************************/
+   protected void registerBackendFieldFunctionAdapter(FieldFunctionTypeIdentifier fieldFunctionTypeIdentifier, Class<? extends RDBMSFieldFunctionAdapterInterface> adapterClass)
+   {
+      backendFieldFunctionAdapterRegistry.register(fieldFunctionTypeIdentifier, getBackendType(), new QCodeReference(adapterClass));
+   }
+
+
+
+   /***************************************************************************
+    * Get an instance of a {@link BackendFieldFunctionAdapterInterface} for a
+    * specific {@link FieldFunctionType}
+    ***************************************************************************/
+   public RDBMSFieldFunctionAdapterInterface getFieldFunctionAdapter(FieldFunctionTypeIdentifier fieldFunctionTypeIdentifier)
+   {
+      BackendFieldFunctionAdapterInterface fieldFunctionAdapter = backendFieldFunctionAdapterRegistry.getFieldFunctionAdapter(fieldFunctionTypeIdentifier);
+      if(fieldFunctionAdapter != null)
+      {
+         if(fieldFunctionAdapter instanceof RDBMSFieldFunctionAdapterInterface rdbmsFieldFunctionAdapterInterface)
+         {
+            return rdbmsFieldFunctionAdapterInterface;
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // this isn't expected, assuming registration is through the registerBackendFieldFunctionAdapter function, which tries to enforce type //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            throw new QRuntimeException("The registered adapter does not implement the RDBMSFieldFunctionAdapterInterface (adapterType=" + fieldFunctionAdapter.getClass().getName() + ")");
+         }
+      }
+
+      return (null);
    }
 
 
@@ -302,8 +374,10 @@ public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
 
 
    /*******************************************************************************
-    ** Called by the QInstanceEnricher - to do backend-type-specific enrichments.
-    ** Original use case is:  reading secrets into fields (e.g., passwords).
+    * Called by the QInstanceEnricher - to do backend-type-specific enrichments.
+    * <p>Original use case is:  reading secrets into fields (e.g., passwords).</p>
+    * <p>another use case is registering field function adapters
+    * {@link #doRegisterFieldFunctionAdapters}</p>
     *******************************************************************************/
    @Override
    public void enrich()
@@ -312,6 +386,8 @@ public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
       username = interpreter.interpret(username);
       password = interpreter.interpret(password);
+
+      doRegisterFieldFunctionAdapters();
    }
 
 

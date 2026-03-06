@@ -73,6 +73,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueRangeBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -2715,6 +2718,200 @@ public class QInstanceValidatorTest extends BaseTest
       // have checks that those keys are consistent with the names in the objects, we can't actually //
       // put the same named field in either map both times, so, there's nothing else to check here.  //
       /////////////////////////////////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithValidFieldFunction()
+   {
+      /////////////////////////////////////////////////
+      // a valid queryable virtual field should pass //
+      /////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) ->
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withVirtualField(new QVirtualFieldMetaData("firstNameLength", QFieldType.INTEGER)
+               .withIsQuerySelectable(true)
+               .withIsQueryCriteria(true)
+               .withFieldFunction(new FieldFunction()
+                  .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+                  .withFieldName("firstName"))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryCriteriaWithNoFieldFunction()
+   {
+      /////////////////////////////////////////////////////////////////////
+      // a queryCriteria virtual field with no fieldFunction should fail //
+      /////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)),
+         "To be a queryCriteria this virtual field must have a field function defined");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQuerySelectableWithNoFieldFunctionOrTableCustomizer()
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // a querySelectable virtual field with no fieldFunction or table post-query customizer should fail //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)),
+         "To be querySelectable (since its table does not have a POST_QUERY_RECORD customizer) this virtual field must have a field function defined");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQuerySelectableWithNoFieldFunctionButWithTableCustomizer()
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // a querySelectable virtual field with no fieldFunction but with a post-query customizer should pass //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerValid.class))
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithNullFunctionTypeIdentifier()
+   {
+      ///////////////////////////////////////////////////////////////////////////
+      // a queryable virtual field whose fieldFunction has no identifier fails //
+      ///////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFieldName("firstName"))),
+         "fieldFunction is missing a function type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithUnrecognizedFunctionType()
+   {
+      ///////////////////////////////////////////////////////////////
+      // a queryable virtual field with unrecognized function type //
+      ///////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(() -> "NoSuchFunction")
+                     .withFieldName("firstName"))),
+         "Unrecognized field function type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithTypeMismatch()
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // a queryable virtual field where source field type doesn't match function's allowed types should fail //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("birthWeekday", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER)
+                     .withFieldName("firstName"))),
+         "is not among the specified field function's allowed types");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithMissingSourceFieldName()
+   {
+      /////////////////////////////////////////////////////////////////////
+      // a queryable virtual field with no source field name should fail //
+      /////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER))),
+         "fieldFunction is missing a source field name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithUnrecognizedSourceField()
+   {
+      ///////////////////////////////////////////////////////////////////////
+      // a queryable virtual field referencing a non-existent source field //
+      ///////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+                     .withFieldName("noSuchField"))),
+         "fieldFunction's referenced source field name is not a defined field on this table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldNotQueryableSkipsValidation()
+   {
+      /////////////////////////////////////////////////////////////////
+      // a non-queryable virtual field with no fieldFunction is fine //
+      /////////////////////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) ->
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.STRING)));
    }
 
 

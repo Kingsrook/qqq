@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -584,6 +585,137 @@ class QRecordEntityTest extends BaseTest
       // no TABLE_NAME in Order class //
       //////////////////////////////////
       assertThatThrownBy(() -> OrderWithoutTableName.getTableName(OrderWithoutTableName.class));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQRecordToEntityWithVirtualField() throws QException
+   {
+      QRecord qRecord = new QRecord()
+         .withValue("sku", "WXYZ-9876")
+         .withValue("quantity", 42)
+         .withValue("displayName", "My Display Name");
+
+      Item item = qRecord.toEntity(Item.class);
+      assertEquals("WXYZ-9876", item.getSku());
+      assertEquals(42, item.getQuantity());
+      assertEquals("My Display Name", item.getDisplayName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testEntityWithVirtualFieldToQRecord() throws QException
+   {
+      Item item = new Item();
+      item.setSku("ABC-123");
+      item.setQuantity(47);
+      item.setDisplayName("My Display Name");
+
+      QRecord qRecord = item.toQRecord();
+      assertEquals("ABC-123", qRecord.getValueString("sku"));
+      assertEquals(47, qRecord.getValueInteger("quantity"));
+      assertEquals("My Display Name", qRecord.getValueString("displayName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldNotInRegularFieldList() throws QException
+   {
+      List<QRecordEntityField> fieldList = QRecordEntity.getFieldList(Item.class);
+      assertThat(fieldList).noneMatch(f -> f.getFieldName().equals("displayName"));
+      assertThat(fieldList).anyMatch(f -> f.getFieldName().equals("sku"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetVirtualFieldList() throws QException
+   {
+      List<QRecordEntityField> virtualFieldList = QRecordEntity.getVirtualFieldList(Item.class);
+      assertThat(virtualFieldList).anyMatch(f -> f.getFieldName().equals("displayName"));
+      assertThat(virtualFieldList).noneMatch(f -> f.getFieldName().equals("sku"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQRecordFromJoinToEntityWithVirtualField() throws QException
+   {
+      QRecord qRecord = new QRecord()
+         .withValue("item.sku", "WXYZ-9876")
+         .withValue("item.quantity", 42)
+         .withValue("item.displayName", "Joined Display Name");
+
+      Item item = QRecordEntity.fromQRecord(Item.class, qRecord, "item.");
+      assertEquals("WXYZ-9876", item.getSku());
+      assertEquals(42, item.getQuantity());
+      assertEquals("Joined Display Name", item.getDisplayName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldNotIncludedInTQRecordOnlyChangedFields() throws QException
+   {
+      Item item = new Item(new QRecord()
+         .withValue("id", 1701)
+         .withValue("sku", "ABC-123")
+         .withValue("displayName", "My Display Name"));
+
+      assertEquals("My Display Name", item.getDisplayName());
+
+      ///////////////////////////////////////////////////////
+      // with nothing changed, this should be an empty set //
+      ///////////////////////////////////////////////////////
+      QRecord qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields(false);
+      assertTrue(qRecordOnlyChangedFields.getValues().isEmpty());
+
+      ///////////////////////////////////////////////////////////////////
+      // changing a virtual field shouldn't show up as a changed field //
+      ///////////////////////////////////////////////////////////////////
+      item.setDisplayName("updated");
+      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields(false);
+      assertTrue(qRecordOnlyChangedFields.getValues().isEmpty());
+
+      ///////////////////////////////////////////////////////
+      // changing a real field should give that field back //
+      ///////////////////////////////////////////////////////
+      item.setDescription("updated");
+      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields(false);
+      assertEquals(Set.of("description"), qRecordOnlyChangedFields.getValues().keySet());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetQVirtualFieldAnnotation() throws QException
+   {
+      assertTrue(QRecordEntity.getQVirtualFieldAnnotation(Item.class, "displayName").isPresent());
+      assertFalse(QRecordEntity.getQVirtualFieldAnnotation(Item.class, "sku").isPresent());
    }
 
 }

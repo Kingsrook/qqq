@@ -440,4 +440,29 @@ class StringUtilsTest extends BaseTest
       assertEquals("1234***9012", StringUtils.maskAndTruncate("123456789012", "***", 3, 4));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCountSubstringInstances() throws Exception
+   {
+      assertEquals(0, StringUtils.countSubstringInstances(null, null));
+      assertEquals(0, StringUtils.countSubstringInstances("haystack", null));
+      assertEquals(0, StringUtils.countSubstringInstances(null, "needle"));
+      assertEquals(0, StringUtils.countSubstringInstances("haystack", ""));
+      assertEquals(0, StringUtils.countSubstringInstances("haystack", "needle"));
+      assertEquals(1, StringUtils.countSubstringInstances("a", "a"));
+      assertEquals(2, StringUtils.countSubstringInstances("aa", "a"));
+      assertEquals(2, StringUtils.countSubstringInstances("aba", "a"));
+      assertEquals(2, StringUtils.countSubstringInstances("abab", "a"));
+      assertEquals(1, StringUtils.countSubstringInstances("ab", "ab"));
+      assertEquals(1, StringUtils.countSubstringInstances("abc", "ab"));
+      assertEquals(1, StringUtils.countSubstringInstances(" abc", "ab"));
+      assertEquals(2, StringUtils.countSubstringInstances("abab", "ab"));
+      assertEquals(2, StringUtils.countSubstringInstances("abcab", "ab"));
+   }
+
+
 }

@@ -56,9 +56,12 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.module.rdbms.fieldfunctions.RDBMSFieldFunctionAdapterInterface;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -99,6 +102,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          List<Serializable> params    = new ArrayList<>();
          Selection          selection = makeSelection(queryInput);
+         CollectionUtils.addAllIfNotNull(params, selection.paramsForSelection());
 
          StringBuilder sql = makeSQL(queryInput, selection, tableName, params, table);
 
@@ -280,7 +284,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
-            sql.append(" ORDER BY ").append(makeOrderByClause(table, filter.getOrderBys(), joinsContext));
+            sql.append(" ORDER BY ").append(makeOrderByClause(table, filter.getOrderBys(), joinsContext, params));
          }
       }
 
@@ -355,8 +359,9 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
     ** - qualifiedColumns is a list of the `table`.`column` strings
     ** - fields are those being selected, in the same order, and with mutated
     ** names for join fields.
+    ** - any parameters required for functions in the SELECT clause
     ***************************************************************************/
-   private record Selection(String selectClause, List<String> qualifiedColumns, List<QFieldMetaData> fields)
+   private record Selection(String selectClause, List<String> qualifiedColumns, List<QFieldMetaData> fields, List<Serializable> paramsForSelection)
    {
 
    }
@@ -393,14 +398,21 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          .map(field -> Pair.of(field, escapeIdentifier(tableName) + "." + escapeIdentifier(getColumnName(field))))
          .map(pair -> wrapHeavyFieldsWithLengthFunctionIfNeeded(pair, queryInput.getShouldFetchHeavyFields()))
          .toList());
-      String columns = String.join(", ", qualifiedColumns);
+
+      StringBuilder        columns            = new StringBuilder(String.join(", ", qualifiedColumns));
+      List<QFieldMetaData> selectionFieldList = new ArrayList<>(fieldList);
+      List<Serializable>   params             = new ArrayList<>();
+
+      /////////////////////////////////////////
+      // add virtual fields if there are any //
+      /////////////////////////////////////////
+      addVirtualFieldsToSelection(table, tableName, fieldNamesToInclude, columns, params, selectionFieldList, false);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       // figure out if distinct is being used.  then start building the select clause with the table's columns //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       boolean              requiresDistinct   = queryInput.getSelectDistinct() || doesSelectClauseRequireDistinct(table);
       StringBuilder        selectClause       = new StringBuilder((requiresDistinct) ? "SELECT DISTINCT " : "SELECT ").append(columns);
-      List<QFieldMetaData> selectionFieldList = new ArrayList<>(fieldList);
 
       boolean needCommaBeforeJoinFields = !columns.isEmpty();
 
@@ -443,7 +455,13 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                .toList();
 
             qualifiedColumns.addAll(qualifiedJoinColumns);
-            String joinColumns = String.join(", ", qualifiedJoinColumns);
+            StringBuilder joinColumns = new StringBuilder(String.join(", ", qualifiedJoinColumns));
+            selectionFieldList.addAll(joinFieldList.stream().map(field -> field.clone().withName(tableNameOrAlias + "." + field.getName())).toList());
+
+            /////////////////////////////////////////
+            // add virtual fields if there are any //
+            /////////////////////////////////////////
+            addVirtualFieldsToSelection(joinTable, tableNameOrAlias, fieldNamesToInclude, joinColumns, params, selectionFieldList, true);
 
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // append to output objects.                                                                  //
@@ -455,12 +473,63 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             }
             selectClause.append(joinColumns);
             needCommaBeforeJoinFields = true;
-
-            selectionFieldList.addAll(joinFieldList.stream().map(field -> field.clone().withName(tableNameOrAlias + "." + field.getName())).toList());
          }
       }
 
-      return (new Selection(selectClause.toString(), qualifiedColumns, selectionFieldList));
+      return (new Selection(selectClause.toString(), qualifiedColumns, selectionFieldList, params));
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void addVirtualFieldsToSelection(QTableMetaData table, String tableNameOrAlias, Set<String> fieldNamesToInclude, StringBuilder columns, List<Serializable> params, List<QFieldMetaData> selectionFieldList, boolean isJoinField)
+   {
+      for(QVirtualFieldMetaData virtualField : CollectionUtils.nonNullMap(table.getVirtualFields()).values())
+      {
+         if(virtualField.getIsQuerySelectable())
+         {
+            FieldFunction fieldFunction = virtualField.getFieldFunction();
+            if(fieldFunction == null)
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               // if there's no field function, then we can't get the virtual field's value from the select. //
+               // this means the value will come from a table customizer                                     //
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               continue;
+            }
+
+            if(fieldNamesToInclude != null && !fieldNamesToInclude.contains(virtualField.getName()))
+            {
+               continue;
+            }
+
+            RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter = backendMetaData.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+            requireFieldFunctionAdapterNotNull(fieldFunctionAdapter, fieldFunction);
+
+            QFieldMetaData sourceField       = table.getField(fieldFunction.getFieldName());
+            String         columnName        = escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(sourceField));
+            String         wrappedColumnName = fieldFunctionAdapter.wrapColumnName(columnName, fieldFunction, makeFieldNameToColumnReferenceFunction(tableNameOrAlias, table));
+
+            CollectionUtils.addAllIfNotNull(params, fieldFunctionAdapter.getParams(fieldFunction));
+
+            if(!columns.isEmpty())
+            {
+               columns.append(", ");
+            }
+
+            columns.append(wrappedColumnName);
+            if(isJoinField)
+            {
+               selectionFieldList.add(virtualField.clone().withName(tableNameOrAlias + "." + virtualField.getName()));
+            }
+            else
+            {
+               selectionFieldList.add(virtualField);
+            }
+         }
+      }
    }
 
 

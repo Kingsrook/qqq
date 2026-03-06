@@ -47,6 +47,9 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.LocalMacDevUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -66,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
- ** Unit test for the ReportAction
+ ** Unit test for ExportAction
  *******************************************************************************/
 class ExportActionTest extends BaseTest
 {
@@ -384,6 +387,98 @@ class ExportActionTest extends BaseTest
       assertThat(limitedFileContent)
          .contains("First Name").contains("Homer")
          .doesNotContain("Last Name").doesNotContain("Simpson");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldNotQueryableRejected()
+   {
+      QInstance     qInstance = QContext.getQInstance();
+      QTableMetaData table    = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      table.withVirtualField(new QVirtualFieldMetaData("notSelectable", QFieldType.INTEGER)
+         .withIsQuerySelectable(false)
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+            .withFieldName("firstName")));
+
+      ExportInput exportInput = new ExportInput();
+      exportInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      exportInput.setFieldNames(List.of("firstName", "notSelectable"));
+      exportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.CSV));
+
+      QUserFacingException exception = assertThrows(QUserFacingException.class, () ->
+         new ExportAction().preExecute(exportInput));
+      assertThat(exception.getMessage()).contains("not queryable");
+      assertThat(exception.getMessage()).contains("notSelectable");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNotFoundAndNotQueryableCombinedErrorMessage()
+   {
+      QInstance     qInstance = QContext.getQInstance();
+      QTableMetaData table    = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      table.withVirtualField(new QVirtualFieldMetaData("notSelectable", QFieldType.INTEGER)
+         .withIsQuerySelectable(false)
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+            .withFieldName("firstName")));
+
+      ExportInput exportInput = new ExportInput();
+      exportInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      exportInput.setFieldNames(List.of("noSuchField", "notSelectable"));
+      exportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.CSV));
+
+      QUserFacingException exception = assertThrows(QUserFacingException.class, () ->
+         new ExportAction().preExecute(exportInput));
+      assertThat(exception.getMessage()).contains("not found");
+      assertThat(exception.getMessage()).contains("not queryable");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportWithSelectableVirtualField() throws QException, IOException
+   {
+      QInstance     qInstance = QContext.getQInstance();
+      QTableMetaData table    = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      table.withVirtualField(new QVirtualFieldMetaData("firstNameLength", QFieldType.INTEGER)
+         .withLabel("First Name Length")
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+            .withFieldName("firstName")));
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(new QRecord().withValue("firstName", "Homer").withValue("lastName", "Simpson")));
+      new InsertAction().execute(insertInput);
+
+      ByteArrayOutputStream reportOutputStream = new ByteArrayOutputStream();
+      ExportInput exportInput = new ExportInput();
+      exportInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      exportInput.setReportDestination(new ReportDestination()
+         .withReportFormat(ReportFormat.CSV)
+         .withReportOutputStream(reportOutputStream));
+      exportInput.setQueryFilter(new QQueryFilter());
+      exportInput.setFieldNames(List.of("firstName", "firstNameLength"));
+      new ExportAction().execute(exportInput);
+
+      String csv = reportOutputStream.toString(StandardCharsets.UTF_8);
+      assertThat(csv).contains("First Name Length");
+      assertThat(csv).contains("Homer");
+      assertThat(csv).contains("5");
    }
 
 }

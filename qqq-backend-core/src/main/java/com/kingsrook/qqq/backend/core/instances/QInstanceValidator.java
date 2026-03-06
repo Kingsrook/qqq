@@ -81,6 +81,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -1004,6 +1007,7 @@ public class QInstanceValidator
                usedVirtualFieldNames.add(fieldName);
 
                validateTableField(qInstance, tableName, fieldName, table, entry.getValue());
+               validateTableVirtualField(qInstance, tableName, fieldName, table, entry.getValue());
             }
 
             //////////////////////////////////////////
@@ -1091,6 +1095,62 @@ public class QInstanceValidator
             runPlugins(QTableMetaData.class, table, qInstance);
          });
       }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void validateTableVirtualField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QVirtualFieldMetaData virtualFieldMetaData)
+   {
+      String prefix = "Table [" + tableName + "], Virtual field [" + fieldName + "]: ";
+
+      boolean requireFieldFunction = false;
+      String requireFieldFunctionReason = null;
+      if(virtualFieldMetaData.getIsQueryCriteria())
+      {
+         requireFieldFunction = true;
+         requireFieldFunctionReason = "To be a queryCriteria";
+      }
+      else if(virtualFieldMetaData.getIsQuerySelectable())
+      {
+         if(table.getCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole()).isEmpty())
+         {
+            requireFieldFunction = true;
+            requireFieldFunctionReason = "To be querySelectable (since its table does not have a POST_QUERY_RECORD customizer)";
+         }
+      }
+
+      FieldFunction fieldFunction = virtualFieldMetaData.getFieldFunction();
+      if(requireFieldFunction)
+      {
+         assertCondition(fieldFunction != null, prefix + requireFieldFunctionReason + " this virtual field must have a field function defined");
+      }
+
+      if(fieldFunction != null)
+      {
+         if(assertCondition(fieldFunction.getFunctionTypeIdentifier() != null, "fieldFunction is missing a function type"))
+         {
+            FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(qInstance).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+            if(assertCondition(fieldFunctionType != null, prefix + "Unrecognized field function type: " + fieldFunction.getFunctionTypeIdentifier()))
+            {
+               if(CollectionUtils.nullSafeHasContents(fieldFunctionType.getAllowedFieldTypes()))
+               {
+                  String sourceFieldName = virtualFieldMetaData.getFieldFunction().getFieldName();
+                  if(assertCondition(StringUtils.hasContent(sourceFieldName), "fieldFunction is missing a source field name"))
+                  {
+                     if(assertCondition(table.getFields().containsKey(sourceFieldName), "fieldFunction's referenced source field name is not a defined field on this table"))
+                     {
+                        QFieldMetaData sourceField = table.getField(sourceFieldName);
+                        assertCondition(fieldFunctionType.getAllowedFieldTypes().contains(sourceField.getType()), prefix + "source field [" + sourceFieldName + "]'s type [" + sourceField.getType() + "] is not among the specified field function's allowed types [" + fieldFunctionType.getAllowedFieldTypes() + "]");
+                     }
+                  }
+               }
+            }
+         }
+      }
+
    }
 
 
@@ -1919,7 +1979,10 @@ public class QInstanceValidator
                      {
                         assertCondition(!matchedExposedJoins.get(0).getIsMany(qInstance), sectionPrefix + "join-field " + fieldName + " references an is-many join, which is not supported.");
                      }
-                     assertCondition(qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName), sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
+
+                     boolean foreignTableHasField = qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName);
+                     boolean foreignTableHasVirtualField = CollectionUtils.nonNullMap(qInstance.getTable(otherTableName).getVirtualFields()).containsKey(foreignFieldName);
+                     assertCondition(foreignTableHasField || foreignTableHasVirtualField, sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
                   }
                }
                else

@@ -29,15 +29,19 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.metadata.personalization.TableMetaDataPersonalizerAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.personalization.TableMetaDataPersonalizerInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -45,6 +49,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class FilterValidationHelper
 {
+   private static final QLogger LOG = QLogger.getLogger(FilterValidationHelper.class);
+
 
    /***************************************************************************
     * throw an exception if a filter contains any field names (in its criteria
@@ -106,10 +112,10 @@ public class FilterValidationHelper
          boolean found = false;
          try
          {
-            FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, fieldName, input.getQueryJoins());
+            FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, fieldName, input.getQueryJoins(), true);
             if(fieldAndJoinTable.joinTable().getName().equals(mainTable.getName()))
             {
-               found = mainTable.getFields().containsKey(fieldAndJoinTable.field().getName());
+               found = isFieldNameFoundAndAllowedForFilter(fieldAndJoinTable, mainTable);
             }
             else
             {
@@ -126,7 +132,7 @@ public class FilterValidationHelper
                   }
                });
 
-               found = joinTable.getFields().containsKey(fieldAndJoinTable.field().getName());
+               found = isFieldNameFoundAndAllowedForFilter(fieldAndJoinTable, joinTable);
             }
          }
          catch(Exception e)
@@ -140,6 +146,30 @@ public class FilterValidationHelper
          {
             unrecognizedFieldNames.add(fieldName);
          }
+      }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static boolean isFieldNameFoundAndAllowedForFilter(FieldAndJoinTable fieldAndJoinTable, QTableMetaData table)
+   {
+      QFieldMetaData field = fieldAndJoinTable.field();
+      if(field instanceof QVirtualFieldMetaData virtualField)
+      {
+         if(!virtualField.getIsQueryCriteria())
+         {
+            LOG.info("Query Filter contained a Virtual Field that is not allowed in a query criteria", logPair("fieldName", virtualField.getName()));
+            return (false);
+         }
+
+         return table.getVirtualFields().containsKey(virtualField.getName());
+      }
+      else
+      {
+         return table.getFields().containsKey(field.getName());
       }
    }
 
