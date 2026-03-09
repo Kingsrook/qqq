@@ -251,12 +251,23 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
       if(filter != null && filter.getSubFilterSetOperator() != null && CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
       {
+         boolean isFirst = true;
          for(QQueryFilter subFilter : filter.getSubFilters())
          {
             if(!sql.isEmpty())
             {
                sql.append(" ").append(filter.getSubFilterSetOperator().name().replace('_', ' ')).append(" ");
             }
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            // add selection params for each sub-query after the first (the first set was added by the caller //
+            // before this method was invoked).                                                               //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!isFirst)
+            {
+               CollectionUtils.addAllIfNotNull(params, selection.paramsForSelection());
+            }
+            isFirst = false;
 
             sql.append(" (");
             sql.append(selection.selectClause());

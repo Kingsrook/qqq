@@ -87,6 +87,7 @@ public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
    public static final String VENDOR_AURORA_MYSQL = "aurora-mysql";
 
    private BackendFieldFunctionAdapterRegistry backendFieldFunctionAdapterRegistry = new BackendFieldFunctionAdapterRegistry();
+   private boolean wasBackendFieldFunctionAdapterRegistryPopulated = false;
 
 
    /*******************************************************************************
@@ -115,6 +116,7 @@ public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
       registerBackendFieldFunctionAdapter(SubStringFunction.IDENTIFIER, RDBMSSubStringFunction.class);
       registerBackendFieldFunctionAdapter(WeekdayOfDateFunction.IDENTIFIER, RDBMSWeekdayOfDateFunction.class);
       registerBackendFieldFunctionAdapter(WeekdayOfDateTimeFunction.IDENTIFIER, RDBMSWeekdayOfDateTimeFunction.class);
+      wasBackendFieldFunctionAdapterRegistryPopulated = true;
    }
 
 
@@ -136,6 +138,11 @@ public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
     ***************************************************************************/
    public RDBMSFieldFunctionAdapterInterface getFieldFunctionAdapter(FieldFunctionTypeIdentifier fieldFunctionTypeIdentifier)
    {
+      if(!wasBackendFieldFunctionAdapterRegistryPopulated)
+      {
+         doRegisterFieldFunctionAdapters();
+      }
+
       BackendFieldFunctionAdapterInterface fieldFunctionAdapter = backendFieldFunctionAdapterRegistry.getFieldFunctionAdapter(fieldFunctionTypeIdentifier);
       if(fieldFunctionAdapter != null)
       {

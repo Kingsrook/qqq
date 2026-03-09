@@ -792,7 +792,7 @@ public abstract class AbstractRDBMSAction
     ***************************************************************************/
    protected void requireFieldFunctionAdapterNotNull(RDBMSFieldFunctionAdapterInterface fieldFunctionAdapter, FieldFunction fieldFunction)
    {
-      Objects.requireNonNull(fieldFunctionAdapter, "Missing field function adapter for function "
+      Objects.requireNonNull(fieldFunctionAdapter, "Missing field function adapter for function ["
          + ObjectUtils.tryElse(() -> fieldFunction.getFunctionTypeIdentifier().getName(), "unknown")
          + "] in backend ["
          + ObjectUtils.tryElse(() -> backendMetaData.getName(), "unknown") + "]");
