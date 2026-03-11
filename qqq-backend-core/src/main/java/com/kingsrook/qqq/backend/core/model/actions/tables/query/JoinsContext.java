@@ -176,7 +176,7 @@ public class JoinsContext
    {
       this.instance = instance;
       this.mainTableName = tableName;
-      this.queryJoins = new MutableList<>(queryJoins);
+      this.queryJoins = new ArrayList<>(CollectionUtils.nonNullList(queryJoins).stream().map(QueryJoin::clone).toList());
       this.securityFilter = new QQueryFilter();
       this.securityFilterCursor = this.securityFilter;
 
@@ -622,15 +622,6 @@ public class JoinsContext
       boolean haveAllAccessKey = hasAllAccessKey(recordSecurityLock);
       if(haveAllAccessKey)
       {
-         if(sourceQueryJoin != null)
-         {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // in case the queryJoin object is re-used between queries, and its security criteria need to be different (!!), reset it //
-            // this can be exposed in tests - maybe not entirely expected in real-world, but seems safe enough                        //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            sourceQueryJoin.withSecurityCriteria(new ArrayList<>());
-         }
-
          ////////////////////////////////////////////////////////////////////////////////////////
          // if we're in an AND filter, then we don't need a criteria for this lock, so return. //
          ////////////////////////////////////////////////////////////////////////////////////////

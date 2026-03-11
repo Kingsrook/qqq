@@ -304,13 +304,9 @@ class JoinsContextTest extends BaseTest
       /////////////////////////////////////////////////////////////////////////////
       QueryJoin detailJoin = new QueryJoin().withJoinTable(EMPLOYEE_DETAIL_TABLE);
 
-      ////////////////////////////////////////////////////////////////////////////////////
-      // constructing this joinsContext has the side-effect of modifying the QueryJoin  //
-      // with its QJoinMetaData (thus, no need to capture the constructed JoinsContext) //
-      ////////////////////////////////////////////////////////////////////////////////////
-      new JoinsContext(instance, EMPLOYEE_TABLE, List.of(detailJoin), new QQueryFilter());
+      JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(detailJoin), new QQueryFilter());
 
-      QJoinMetaData resolvedMetaData = detailJoin.getJoinMetaData();
+      QJoinMetaData resolvedMetaData = joinsContext.getQueryJoins().get(0).getJoinMetaData();
       assertNotNull(resolvedMetaData, "JoinMetaData should have been auto-filled");
       assertEquals(EMPLOYEE_TABLE, resolvedMetaData.getLeftTable());
       assertEquals(EMPLOYEE_DETAIL_TABLE, resolvedMetaData.getRightTable());
@@ -1260,10 +1256,10 @@ class JoinsContextTest extends BaseTest
       JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(queryJoin), new QQueryFilter());
 
       /////////////////////////////////////////////////////////////////////////
-      // after construction, the queryJoin's metadata should have been       //
-      // flipped: its leftTable should now be employee (the main table side) //
+      // after construction, the context's copy of the join should have its  //
+      // metadata flipped: leftTable should now be employee (main table)     //
       /////////////////////////////////////////////////////////////////////////
-      QJoinMetaData resolvedMetaData = queryJoin.getJoinMetaData();
+      QJoinMetaData resolvedMetaData = joinsContext.getQueryJoins().get(0).getJoinMetaData();
       assertNotNull(resolvedMetaData, "JoinMetaData should still be present after flip");
       assertEquals(EMPLOYEE_TABLE, resolvedMetaData.getLeftTable(), "Left table should be employee (flipped)");
       assertEquals(DEPARTMENT_TABLE, resolvedMetaData.getRightTable(), "Right table should be department (flipped)");
@@ -1532,6 +1528,85 @@ class JoinsContextTest extends BaseTest
       }
 
       return false;
+   }
+
+
+
+   /*******************************************************************************
+    ** Demonstrates the shared-mutable-state bug: when the same queryJoins list
+    ** is passed to JoinsContext twice (as happens with ChildRecordListRenderer's
+    ** widget metadata), ImplicitQueryJoinForSecurityLock objects from the first
+    ** construction leak into the list and are reused by the second construction
+    ** without re-evaluating security.
+    **
+    ** Scenario (mirrors the ColdTrack-Live lineItem widget bug):
+    ** - department table has a companyKey security lock via joinNameChain
+    ** - First JoinsContext: restricted session (companyKey = [42]) → adds an
+    **   INNER security join with criteria companyId IN (42) to the shared list
+    ** - Second JoinsContext: all-access session → should produce a LEFT join
+    **   with no criteria, but finds the stale INNER join and reuses it
+    *******************************************************************************/
+   @Test
+   void testSharedQueryJoinListIsNotMutatedBetweenConstructions() throws QException
+   {
+      QInstance instance = buildBaseInstance();
+      instance.addSecurityKeyType(new QSecurityKeyType()
+         .withName(SECURITY_KEY_TYPE_COMPANY)
+         .withAllAccessKeyName(SECURITY_KEY_COMPANY_ALL_ACCESS));
+
+      instance.getTable(DEPARTMENT_TABLE).withRecordSecurityLock(new RecordSecurityLock()
+         .withSecurityKeyType(SECURITY_KEY_TYPE_COMPANY)
+         .withFieldName("company.id")
+         .withJoinNameChain(List.of(COMPANY_JOIN_DEPARTMENT)));
+
+      useInstance(instance);
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // Simulate a shared queryJoins list (like the one stored in widget metadata). //
+      // It starts with a single user-defined join, analogous to the item LEFT JOIN  //
+      // in the lineItems widget.                                                    //
+      /////////////////////////////////////////////////////////////////////////////////
+      QueryJoin userJoin = new QueryJoin()
+         .withJoinTable(EMPLOYEE_TABLE)
+         .withType(QueryJoin.Type.LEFT)
+         .withSelect(true)
+         .withJoinMetaData(instance.getJoin(DEPARTMENT_JOIN_EMPLOYEE));
+
+      List<QueryJoin> sharedQueryJoins = new java.util.ArrayList<>(List.of(userJoin));
+      int originalSize = sharedQueryJoins.size();
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // First construction: restricted session with specific company key values.    //
+      // This should NOT modify the shared list.                                     //
+      /////////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_TYPE_COMPANY, 42));
+      new JoinsContext(instance, DEPARTMENT_TABLE, sharedQueryJoins, new QQueryFilter());
+
+      assertEquals(originalSize, sharedQueryJoins.size(),
+         "JoinsContext should not add security joins to the caller's queryJoins list");
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // Second construction: all-access session.                                    //
+      // Because the list was mutated above, the stale INNER join with companyId     //
+      // IN (42) is found "already in the query" and reused without re-evaluation.   //
+      /////////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_COMPANY_ALL_ACCESS, true));
+      JoinsContext allAccessContext = new JoinsContext(instance, DEPARTMENT_TABLE, sharedQueryJoins, new QQueryFilter());
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // With all-access, the security join should be LEFT (not INNER) and should  //
+      // have no security criteria on it.                                          //
+      ///////////////////////////////////////////////////////////////////////////////
+      QueryJoin securityJoin = allAccessContext.getQueryJoins().stream()
+         .filter(qj -> qj instanceof ImplicitQueryJoinForSecurityLock)
+         .findFirst()
+         .orElse(null);
+
+      assertNotNull(securityJoin, "All-access context should still have a security join");
+      assertEquals(QueryJoin.Type.LEFT, securityJoin.getType(),
+         "All-access session should produce a LEFT join, not INNER");
+      assertTrue(securityJoin.getSecurityCriteria().isEmpty(),
+         "All-access session should have no security criteria on the join");
    }
 
 }
