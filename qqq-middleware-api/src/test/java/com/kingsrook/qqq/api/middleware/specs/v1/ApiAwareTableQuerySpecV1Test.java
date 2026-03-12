@@ -407,15 +407,14 @@ class ApiAwareTableQuerySpecV1Test extends ApiAwareSpecTestBase
          .asString();
       assert400.accept(response, "Unrecognized criteria field name: orderLine.noSuchField.");
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////
-      // join for sku - should find (but... memory backend isn't joining correctly at this time... //
-      // so we'll ensure at least http 200, and trust that other backends join correctly...        //
-      ///////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////
+      // join for sku - should find the 1 order that has a line with that sku. //
+      ///////////////////////////////////////////////////////////////////////////
       response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2023_Q1) + "/table/order/query")
          .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_LINE_ITEM + ".sku", QCriteriaOperator.EQUALS, "BASIC1")))))
          .contentType(ContentType.APPLICATION_JSON.getMimeType())
          .asString();
-      assertOrderCount.accept(response, 0); // todo - ideally 1, but memory backend joining...
+      assertOrderCount.accept(response, 1);
 
       ///////////////////////////////
       // fetch exposed join fields //

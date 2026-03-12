@@ -62,6 +62,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.ImplicitQueryJoinForSecurityLock;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -230,9 +231,16 @@ public class MemoryRecordStore
       }
       else
       {
-         if(CollectionUtils.nullSafeHasContents(input.getQueryJoins()))
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // use joinsContext's query joins (which have enriched metadata from cloning), but exclude implicit security joins  //
+         // that JoinsContext added — those are handled separately via the security filter and validateSecurityFields calls. //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         List<QueryJoin> nonSecurityQueryJoins = joinsContext.getQueryJoins().stream()
+            .filter(qj -> !(qj instanceof ImplicitQueryJoinForSecurityLock))
+            .toList();
+         if(CollectionUtils.nullSafeHasContents(nonSecurityQueryJoins))
          {
-            tableData = buildJoinCrossProduct(input.getTable(), input.getQueryJoins());
+            tableData = buildJoinCrossProduct(input.getTable(), nonSecurityQueryJoins);
          }
       }
 
