@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -1255,10 +1256,10 @@ class JoinsContextTest extends BaseTest
 
       JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(queryJoin), new QQueryFilter());
 
-      /////////////////////////////////////////////////////////////////////////
-      // after construction, the context's copy of the join should have its  //
-      // metadata flipped: leftTable should now be employee (main table)     //
-      /////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////
+      // after construction, the context's copy of the join should have its //
+      // metadata flipped: leftTable should now be employee (main table)    //
+      ////////////////////////////////////////////////////////////////////////
       QJoinMetaData resolvedMetaData = joinsContext.getQueryJoins().get(0).getJoinMetaData();
       assertNotNull(resolvedMetaData, "JoinMetaData should still be present after flip");
       assertEquals(EMPLOYEE_TABLE, resolvedMetaData.getLeftTable(), "Left table should be employee (flipped)");
@@ -1572,31 +1573,31 @@ class JoinsContextTest extends BaseTest
          .withSelect(true)
          .withJoinMetaData(instance.getJoin(DEPARTMENT_JOIN_EMPLOYEE));
 
-      List<QueryJoin> sharedQueryJoins = new java.util.ArrayList<>(List.of(userJoin));
+      List<QueryJoin> sharedQueryJoins = new ArrayList<>(List.of(userJoin));
       int originalSize = sharedQueryJoins.size();
 
-      /////////////////////////////////////////////////////////////////////////////////
-      // First construction: restricted session with specific company key values.    //
-      // This should NOT modify the shared list.                                     //
-      /////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////
+      // First construction: restricted session with specific company key values. //
+      // This should NOT modify the shared list.                                  //
+      //////////////////////////////////////////////////////////////////////////////
       QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_TYPE_COMPANY, 42));
       new JoinsContext(instance, DEPARTMENT_TABLE, sharedQueryJoins, new QQueryFilter());
 
       assertEquals(originalSize, sharedQueryJoins.size(),
          "JoinsContext should not add security joins to the caller's queryJoins list");
 
-      /////////////////////////////////////////////////////////////////////////////////
-      // Second construction: all-access session.                                    //
-      // Because the list was mutated above, the stale INNER join with companyId     //
-      // IN (42) is found "already in the query" and reused without re-evaluation.   //
-      /////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////
+      // Second construction: all-access session.                                  //
+      // Because the list was mutated above, the stale INNER join with companyId   //
+      // IN (42) is found "already in the query" and reused without re-evaluation. //
+      ///////////////////////////////////////////////////////////////////////////////
       QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_COMPANY_ALL_ACCESS, true));
       JoinsContext allAccessContext = new JoinsContext(instance, DEPARTMENT_TABLE, sharedQueryJoins, new QQueryFilter());
 
-      ///////////////////////////////////////////////////////////////////////////////
-      // With all-access, the security join should be LEFT (not INNER) and should  //
-      // have no security criteria on it.                                          //
-      ///////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////
+      // With all-access, the security join should be LEFT (not INNER) and should //
+      // have no security criteria on it.                                         //
+      //////////////////////////////////////////////////////////////////////////////
       QueryJoin securityJoin = allAccessContext.getQueryJoins().stream()
          .filter(qj -> qj instanceof ImplicitQueryJoinForSecurityLock)
          .findFirst()
