@@ -176,7 +176,13 @@ public class JoinsContext
    {
       this.instance = instance;
       this.mainTableName = tableName;
+
+      /////////////////////////////////////////////////////////////////////////////
+      // clone the incoming query joins - as this class will mutate them!  so in //
+      // case they came from some meta-data, we don't want to change them there. //
+      /////////////////////////////////////////////////////////////////////////////
       this.queryJoins = new ArrayList<>(CollectionUtils.nonNullList(queryJoins).stream().map(QueryJoin::clone).toList());
+
       this.securityFilter = new QQueryFilter();
       this.securityFilterCursor = this.securityFilter;
 
