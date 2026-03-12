@@ -275,10 +275,12 @@ public class MemoryRecordStore
                //////////////////////////////////////////////////////////////////////////////////
                // make sure we're not giving back records that are all full of associations... //
                // or fields that the user isn't supposed to get (e.g., from personalization)   //
+               // or old display values (or just ones that wern't requested)                   //
                //////////////////////////////////////////////////////////////////////////////////
                QRecord recordToReturn = new QRecord(qRecord);
-               stripUnrecognizedFieldsFromRecords(List.of(recordToReturn), personalizedTables, input.getTable());
                recordToReturn.setAssociatedRecords(new HashMap<>());
+               stripUnrecognizedFieldsFromRecords(List.of(recordToReturn), personalizedTables, input.getTable());
+               recordToReturn.setDisplayValues(new HashMap<>());
                records.add(recordToReturn);
             }
          }
