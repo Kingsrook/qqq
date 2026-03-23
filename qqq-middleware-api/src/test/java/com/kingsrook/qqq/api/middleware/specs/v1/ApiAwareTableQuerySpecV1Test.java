@@ -55,7 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ApiAwareTableQuerySpecV1Test extends ApiAwareSpecTestBase
 {
 
-
    /***************************************************************************
     **
     ***************************************************************************/

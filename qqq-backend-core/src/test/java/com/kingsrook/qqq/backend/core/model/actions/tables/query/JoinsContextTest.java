@@ -1534,6 +1534,206 @@ class JoinsContextTest extends BaseTest
 
 
    /*******************************************************************************
+    ** Verify that a 2-hop security lock chain produces correctly-oriented join
+    ** metadata for both hops.  Before the fix in fillInMissingJoinMetaData, the
+    ** second hop's metadata was double-flipped: it was correctly flipped during
+    ** ensureRecordSecurityLockIsRepresented, then incorrectly flipped again by
+    ** fillInMissingJoinMetaData because it couldn't see that the intermediate
+    ** table was already in the query under an alias.
+    **
+    ** Scenario:
+    ** - main table = employee
+    ** - security lock on company.id via joinNameChain [companyDepartments, departmentEmployees]
+    ** - reversed chain walks: employee → department (hop 1), department → company (hop 2)
+    ** - hop 1 creates an aliased join like "department_forSecurityJoin_departmentEmployees"
+    ** - hop 2's metadata should have leftTable=department, rightTable=company
+    **   (i.e., still flipped from the original companyDepartments direction)
+    **   but was getting double-flipped back to leftTable=company, rightTable=department
+    *******************************************************************************/
+   @Test
+   void testTwoHopSecurityLockJoinMetaDataNotDoubleFlipped() throws QException
+   {
+      QInstance instance = buildBaseInstance();
+      instance.addSecurityKeyType(new QSecurityKeyType()
+         .withName(SECURITY_KEY_TYPE_COMPANY)
+         .withAllAccessKeyName(SECURITY_KEY_COMPANY_ALL_ACCESS));
+
+      instance.getTable(EMPLOYEE_TABLE).withRecordSecurityLock(new RecordSecurityLock()
+         .withSecurityKeyType(SECURITY_KEY_TYPE_COMPANY)
+         .withFieldName("company.id")
+         .withJoinNameChain(List.of(COMPANY_JOIN_DEPARTMENT, DEPARTMENT_JOIN_EMPLOYEE)));
+
+      useInstance(instance);
+
+      QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_TYPE_COMPANY, 42));
+      JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(), new QQueryFilter());
+
+      List<QueryJoin> securityJoins = joinsContext.getQueryJoins().stream()
+         .filter(qj -> qj instanceof ImplicitQueryJoinForSecurityLock)
+         .toList();
+
+      assertEquals(2, securityJoins.size(), "Should have 2 security joins for a 2-hop chain");
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // Hop 1: employee → department.  The original departmentEmployees join has            //
+      // left=department, right=employee, so it gets flipped: left=employee, right=department //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      QueryJoin hop1 = securityJoins.get(0);
+      QJoinMetaData hop1Meta = hop1.getJoinMetaData();
+      assertNotNull(hop1Meta);
+      assertEquals(EMPLOYEE_TABLE, hop1Meta.getLeftTable(),
+         "Hop 1 left table should be employee (main table, flipped from original)");
+      assertEquals(DEPARTMENT_TABLE, hop1Meta.getRightTable(),
+         "Hop 1 right table should be department");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // Hop 2: department → company.  The original companyDepartments join has                 //
+      // left=company, right=department, so it gets flipped: left=department, right=company.    //
+      // Before the fix, fillInMissingJoinMetaData would double-flip this back to the original  //
+      // orientation (left=company, right=department), because it couldn't see that "department" //
+      // was already in the query under the aliased hop-1 join.                                 //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      QueryJoin hop2 = securityJoins.get(1);
+      QJoinMetaData hop2Meta = hop2.getJoinMetaData();
+      assertNotNull(hop2Meta);
+      assertEquals(DEPARTMENT_TABLE, hop2Meta.getLeftTable(),
+         "Hop 2 left table should be department (flipped from original companyDepartments)");
+      assertEquals(COMPANY_TABLE, hop2Meta.getRightTable(),
+         "Hop 2 right table should be company");
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // Also verify the joinOn fields are oriented correctly after the (single) flip.   //
+      // Original companyDepartments: JoinOn(id, companyId) meaning company.id = dept.companyId //
+      // After flip: JoinOn(companyId, id) meaning dept.companyId = company.id           //
+      /////////////////////////////////////////////////////////////////////////////////////
+      JoinOn hop2JoinOn = hop2Meta.getJoinOns().get(0);
+      assertEquals("companyId", hop2JoinOn.getLeftField(),
+         "After flip, left field should be companyId (department's FK)");
+      assertEquals("id", hop2JoinOn.getRightField(),
+         "After flip, right field should be id (company's PK)");
+   }
+
+
+
+   /*******************************************************************************
+    ** Same 2-hop chain scenario, but verifying the security filter criteria are
+    ** correctly placed.  This matters for RDBMS backends, where the security filter
+    ** becomes part of the WHERE clause and must reference the correct alias.
+    *******************************************************************************/
+   @Test
+   void testTwoHopSecurityLockFilterCriteria() throws QException
+   {
+      QInstance instance = buildBaseInstance();
+      instance.addSecurityKeyType(new QSecurityKeyType()
+         .withName(SECURITY_KEY_TYPE_COMPANY)
+         .withAllAccessKeyName(SECURITY_KEY_COMPANY_ALL_ACCESS));
+
+      instance.getTable(EMPLOYEE_TABLE).withRecordSecurityLock(new RecordSecurityLock()
+         .withSecurityKeyType(SECURITY_KEY_TYPE_COMPANY)
+         .withFieldName("company.id")
+         .withJoinNameChain(List.of(COMPANY_JOIN_DEPARTMENT, DEPARTMENT_JOIN_EMPLOYEE)));
+
+      useInstance(instance);
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // With a restricted session, the security criteria should be placed on the     //
+      // last security join in the chain (the one closest to the company table).      //
+      // For join-chain locks, criteria go on the QueryJoin's securityCriteria field, //
+      // not in the main WHERE filter.                                                //
+      /////////////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_TYPE_COMPANY, 42));
+      JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(), new QQueryFilter());
+
+      List<QueryJoin> restrictedSecurityJoins = joinsContext.getQueryJoins().stream()
+         .filter(qj -> qj instanceof ImplicitQueryJoinForSecurityLock)
+         .toList();
+
+      assertEquals(2, restrictedSecurityJoins.size());
+
+      QueryJoin lastHop = restrictedSecurityJoins.get(restrictedSecurityJoins.size() - 1);
+      assertFalse(lastHop.getSecurityCriteria().isEmpty(),
+         "Last security join should have security criteria for restricted session");
+      assertThat(lastHop.getSecurityCriteria().get(0).getFieldName()).contains("id");
+      assertThat(lastHop.getSecurityCriteria().get(0).getValues()).contains(42);
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // now with all-access, verify the security joins are LEFT and have no criteria.      //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_COMPANY_ALL_ACCESS, true));
+      JoinsContext allAccessContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(), new QQueryFilter());
+
+      List<QueryJoin> allAccessSecurityJoins = allAccessContext.getQueryJoins().stream()
+         .filter(qj -> qj instanceof ImplicitQueryJoinForSecurityLock)
+         .toList();
+
+      assertEquals(2, allAccessSecurityJoins.size());
+      for(QueryJoin join : allAccessSecurityJoins)
+      {
+         assertEquals(QueryJoin.Type.LEFT, join.getType(),
+            "All-access session should produce LEFT joins, not INNER");
+         assertTrue(join.getSecurityCriteria().isEmpty(),
+            "All-access session should have no security criteria");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** 3-hop security lock chain: employeeDetail → employee → department → company.
+    ** Ensures fillInMissingJoinMetaData handles even deeper chains correctly,
+    ** where each hop's intermediate table is under a unique alias.
+    *******************************************************************************/
+   @Test
+   void testThreeHopSecurityLockJoinMetaDataOrientation() throws QException
+   {
+      QInstance instance = buildBaseInstance();
+      instance.addSecurityKeyType(new QSecurityKeyType()
+         .withName(SECURITY_KEY_TYPE_COMPANY)
+         .withAllAccessKeyName(SECURITY_KEY_COMPANY_ALL_ACCESS));
+
+      instance.getTable(EMPLOYEE_DETAIL_TABLE).withRecordSecurityLock(new RecordSecurityLock()
+         .withSecurityKeyType(SECURITY_KEY_TYPE_COMPANY)
+         .withFieldName("company.id")
+         .withJoinNameChain(List.of(COMPANY_JOIN_DEPARTMENT, DEPARTMENT_JOIN_EMPLOYEE, EMPLOYEE_JOIN_EMPLOYEE_DETAIL)));
+
+      useInstance(instance);
+
+      QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_TYPE_COMPANY, 42));
+      JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_DETAIL_TABLE, List.of(), new QQueryFilter());
+
+      List<QueryJoin> securityJoins = joinsContext.getQueryJoins().stream()
+         .filter(qj -> qj instanceof ImplicitQueryJoinForSecurityLock)
+         .toList();
+
+      assertEquals(3, securityJoins.size(), "Should have 3 security joins for a 3-hop chain");
+
+      //////////////////////////////////////////////////////////////////////////
+      // Hop 1: employeeDetail → employee (flipped from employee→employeeDetail) //
+      //////////////////////////////////////////////////////////////////////////
+      QJoinMetaData hop1Meta = securityJoins.get(0).getJoinMetaData();
+      assertEquals(EMPLOYEE_DETAIL_TABLE, hop1Meta.getLeftTable());
+      assertEquals(EMPLOYEE_TABLE, hop1Meta.getRightTable());
+
+      ///////////////////////////////////////////////////////////////////////////
+      // Hop 2: employee → department (flipped from department→employee)       //
+      ///////////////////////////////////////////////////////////////////////////
+      QJoinMetaData hop2Meta = securityJoins.get(1).getJoinMetaData();
+      assertEquals(EMPLOYEE_TABLE, hop2Meta.getLeftTable(),
+         "Hop 2 left should be employee (not double-flipped back to department)");
+      assertEquals(DEPARTMENT_TABLE, hop2Meta.getRightTable());
+
+      ///////////////////////////////////////////////////////////////////////////
+      // Hop 3: department → company (flipped from company→department)         //
+      ///////////////////////////////////////////////////////////////////////////
+      QJoinMetaData hop3Meta = securityJoins.get(2).getJoinMetaData();
+      assertEquals(DEPARTMENT_TABLE, hop3Meta.getLeftTable(),
+         "Hop 3 left should be department (not double-flipped back to company)");
+      assertEquals(COMPANY_TABLE, hop3Meta.getRightTable());
+   }
+
+
+
+   /*******************************************************************************
     ** Demonstrates the shared-mutable-state bug: when the same queryJoins list
     ** is passed to JoinsContext twice (as happens with ChildRecordListRenderer's
     ** widget metadata), ImplicitQueryJoinForSecurityLock objects from the first

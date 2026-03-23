@@ -830,6 +830,8 @@ public class JoinsContext
 
                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // check the other joins in this query - if any of them have this join's left-table as their baseTable, then set the flag to true //
+               // also check if any other join's join-table resolves to this left table (handles aliased joins, e.g., security joins that bring  //
+               // a table into the query under an alias like "orderLine_forSecurityJoin_lineItemLineItemExtrinsic")                               //
                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                for(QueryJoin otherJoin : queryJoins)
                {
@@ -839,6 +841,13 @@ public class JoinsContext
                   }
 
                   if(Objects.equals(otherJoin.getBaseTableOrAlias(), joinMetaDataLeftTable))
+                  {
+                     isJoinLeftTableInQuery = true;
+                     break;
+                  }
+
+                  String otherJoinTableName = resolveTableNameOrAliasToTableName(otherJoin.getJoinTableOrItsAlias());
+                  if(Objects.equals(otherJoinTableName, joinMetaDataLeftTable))
                   {
                      isJoinLeftTableInQuery = true;
                      break;
