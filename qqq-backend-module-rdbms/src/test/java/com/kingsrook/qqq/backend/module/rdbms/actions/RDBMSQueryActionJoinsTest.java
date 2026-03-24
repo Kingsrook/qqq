@@ -1175,10 +1175,10 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
    @Test
    void testTwoHopSecurityLockChainOnLineItemExtrinsic() throws QException
    {
-      /////////////////////////////////////////////////////////////////////////////////////
-      // insert lineItemExtrinsic rows linked to order_line rows from different stores.  //
+      //////////////////////////////////////////////////////////////////////////////////////
+      // insert lineItemExtrinsic rows linked to order_line rows from different stores.   //
       // order_line id=1 is on order 1 (store 1), order_line id=6 is on order 4 (store 2) //
-      /////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).withRecords(List.of(
          new QRecord().withValue("orderLineId", 1).withValue("key", "color").withValue("value", "red"),
@@ -1186,9 +1186,9 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
          new QRecord().withValue("orderLineId", 6).withValue("key", "color").withValue("value", "blue")
       )));
 
-      ///////////////////////////////////////////////////////////////////////////////
-      // with all-access, should see all 3 rows                                   //
-      ///////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////
+      // with all-access, should see all 3 rows //
+      ////////////////////////////////////////////
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
       List<QRecord> allRecords = new QueryAction().execute(queryInput).getRecords();
@@ -1214,18 +1214,18 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       assertEquals(1, store2Records.size(), "Store 2 should see 1 lineItemExtrinsic row");
       assertThat(store2Records).allMatch(r -> r.getValueInteger("orderLineId").equals(6));
 
-      //////////////////////////////////////////////////////////////////////////////
-      // with store=5 (no orders), should see nothing                            //
-      //////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////
+      // with store=5 (no orders), should see nothing //
+      //////////////////////////////////////////////////
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 5));
       queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
       List<QRecord> noRecords = new QueryAction().execute(queryInput).getRecords();
       assertEquals(0, noRecords.size(), "Store 5 should see no lineItemExtrinsic rows");
 
-      //////////////////////////////////////////////////////////////////////////////
-      // with no security key at all, should see nothing                         //
-      //////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////
+      // with no security key at all, should see nothing //
+      /////////////////////////////////////////////////////
       QContext.setQSession(new QSession());
       queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);

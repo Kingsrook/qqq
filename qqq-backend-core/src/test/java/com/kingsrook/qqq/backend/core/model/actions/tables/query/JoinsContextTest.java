@@ -1574,10 +1574,10 @@ class JoinsContextTest extends BaseTest
 
       assertEquals(2, securityJoins.size(), "Should have 2 security joins for a 2-hop chain");
 
-      ////////////////////////////////////////////////////////////////////////////////////////
-      // Hop 1: employee → department.  The original departmentEmployees join has            //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // Hop 1: employee → department.  The original departmentEmployees join has             //
       // left=department, right=employee, so it gets flipped: left=employee, right=department //
-      ////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////
       QueryJoin hop1 = securityJoins.get(0);
       QJoinMetaData hop1Meta = hop1.getJoinMetaData();
       assertNotNull(hop1Meta);
@@ -1586,13 +1586,13 @@ class JoinsContextTest extends BaseTest
       assertEquals(DEPARTMENT_TABLE, hop1Meta.getRightTable(),
          "Hop 1 right table should be department");
 
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // Hop 2: department → company.  The original companyDepartments join has                 //
-      // left=company, right=department, so it gets flipped: left=department, right=company.    //
-      // Before the fix, fillInMissingJoinMetaData would double-flip this back to the original  //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // Hop 2: department → company.  The original companyDepartments join has                  //
+      // left=company, right=department, so it gets flipped: left=department, right=company.     //
+      // Before the fix, fillInMissingJoinMetaData would double-flip this back to the original   //
       // orientation (left=company, right=department), because it couldn't see that "department" //
-      // was already in the query under the aliased hop-1 join.                                 //
-      ///////////////////////////////////////////////////////////////////////////////////////////
+      // was already in the query under the aliased hop-1 join.                                  //
+      /////////////////////////////////////////////////////////////////////////////////////////////
       QueryJoin hop2 = securityJoins.get(1);
       QJoinMetaData hop2Meta = hop2.getJoinMetaData();
       assertNotNull(hop2Meta);
@@ -1601,11 +1601,11 @@ class JoinsContextTest extends BaseTest
       assertEquals(COMPANY_TABLE, hop2Meta.getRightTable(),
          "Hop 2 right table should be company");
 
-      /////////////////////////////////////////////////////////////////////////////////////
-      // Also verify the joinOn fields are oriented correctly after the (single) flip.   //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // Also verify the joinOn fields are oriented correctly after the (single) flip.          //
       // Original companyDepartments: JoinOn(id, companyId) meaning company.id = dept.companyId //
-      // After flip: JoinOn(companyId, id) meaning dept.companyId = company.id           //
-      /////////////////////////////////////////////////////////////////////////////////////
+      // After flip: JoinOn(companyId, id) meaning dept.companyId = company.id                  //
+      ////////////////////////////////////////////////////////////////////////////////////////////
       JoinOn hop2JoinOn = hop2Meta.getJoinOns().get(0);
       assertEquals("companyId", hop2JoinOn.getLeftField(),
          "After flip, left field should be companyId (department's FK)");
@@ -1635,12 +1635,12 @@ class JoinsContextTest extends BaseTest
 
       useInstance(instance);
 
-      /////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////
       // With a restricted session, the security criteria should be placed on the     //
       // last security join in the chain (the one closest to the company table).      //
       // For join-chain locks, criteria go on the QueryJoin's securityCriteria field, //
       // not in the main WHERE filter.                                                //
-      /////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////
       QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_TYPE_COMPANY, 42));
       JoinsContext joinsContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(), new QQueryFilter());
 
@@ -1656,9 +1656,9 @@ class JoinsContextTest extends BaseTest
       assertThat(lastHop.getSecurityCriteria().get(0).getFieldName()).contains("id");
       assertThat(lastHop.getSecurityCriteria().get(0).getValues()).contains(42);
 
-      ////////////////////////////////////////////////////////////////////////////////////////
-      // now with all-access, verify the security joins are LEFT and have no criteria.      //
-      ////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////
+      // now with all-access, verify the security joins are LEFT and have no criteria. //
+      ///////////////////////////////////////////////////////////////////////////////////
       QContext.setQSession(new QSession().withSecurityKeyValue(SECURITY_KEY_COMPANY_ALL_ACCESS, true));
       JoinsContext allAccessContext = new JoinsContext(instance, EMPLOYEE_TABLE, List.of(), new QQueryFilter());
 
@@ -1707,24 +1707,24 @@ class JoinsContextTest extends BaseTest
 
       assertEquals(3, securityJoins.size(), "Should have 3 security joins for a 3-hop chain");
 
-      //////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////
       // Hop 1: employeeDetail → employee (flipped from employee→employeeDetail) //
-      //////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////
       QJoinMetaData hop1Meta = securityJoins.get(0).getJoinMetaData();
       assertEquals(EMPLOYEE_DETAIL_TABLE, hop1Meta.getLeftTable());
       assertEquals(EMPLOYEE_TABLE, hop1Meta.getRightTable());
 
-      ///////////////////////////////////////////////////////////////////////////
-      // Hop 2: employee → department (flipped from department→employee)       //
-      ///////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////
+      // Hop 2: employee → department (flipped from department→employee) //
+      /////////////////////////////////////////////////////////////////////
       QJoinMetaData hop2Meta = securityJoins.get(1).getJoinMetaData();
       assertEquals(EMPLOYEE_TABLE, hop2Meta.getLeftTable(),
          "Hop 2 left should be employee (not double-flipped back to department)");
       assertEquals(DEPARTMENT_TABLE, hop2Meta.getRightTable());
 
-      ///////////////////////////////////////////////////////////////////////////
-      // Hop 3: department → company (flipped from company→department)         //
-      ///////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////
+      // Hop 3: department → company (flipped from company→department) //
+      ///////////////////////////////////////////////////////////////////
       QJoinMetaData hop3Meta = securityJoins.get(2).getJoinMetaData();
       assertEquals(DEPARTMENT_TABLE, hop3Meta.getLeftTable(),
          "Hop 3 left should be department (not double-flipped back to company)");
