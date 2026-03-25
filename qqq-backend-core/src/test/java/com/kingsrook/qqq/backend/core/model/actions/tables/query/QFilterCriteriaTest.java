@@ -24,12 +24,18 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IS_BLANK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 
 /*******************************************************************************
@@ -71,6 +77,39 @@ class QFilterCriteriaTest extends BaseTest
       assertEquals(0, new QFilterCriteria("foo", EQUALS, nullList).getValues().size());
 
       assertEquals(0, new QFilterCriteria("foo", EQUALS, (List<Serializable>) null).getValues().size());
+   }
+
+
+
+   /*******************************************************************************
+    ** Verify that clone() deep-copies the fieldFunction, so mutating the clone's
+    ** arguments does not affect the original.
+    *******************************************************************************/
+   @Test
+   void testCloneWithFieldFunction()
+   {
+      Map<String, Serializable> args = new HashMap<>(Map.of(SubStringFunction.FROM_INDEX_PARAM, 2));
+
+      QFilterCriteria original = new QFilterCriteria("name", EQUALS, "x")
+         .withFieldFunction(new FieldFunction()
+            .withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER)
+            .withFieldName("name")
+            .withArguments(args));
+
+      QFilterCriteria clone = original.clone();
+
+      /////////////////////////////////////////////
+      // clone should have its own fieldFunction //
+      /////////////////////////////////////////////
+      assertNotNull(clone.getFieldFunction());
+      assertNotSame(original.getFieldFunction(), clone.getFieldFunction());
+      assertEquals("name", clone.getFieldFunction().getFieldName());
+
+      ////////////////////////////////////////////////////////////////////
+      // mutating the clone's arguments should not affect the original  //
+      ////////////////////////////////////////////////////////////////////
+      clone.getFieldFunction().getArguments().put(SubStringFunction.FROM_INDEX_PARAM, 99);
+      assertEquals(2, original.getFieldFunction().getArguments().get(SubStringFunction.FROM_INDEX_PARAM));
    }
 
 }

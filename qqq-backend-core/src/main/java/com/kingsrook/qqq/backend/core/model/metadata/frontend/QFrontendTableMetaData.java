@@ -74,8 +74,9 @@ public class QFrontendTableMetaData
    private String  primaryKeyField;
    private QIcon   icon;
 
-   private Map<String, QFrontendFieldMetaData>     fields;
-   private Map<String, QFrontendFieldMetaData>     virtualFields;
+   private Map<String, QFrontendFieldMetaData>        fields;
+   private Map<String, QFrontendVirtualFieldMetaData> virtualFields;
+
    private List<QFieldSection>                     sections;
    private List<QFrontendExposedJoin>              exposedJoins;
    private Map<String, QSupplementalTableMetaData> supplementalTableMetaData;
@@ -138,7 +139,7 @@ public class QFrontendTableMetaData
             QVirtualFieldMetaData field = entry.getValue();
             if(!field.getIsHidden())
             {
-               this.virtualFields.put(entry.getKey(), new QFrontendFieldMetaData(field));
+               this.virtualFields.put(entry.getKey(), new QFrontendVirtualFieldMetaData(field));
             }
          }
 
@@ -486,7 +487,7 @@ public class QFrontendTableMetaData
     ** Getter for virtualFields
     **
     *******************************************************************************/
-   public Map<String, QFrontendFieldMetaData> getVirtualFields()
+   public Map<String, QFrontendVirtualFieldMetaData> getVirtualFields()
    {
       return virtualFields;
    }

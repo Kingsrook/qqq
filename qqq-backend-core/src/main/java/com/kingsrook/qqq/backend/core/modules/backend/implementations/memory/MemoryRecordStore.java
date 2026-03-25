@@ -74,6 +74,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -175,8 +178,8 @@ public class MemoryRecordStore
    private Map<Serializable, QRecord> getTableData(QTableMetaData table) throws QException
    {
       BackendIdentifier                       backendIdentifier = getBackendIdentifier(table);
-      Map<String, Map<Serializable, QRecord>> dataForBackend    = data.computeIfAbsent(backendIdentifier, k -> new HashMap<>());
-      return (dataForBackend.computeIfAbsent(table.getName(), k -> new HashMap<>()));
+      Map<String, Map<Serializable, QRecord>> dataForBackend = data.computeIfAbsent(backendIdentifier, k -> Collections.synchronizedMap(new HashMap<>()));
+      return (dataForBackend.computeIfAbsent(table.getName(), k -> Collections.synchronizedMap(new HashMap<>())));
    }
 
 
@@ -278,15 +281,16 @@ public class MemoryRecordStore
                // or old display values (or just ones that wern't requested)                   //
                //////////////////////////////////////////////////////////////////////////////////
                QRecord recordToReturn = new QRecord(qRecord);
-               recordToReturn.setAssociatedRecords(new HashMap<>());
+               addVirtualFieldsToRecords(List.of(recordToReturn), input.getTable());
                stripUnrecognizedFieldsFromRecords(List.of(recordToReturn), personalizedTables, input.getTable());
+               recordToReturn.setAssociatedRecords(new HashMap<>());
                recordToReturn.setDisplayValues(new HashMap<>());
                records.add(recordToReturn);
             }
          }
       }
 
-      BackendQueryFilterUtils.sortRecordList(input.getFilter(), records);
+      BackendQueryFilterUtils.sortRecordList(joinsContext, input.getFilter(), records);
       records = BackendQueryFilterUtils.applySkipAndLimit(input.getFilter(), records);
 
       return (records);
@@ -294,8 +298,40 @@ public class MemoryRecordStore
 
 
 
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void addVirtualFieldsToRecords(List<QRecord> records, QTableMetaData table) throws QException
+   {
+      for(QVirtualFieldMetaData virtualField : CollectionUtils.nonNullMap(table.getVirtualFields()).values())
+      {
+         if(virtualField.getIsQuerySelectable() && virtualField.getFieldFunction() != null)
+         {
+            FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(virtualField.getFieldFunction().getFunctionTypeIdentifier());
+
+            for(QRecord record : records)
+            {
+               Serializable value = fieldFunctionType.apply(virtualField.getFieldFunction(), record);
+               record.withValue(virtualField.getName(), value);
+            }
+         }
+      }
+   }
+
+
+
    /*******************************************************************************
-    **
+    * Given a table and a list of query joins, build a collection of records that
+    * make up a cross-product necessary to perform the join query.
+    *
+    * <p>Note that this can potentially be explosively huge... which is why the memory
+    * backend is not meant for use with large production data sets...</p>
+    *
+    * <p>Of course, I suppose, we could probably stream through the cross-product,
+    * or take an altogether different approach, but, this serves us for the time being.</p>
+    *
+    * <p>Note that INNER & LEFT joins should work but, RIGHT joins will not work
+    * at this time.</p>
     *******************************************************************************/
    private Collection<QRecord> buildJoinCrossProduct(QTableMetaData table, List<QueryJoin> queryJoins) throws QException
    {
@@ -584,7 +620,7 @@ public class MemoryRecordStore
    private void setNextSerial(QTableMetaData table, Integer nextSerial) throws QException
    {
       BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
-      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> Collections.synchronizedMap(new HashMap<>()));
       nextSerialsForBackend.put(table.getName(), nextSerial);
    }
 
@@ -596,7 +632,7 @@ public class MemoryRecordStore
    private Integer getNextSerial(QTableMetaData table) throws QException
    {
       BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
-      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> Collections.synchronizedMap(new HashMap<>()));
       return (nextSerialsForBackend.get(table.getName()));
    }
 

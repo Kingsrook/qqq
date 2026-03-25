@@ -588,4 +588,36 @@ public class StringUtils
       return (StringUtils.join(glue, Collections.nCopies(n, s)));
    }
 
+
+
+   /***************************************************************************
+    * For a given string, count how many times (if any) the given substring
+    * appears (non-overlapping).
+    *
+    * @param str the "haystack" - the string being searched in.
+    * @param substring the "needle" - the substring being looked for.
+    * @return int number of non-overlapping occurrences - 0 if not found.
+    * also 0 if either string is null or the substring is empty.
+    ***************************************************************************/
+   public static int countSubstringInstances(String str, String substring)
+   {
+      if(str == null || substring == null || substring.isEmpty())
+      {
+         return 0;
+      }
+
+      int count = 0;
+      int index = 0;
+
+      while((index = str.indexOf(substring, index)) != -1)
+      {
+         count++;
+         index += substring.length();
+      }
+
+      return count;
+   }
+
+
+
 }

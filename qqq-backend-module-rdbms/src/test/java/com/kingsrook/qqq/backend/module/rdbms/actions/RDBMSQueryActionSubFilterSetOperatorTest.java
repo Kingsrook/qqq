@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -30,6 +31,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -166,6 +171,51 @@ public class RDBMSQueryActionSubFilterSetOperatorTest extends RDBMSActionTest
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
       assertEquals(1, queryOutput.getRecords().get(0).getValueInteger("id"));
       assertEquals(3, queryOutput.getRecords().get(1).getValueInteger("id"));
+   }
+
+
+
+   /***************************************************************************
+    ** Test UNION with virtual fields that have function parameters (e.g.,
+    ** SubStringFunction with fromIndex and length params).  Each sub-query in
+    ** the set operation needs to bind the function parameters independently.
+    ***************************************************************************/
+   @Test
+   public void testUnionWithVirtualFieldFunctionParameters() throws QException
+   {
+      //////////////////////////////////////////////////////////////////////////////////////
+      // add a virtual field using SubStringFunction with parameters to the person table  //
+      //////////////////////////////////////////////////////////////////////////////////////
+      QVirtualFieldMetaData firstNameSub3For2 = new QVirtualFieldMetaData("firstNameSub3For2", QFieldType.STRING)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER)
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 3, SubStringFunction.LENGTH_PARAM, 2)));
+
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .withVirtualField(firstNameSub3For2);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // test data: Darin(id=1), James(id=2), Tim(id=3), Tyler(id=4), Garret(id=5)                                   //
+      // SUBSTRING(firstName, 3, 2): Darin->ri, James->me, Tim->m, Tyler->le, Garret->rr                             //
+      // sub-filter 1: firstNameSub3For2 = 'ri' => Darin (id=1)                                                      //
+      // sub-filter 2: firstNameSub3For2 = 'le' => Tyler (id=4)                                                      //
+      // UNION of those two should give us ids 1 and 4                                                                //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withSubFilterSetOperator(QQueryFilter.SubFilterSetOperator.UNION)
+         .withSubFilter(new QQueryFilter(new QFilterCriteria("firstNameSub3For2", QCriteriaOperator.EQUALS, "ri")))
+         .withSubFilter(new QQueryFilter(new QFilterCriteria("firstNameSub3For2", QCriteriaOperator.EQUALS, "le")))
+         .withOrderBy(new QFilterOrderBy("id", true))
+      );
+
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
+      assertEquals(1, queryOutput.getRecords().get(0).getValueInteger("id"));
+      assertEquals(4, queryOutput.getRecords().get(1).getValueInteger("id"));
    }
 
 }

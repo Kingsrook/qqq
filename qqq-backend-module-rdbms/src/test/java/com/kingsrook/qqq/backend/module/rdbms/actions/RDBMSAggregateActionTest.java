@@ -45,6 +45,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
@@ -419,6 +422,90 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
          }
       }
       fail("Didn't find SKU " + sku + " in aggregate results");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGroupByVirtualField() throws Exception
+   {
+      QVirtualFieldMetaData firstNameLengthField = new QVirtualFieldMetaData("firstNameLength", QFieldType.INTEGER)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER));
+
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .withVirtualField(firstNameLengthField);
+
+      AggregateInput aggregateInput = initAggregateRequest();
+      Aggregate      countOfId      = new Aggregate("id", AggregateOperator.COUNT);
+      aggregateInput.withAggregate(countOfId);
+
+      GroupBy lengthGroupBy = new GroupBy(firstNameLengthField);
+      aggregateInput.withGroupBy(lengthGroupBy);
+
+      AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+      assertEquals(3, aggregateOutput.getResults().size());
+
+      // find the row with length=5 and verify count=3 (Darin, James, Tyler)
+      AggregateResult length5Row = aggregateOutput.getResults().stream()
+         .filter(r -> Integer.valueOf(5).equals(r.getGroupByValue(lengthGroupBy)))
+         .findFirst().orElseThrow();
+      assertEquals(3, length5Row.getAggregateValue(countOfId));
+
+      // find the row with length=3 and verify count=1 (Tim)
+      AggregateResult length3Row = aggregateOutput.getResults().stream()
+         .filter(r -> Integer.valueOf(3).equals(r.getGroupByValue(lengthGroupBy)))
+         .findFirst().orElseThrow();
+      assertEquals(1, length3Row.getAggregateValue(countOfId));
+
+      // find the row with length=6 and verify count=1 (Garret)
+      AggregateResult length6Row = aggregateOutput.getResults().stream()
+         .filter(r -> Integer.valueOf(6).equals(r.getGroupByValue(lengthGroupBy)))
+         .findFirst().orElseThrow();
+      assertEquals(1, length6Row.getAggregateValue(countOfId));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAggregateOnVirtualField() throws Exception
+   {
+      QVirtualFieldMetaData firstNameLengthField = new QVirtualFieldMetaData("firstNameLength", QFieldType.INTEGER)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER));
+
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .withVirtualField(firstNameLengthField);
+
+      // MIN(firstNameLength) with no group-by — should be 3 (Tim)
+      {
+         AggregateInput aggregateInput = initAggregateRequest();
+         Aggregate      minLength      = new Aggregate("firstNameLength", AggregateOperator.MIN);
+         aggregateInput.withAggregate(minLength);
+
+         AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+         assertEquals(1, aggregateOutput.getResults().size());
+         assertEquals(3, aggregateOutput.getResults().get(0).getAggregateValue(minLength));
+      }
+
+      // SUM(firstNameLength) with no group-by — should be 3+5+5+5+6=24
+      {
+         AggregateInput aggregateInput = initAggregateRequest();
+         Aggregate      sumLength      = new Aggregate("firstNameLength", AggregateOperator.SUM);
+         aggregateInput.withAggregate(sumLength);
+
+         AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+         assertEquals(1, aggregateOutput.getResults().size());
+         assertEquals(24, aggregateOutput.getResults().get(0).getAggregateValue(sumLength));
+      }
    }
 
 

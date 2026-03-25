@@ -25,6 +25,7 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1.responses;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.OAuth2AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.io.AuthenticationMetaDataOutputInterface;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
@@ -326,7 +327,7 @@ public class AuthenticationMetaDataResponseV1 implements AuthenticationMetaDataO
          OAuth2Values oauth2Values = new OAuth2Values();
          values = oauth2Values;
          oauth2Values.setClientId(oauth2MetaData.getClientId());
-         oauth2Values.setBaseUrl(oauth2MetaData.getBaseUrl());
+         oauth2Values.setBaseUrl(StringUtils.hasContent(oauth2MetaData.getExternalBaseUrl()) ? oauth2MetaData.getExternalBaseUrl() : oauth2MetaData.getBaseUrl());
          oauth2Values.setScopes(oauth2MetaData.getScopes());
       }
       else if(qAuthenticationMetaData instanceof Auth0AuthenticationMetaData auth0MetaData)

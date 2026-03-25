@@ -32,11 +32,35 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** Meta-data to provide details of an OAuth2 Authentication module
+ ** Meta-data to provide details of an OAuth2 Authentication module.
+ **
+ ** baseUrl is used by the backend server for OIDC discovery and token exchange
+ ** (server-to-server calls). In Kubernetes or environments behind a reverse proxy,
+ ** this may be an internal/cluster-local URL (e.g., http://auth-service.auth.svc/).
+ **
+ ** externalBaseUrl, if set, is the URL sent to the frontend/SPA for browser-based
+ ** OAuth2 redirects. This is needed when the backend cannot reach the OAuth2
+ ** provider via the same URL that browsers use (e.g., Calico NetworkPolicy
+ ** blocking pod-to-LoadBalancer traffic, or internal HTTP vs external HTTPS).
+ ** If not set, baseUrl is used for both purposes (backwards compatible).
  *******************************************************************************/
 public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
 {
+   ///////////////////////////////////////////////////////////////////////////////
+   // URL used by the backend for OIDC discovery and token exchange.            //
+   // In split-URL deployments, this should be the internal/cluster-reachable   //
+   // URL for the OAuth2 provider.                                              //
+   ///////////////////////////////////////////////////////////////////////////////
    private String baseUrl;
+
+   ///////////////////////////////////////////////////////////////////////////////
+   // Optional URL sent to the frontend for browser-based OAuth2 redirects.     //
+   // When set, the /metaData/authentication API response returns this value    //
+   // instead of baseUrl, allowing the SPA to redirect to a different (external //
+   // HTTPS) URL than the one the backend uses internally.                      //
+   // If not set, baseUrl is used for both backend and frontend (default).      //
+   ///////////////////////////////////////////////////////////////////////////////
+   private String externalBaseUrl;
    private String tokenUrl;
    private String clientId;
    private String scopes;
@@ -125,6 +149,37 @@ public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
    public void setBaseUrl(String baseUrl)
    {
       this.baseUrl = baseUrl;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for externalBaseUrl
+    *******************************************************************************/
+   public String getExternalBaseUrl()
+   {
+      return (this.externalBaseUrl);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for externalBaseUrl
+    *******************************************************************************/
+   public void setExternalBaseUrl(String externalBaseUrl)
+   {
+      this.externalBaseUrl = externalBaseUrl;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for externalBaseUrl
+    *******************************************************************************/
+   public OAuth2AuthenticationMetaData withExternalBaseUrl(String externalBaseUrl)
+   {
+      this.externalBaseUrl = externalBaseUrl;
+      return (this);
    }
 
 

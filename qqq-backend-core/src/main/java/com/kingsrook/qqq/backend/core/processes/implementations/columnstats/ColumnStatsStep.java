@@ -604,7 +604,7 @@ public class ColumnStatsStep implements BackendStep
          {
             if(exposedJoin.getJoinTable().equals(parts[0]))
             {
-               field = QContext.getQInstance().getTable(exposedJoin.getJoinTable()).getField(parts[1]);
+               field = QContext.getQInstance().getTable(exposedJoin.getJoinTable()).getFieldOrVirtualField(parts[1]);
                queryJoin = new QueryJoin()
                   .withJoinTable(exposedJoin.getJoinTable())
                   .withSelect(true)
@@ -615,7 +615,7 @@ public class ColumnStatsStep implements BackendStep
       }
       else
       {
-         field = table.getField(fieldName);
+         field = table.getFieldOrVirtualField(fieldName);
       }
 
       return (new FieldAndQueryJoin(field, queryJoin));

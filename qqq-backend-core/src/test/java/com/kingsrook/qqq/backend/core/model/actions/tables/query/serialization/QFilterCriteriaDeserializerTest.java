@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.Abs
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.Now;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.NowWithOffset;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.ThisOrLastPeriod;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.BETWEEN;
@@ -39,6 +40,8 @@ import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteri
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -113,4 +116,64 @@ class QFilterCriteriaDeserializerTest extends BaseTest
       }
 
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeserializeWithFieldFunction() throws IOException
+   {
+      QFilterCriteria criteria = JsonUtils.toObject("""
+         {"fieldName": "firstName", "operator": "EQUALS", "values": [5],
+          "fieldFunction": {"fieldName": "firstName", "functionTypeIdentifierName": "StringLength", "arguments": null}}
+         """, QFilterCriteria.class);
+      assertEquals("firstName", criteria.getFieldName());
+      assertEquals(EQUALS, criteria.getOperator());
+      assertEquals(List.of(5), criteria.getValues());
+
+      FieldFunction fieldFunction = criteria.getFieldFunction();
+      assertNotNull(fieldFunction);
+      assertEquals("firstName", fieldFunction.getFieldName());
+      assertEquals("StringLength", fieldFunction.getFunctionTypeIdentifier().getName());
+      assertNull(fieldFunction.getArguments());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeserializeWithFieldFunctionWithArguments() throws IOException
+   {
+      QFilterCriteria criteria = JsonUtils.toObject("""
+         {"fieldName": "firstName", "operator": "EQUALS", "values": ["ell"],
+          "fieldFunction": {"fieldName": "firstName", "functionTypeIdentifierName": "SubString",
+            "arguments": {"fromIndex": 2, "length": 3}}}
+         """, QFilterCriteria.class);
+      assertEquals("firstName", criteria.getFieldName());
+
+      FieldFunction fieldFunction = criteria.getFieldFunction();
+      assertNotNull(fieldFunction);
+      assertEquals("SubString", fieldFunction.getFunctionTypeIdentifier().getName());
+      assertNotNull(fieldFunction.getArguments());
+      assertEquals(2, fieldFunction.getArguments().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeserializeWithoutFieldFunction() throws IOException
+   {
+      QFilterCriteria criteria = JsonUtils.toObject("""
+         {"fieldName": "id", "operator": "EQUALS", "values": [1]}
+         """, QFilterCriteria.class);
+      assertNull(criteria.getFieldFunction());
+   }
+
 }

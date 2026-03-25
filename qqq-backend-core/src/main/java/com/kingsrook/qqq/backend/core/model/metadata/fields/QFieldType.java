@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -52,6 +53,10 @@ public enum QFieldType
    // keep these values in sync with QFieldType.ts in qqq-frontend-core //
    ///////////////////////////////////////////////////////////////////////
 
+   public static final Set<QFieldType> STRING_LIKE_TYPES =  Set.of(STRING, TEXT, HTML, PASSWORD);
+   public static final Set<QFieldType> NUMERIC_TYPES =  Set.of(INTEGER, LONG, DECIMAL);
+   public static final Set<QFieldType> INTEGRAL_TYPES =  Set.of(INTEGER, LONG);
+   public static final Set<QFieldType> TEMPORAL_TYPES =  Set.of(DATE, DATE_TIME, TIME);
 
 
    /*******************************************************************************
@@ -116,7 +121,7 @@ public enum QFieldType
     *******************************************************************************/
    public boolean isStringLike()
    {
-      return this == QFieldType.STRING || this == QFieldType.TEXT || this == QFieldType.HTML || this == QFieldType.PASSWORD;
+      return STRING_LIKE_TYPES.contains(this);
    }
 
 
@@ -126,7 +131,17 @@ public enum QFieldType
     *******************************************************************************/
    public boolean isNumeric()
    {
-      return this == QFieldType.INTEGER || this == QFieldType.LONG || this == QFieldType.DECIMAL;
+      return NUMERIC_TYPES.contains(this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean isIntegral()
+   {
+      return INTEGRAL_TYPES.contains(this);
    }
 
 
@@ -136,7 +151,7 @@ public enum QFieldType
     *******************************************************************************/
    public boolean isTemporal()
    {
-      return this == QFieldType.DATE || this == QFieldType.DATE_TIME || this == QFieldType.TIME;
+      return TEMPORAL_TYPES.contains(this);
    }
 
 
