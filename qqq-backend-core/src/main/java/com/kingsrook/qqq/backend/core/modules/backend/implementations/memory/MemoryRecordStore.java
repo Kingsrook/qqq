@@ -281,8 +281,8 @@ public class MemoryRecordStore
                // or old display values (or just ones that wern't requested)                   //
                //////////////////////////////////////////////////////////////////////////////////
                QRecord recordToReturn = new QRecord(qRecord);
-               addVirtualFieldsToRecords(List.of(recordToReturn), input.getTable());
                stripUnrecognizedFieldsFromRecords(List.of(recordToReturn), personalizedTables, input.getTable());
+               addVirtualFieldsToRecords(List.of(recordToReturn), input.getTable());
                recordToReturn.setAssociatedRecords(new HashMap<>());
                recordToReturn.setDisplayValues(new HashMap<>());
                records.add(recordToReturn);
