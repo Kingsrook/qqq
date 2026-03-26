@@ -783,6 +783,64 @@ class MemoryBackendModuleTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testQueryDisplayValuesAreNotStale() throws QException
+   {
+      QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_SHAPE);
+
+      //////////////////////////////////////////////////////////
+      // insert a record with just values (no display values) //
+      //////////////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(List.of(
+         new QRecord()
+            .withTableName(table.getName())
+            .withValue("name", "My Triangle")
+            .withValue("type", "triangle")
+            .withValue("isPolygon", true)
+      ));
+      new InsertAction().execute(insertInput);
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // query with display values - assert we get the expected display value for isPolygon //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(table.getName());
+      queryInput.setShouldGenerateDisplayValues(true);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size());
+      assertEquals("Yes", queryOutput.getRecords().get(0).getDisplayValue("isPolygon"));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // update the record - change isPolygon from true to false (just values, no display values) //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(table.getName());
+      updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("isPolygon", false)));
+      new UpdateAction().execute(updateInput);
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // re-query with display values - assert the display value reflects the updated value //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size());
+      assertEquals("No", queryOutput.getRecords().get(0).getDisplayValue("isPolygon"));
+
+      ///////////////////////////////////////////////////////////////////////
+      // re-query without display values - assert display values are empty //
+      ///////////////////////////////////////////////////////////////////////
+      queryInput.setShouldGenerateDisplayValues(false);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size());
+      assertThat(queryOutput.getRecords().get(0).getDisplayValues()).isEmpty();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQueryVirtualFields() throws Exception
    {
       QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
