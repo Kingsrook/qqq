@@ -36,6 +36,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 
@@ -64,7 +65,8 @@ public class BaseTest
          .withEnv("MONGO_INITDB_ROOT_USERNAME", TestUtils.MONGO_USERNAME)
          .withEnv("MONGO_INITDB_ROOT_PASSWORD", TestUtils.MONGO_PASSWORD)
          .withEnv("MONGO_INITDB_DATABASE", TestUtils.MONGO_DATABASE)
-         .withExposedPorts(TestUtils.MONGO_PORT);
+         .withExposedPorts(TestUtils.MONGO_PORT)
+         .waitingFor(Wait.forLogMessage("(?i).*waiting for connections.*", 1));
 
       mongoDBContainer.start();
    }

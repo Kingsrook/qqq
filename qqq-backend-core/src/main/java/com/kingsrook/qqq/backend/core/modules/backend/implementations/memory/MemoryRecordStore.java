@@ -62,6 +62,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.ImplicitQueryJoinForSecurityLock;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -115,12 +116,15 @@ public class MemoryRecordStore
 
    public static final ListingHash<Class<? extends AbstractActionInput>, AbstractActionInput> actionInputs = new ListingHash<>();
 
-   //////////////////////////////////////////////////////////////////////
-   // to slow-roll this change in capability, set it as a feature-flag //
-   // on the MemoryRecordStore singleton instance.  This should allow  //
-   // an individual test, for example, to toggle it, then reset it.    //
-   //////////////////////////////////////////////////////////////////////
-   public static boolean BUILD_JOIN_CROSS_PRODUCT_FROM_JOIN_CONTEXT_DEFAULT = false;
+   ////////////////////////////////////////////////////////////////////////
+   // this flag controls whether MemoryRecordStore builds its join cross //
+   // product from the JoinsContext's query joins (which includes joins  //
+   // needed for security) or from the QueryInput's query joins (which   //
+   // only has explicitly-requested joins).  Originally defaulted to     //
+   // false while we gained confidence; now defaults to true.  If a test //
+   // needs the old behavior, it can set this to false on the singleton. //
+   ////////////////////////////////////////////////////////////////////////
+   public static boolean BUILD_JOIN_CROSS_PRODUCT_FROM_JOIN_CONTEXT_DEFAULT = true;
    private       boolean buildJoinCrossProductFromJoinContext               = BUILD_JOIN_CROSS_PRODUCT_FROM_JOIN_CONTEXT_DEFAULT;
 
 
@@ -217,23 +221,19 @@ public class MemoryRecordStore
       QQueryFilter filter       = clonedOrNewFilter(input.getFilter());
       JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), input.getTableName(), input.getQueryJoins(), filter);
 
-      /////////////////////////////////////////////////////////////////////////////////////////////////
-      // if we every wanted or needed per-query control here, that could look like:                  //
-      // || input.hasFlag(MemoryBackendQueryActionFlags.BUILD_JOIN_CROSS_PRODUCT_FROM_JOIN_CONTEXT)) //
-      /////////////////////////////////////////////////////////////////////////////////////////////////
-      if(buildJoinCrossProductFromJoinContext)
+      ////////////////////////////////////////////////////////////////////////////////
+      // see comment on #withBuildJoinCrossProductFromJoinContext for full history. //
+      // when true, use joinsContext's query joins (includes security joins);       //
+      // when false, use the input's query joins (original behavior).               //
+      ////////////////////////////////////////////////////////////////////////////////
+      List<QueryJoin> queryJoins = buildJoinCrossProductFromJoinContext ? joinsContext.getQueryJoins() : input.getQueryJoins();
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // if there are query joins, then use the cross product of those joins as the table data //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(queryJoins))
       {
-         if(CollectionUtils.nullSafeHasContents(joinsContext.getQueryJoins()))
-         {
-            tableData = buildJoinCrossProduct(input.getTable(), joinsContext.getQueryJoins());
-         }
-      }
-      else
-      {
-         if(CollectionUtils.nullSafeHasContents(input.getQueryJoins()))
-         {
-            tableData = buildJoinCrossProduct(input.getTable(), input.getQueryJoins());
-         }
+         tableData = buildJoinCrossProduct(input.getTable(), queryJoins, joinsContext);
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -242,7 +242,7 @@ public class MemoryRecordStore
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       Map<String, QTableMetaData> personalizedTables = new HashMap<>();
       personalizedTables.put(input.getTableName(), input.getTableMetaData());
-      for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+      for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
       {
          QTableMetaData joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
          joinTable = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(joinTable).withInputSource(input.getInputSource()));
@@ -332,8 +332,12 @@ public class MemoryRecordStore
     *
     * <p>Note that INNER & LEFT joins should work but, RIGHT joins will not work
     * at this time.</p>
+    *
+    * @param table the main-table being queried for
+    * @param queryJoins the list of joins to cross against the main table.
+    * @param joinsContext more details about the join.
     *******************************************************************************/
-   private Collection<QRecord> buildJoinCrossProduct(QTableMetaData table, List<QueryJoin> queryJoins) throws QException
+   private Collection<QRecord> buildJoinCrossProduct(QTableMetaData table, List<QueryJoin> queryJoins, JoinsContext joinsContext) throws QException
    {
       QInstance qInstance = QContext.getQInstance();
 
@@ -350,7 +354,13 @@ public class MemoryRecordStore
       {
          QTableMetaData      nextTable        = qInstance.getTable(queryJoin.getJoinTable());
          Collection<QRecord> nextTableRecords = getTableData(nextTable).values();
-         QJoinMetaData       joinMetaData     = Objects.requireNonNull(queryJoin.getJoinMetaData(), () -> "Could not find a join between tables [" + leftTable + "][" + queryJoin.getJoinTable() + "]");
+
+         QJoinMetaData joinMetaData = queryJoin.getJoinMetaData();
+         if(joinMetaData == null)
+         {
+            joinMetaData = joinsContext.findJoinMetaData(table.getName(), queryJoin.getJoinTable(), false);
+            Objects.requireNonNull(joinMetaData, () -> "Did not have, and could not find a join metaData between tables in QueryJoin object base=[" + leftTable + "], join=[" + queryJoin.getJoinTable() + "]");
+         }
 
          List<QRecord> nextLevelProduct = new ArrayList<>();
          for(QRecord productRecord : crossProduct)
@@ -1277,18 +1287,19 @@ public class MemoryRecordStore
    /*******************************************************************************
     * Fluent setter for buildJoinCrossProductFromJoinContext
     *
-    * @param buildJoinCrossProductFromJoinContext
-    * The original implementation of this class only tried to build cross-products
-    * for joins based on QueryJoin objects directly added to the QueryInput.
-    * However, this meant that if a join was needed for the security key on a table,
-    * that this table wouldn't be included in the join cross product, thus incorrect
-    * query results could be returned.
+    * <p>The original implementation of this class only built cross-products for
+    * joins explicitly added to the QueryInput.  This meant that joins needed for
+    * security locks (added by JoinsContext) were not included, causing incorrect
+    * query results for tables with join-chain security locks.</p>
     *
-    * <p>This new behavior (to use joins from the JoinContext, which means, it includes
-    * joins needed for security) seems like the obviously more correct way to do it -
-    * but, it is a potentially breaking change, so we want to slow-roll it out.
-    * Thus, an application (or a unit test) can opt-in to the new behavior by
-    * setting this field to true on a MemoryRecordStore singleton instance.</p>
+    * <p>The corrected behavior (using joins from JoinsContext, which includes
+    * security joins) is now the default ({@code true}).  Originally this defaulted
+    * to {@code false} while we gained confidence, but after fixing a double-flip
+    * bug in {@code JoinsContext.fillInMissingJoinMetaData} that was causing
+    * multi-hop security chain failures, all tests pass with the new default.</p>
+    *
+    * <p>If a test needs the old behavior, it can set this to {@code false} on the
+    * MemoryRecordStore singleton instance.</p>
     *
     * @return this
     *******************************************************************************/

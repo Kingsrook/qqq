@@ -28,10 +28,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -1154,6 +1156,81 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("firstName"));
       assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("id2.idNumber"));
       assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() == 2);
+   }
+
+
+
+   /*******************************************************************************
+    ** Exercises a 2-hop security lock chain through the RDBMS backend.
+    **
+    ** The lineItemExtrinsic table has a security lock on order.storeId via
+    ** joinNameChain [orderJoinOrderLine, orderLineJoinLineItemExtrinsic].
+    ** This means querying lineItemExtrinsic requires joining through orderLine
+    ** to order to evaluate the security lock.
+    **
+    ** This test verifies that the generated SQL correctly handles the 2-hop
+    ** chain — specifically that fillInMissingJoinMetaData does not double-flip
+    ** the second hop's join metadata, which would produce an invalid ON clause.
+    *******************************************************************************/
+   @Test
+   void testTwoHopSecurityLockChainOnLineItemExtrinsic() throws QException
+   {
+      //////////////////////////////////////////////////////////////////////////////////////
+      // insert lineItemExtrinsic rows linked to order_line rows from different stores.   //
+      // order_line id=1 is on order 1 (store 1), order_line id=6 is on order 4 (store 2) //
+      //////////////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).withRecords(List.of(
+         new QRecord().withValue("orderLineId", 1).withValue("key", "color").withValue("value", "red"),
+         new QRecord().withValue("orderLineId", 1).withValue("key", "size").withValue("value", "large"),
+         new QRecord().withValue("orderLineId", 6).withValue("key", "color").withValue("value", "blue")
+      )));
+
+      ////////////////////////////////////////////
+      // with all-access, should see all 3 rows //
+      ////////////////////////////////////////////
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      List<QRecord> allRecords = new QueryAction().execute(queryInput).getRecords();
+      assertEquals(3, allRecords.size(), "All-access should see all 3 lineItemExtrinsic rows");
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // with store=1, should see the 2 rows linked through order_line 1 → order 1 //
+      ///////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      List<QRecord> store1Records = new QueryAction().execute(queryInput).getRecords();
+      assertEquals(2, store1Records.size(), "Store 1 should see 2 lineItemExtrinsic rows");
+      assertThat(store1Records).allMatch(r -> r.getValueInteger("orderLineId").equals(1));
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // with store=2, should see the 1 row linked through order_line 6 → order 4 //
+      ///////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 2));
+      queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      List<QRecord> store2Records = new QueryAction().execute(queryInput).getRecords();
+      assertEquals(1, store2Records.size(), "Store 2 should see 1 lineItemExtrinsic row");
+      assertThat(store2Records).allMatch(r -> r.getValueInteger("orderLineId").equals(6));
+
+      //////////////////////////////////////////////////
+      // with store=5 (no orders), should see nothing //
+      //////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 5));
+      queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      List<QRecord> noRecords = new QueryAction().execute(queryInput).getRecords();
+      assertEquals(0, noRecords.size(), "Store 5 should see no lineItemExtrinsic rows");
+
+      /////////////////////////////////////////////////////
+      // with no security key at all, should see nothing //
+      /////////////////////////////////////////////////////
+      QContext.setQSession(new QSession());
+      queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      List<QRecord> emptySessionRecords = new QueryAction().execute(queryInput).getRecords();
+      assertEquals(0, emptySessionRecords.size(), "Empty session should see no lineItemExtrinsic rows");
    }
 
 }

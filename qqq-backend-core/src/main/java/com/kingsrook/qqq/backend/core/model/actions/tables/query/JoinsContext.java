@@ -176,7 +176,13 @@ public class JoinsContext
    {
       this.instance = instance;
       this.mainTableName = tableName;
-      this.queryJoins = new MutableList<>(queryJoins);
+
+      /////////////////////////////////////////////////////////////////////////////
+      // clone the incoming query joins - as this class will mutate them!  so in //
+      // case they came from some meta-data, we don't want to change them there. //
+      /////////////////////////////////////////////////////////////////////////////
+      this.queryJoins = new ArrayList<>(CollectionUtils.nonNullList(queryJoins).stream().map(QueryJoin::clone).toList());
+
       this.securityFilter = new QQueryFilter();
       this.securityFilterCursor = this.securityFilter;
 
@@ -622,15 +628,6 @@ public class JoinsContext
       boolean haveAllAccessKey = hasAllAccessKey(recordSecurityLock);
       if(haveAllAccessKey)
       {
-         if(sourceQueryJoin != null)
-         {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // in case the queryJoin object is re-used between queries, and its security criteria need to be different (!!), reset it //
-            // this can be exposed in tests - maybe not entirely expected in real-world, but seems safe enough                        //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            sourceQueryJoin.withSecurityCriteria(new ArrayList<>());
-         }
-
          ////////////////////////////////////////////////////////////////////////////////////////
          // if we're in an AND filter, then we don't need a criteria for this lock, so return. //
          ////////////////////////////////////////////////////////////////////////////////////////
@@ -833,6 +830,8 @@ public class JoinsContext
 
                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // check the other joins in this query - if any of them have this join's left-table as their baseTable, then set the flag to true //
+               // also check if any other join's join-table resolves to this left table (handles aliased joins, e.g., security joins that bring  //
+               // a table into the query under an alias like "orderLine_forSecurityJoin_lineItemLineItemExtrinsic")                              //
                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                for(QueryJoin otherJoin : queryJoins)
                {
@@ -842,6 +841,13 @@ public class JoinsContext
                   }
 
                   if(Objects.equals(otherJoin.getBaseTableOrAlias(), joinMetaDataLeftTable))
+                  {
+                     isJoinLeftTableInQuery = true;
+                     break;
+                  }
+
+                  String otherJoinTableName = resolveTableNameOrAliasToTableName(otherJoin.getJoinTableOrItsAlias());
+                  if(Objects.equals(otherJoinTableName, joinMetaDataLeftTable))
                   {
                      isJoinLeftTableInQuery = true;
                      break;
