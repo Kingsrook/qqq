@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.data.QVirtualField;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 
 
@@ -57,6 +58,9 @@ public class Item extends QRecordEntity
 
    @QField(backendName = "is_featured")
    private Boolean featured;
+
+   @QVirtualField
+   private String displayName;
 
    @QAssociation(name = ASSOCIATION_ITEM_ALTERNATES_NAME)
    private List<Item> itemAlternates;
@@ -244,6 +248,37 @@ public class Item extends QRecordEntity
    public Item withFeatured(Boolean featured)
    {
       this.featured = featured;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for displayName
+    *******************************************************************************/
+   public String getDisplayName()
+   {
+      return (this.displayName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for displayName
+    *******************************************************************************/
+   public void setDisplayName(String displayName)
+   {
+      this.displayName = displayName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for displayName
+    *******************************************************************************/
+   public Item withDisplayName(String displayName)
+   {
+      this.displayName = displayName;
       return (this);
    }
 

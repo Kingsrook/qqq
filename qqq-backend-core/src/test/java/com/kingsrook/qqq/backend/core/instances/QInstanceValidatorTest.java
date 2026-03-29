@@ -70,14 +70,22 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValue
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueRangeBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.menus.QMenu;
+import com.kingsrook.qqq.backend.core.model.metadata.menus.QMenuSlot;
+import com.kingsrook.qqq.backend.core.model.metadata.menus.defaults.QMenuDefaultViewScreenActionsMenu;
+import com.kingsrook.qqq.backend.core.model.metadata.menus.items.QMenuItemRunProcess;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
@@ -95,6 +103,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSectionAlternativeType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -1754,6 +1763,44 @@ public class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testTableMenus()
+   {
+      ///////////////////////////////////////////
+      // the view screen default menu is valid //
+      ///////////////////////////////////////////
+      assertValidationSuccess((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withMenu(new QMenuDefaultViewScreenActionsMenu()));
+
+      ///////////////////////////////////////////////
+      // an empty menu fails - it's missing a slot //
+      ///////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withMenu(new QMenu()),
+         "Missing a slot for menu item [null] in QTableMetaData[personMemory]");
+
+      //////////////////////////////////
+      // a menu with a bad item fails //
+      //////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withMenu(new QMenu().withSlot(QMenuSlot.VIEW_SCREEN_ADDITIONAL)
+               .withItem(new QMenuItemRunProcess())),
+         "Missing a processName for menu item [null] in QTableMetaData[personMemory]");
+
+      ////////////////////////////////////
+      // a menu with a good item passes //
+      ////////////////////////////////////
+      assertValidationSuccess((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withMenu(new QMenu().withSlot(QMenuSlot.VIEW_SCREEN_ADDITIONAL)
+            .withItem(new QMenuItemRunProcess(TestUtils.PROCESS_NAME_INCREASE_BIRTHDATE))));
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQueueProviderName()
    {
       assertValidationFailureReasons((qInstance) -> qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER).withName(null),
@@ -2388,13 +2435,30 @@ public class QInstanceValidatorTest extends BaseTest
          qInstance.addTable(newTable("B", "id", "aId"));
          qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
       },
-         "than one join with the joinPath: [AB]");
+         "than one exposed join with the joinPath: [AB]");
 
       assertValidationSuccess(qInstance ->
       {
          qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B").withJoinPath(List.of("AB"))));
          qInstance.addTable(newTable("B", "id", "aId"));
          qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+      });
+
+      assertValidationSuccess(qInstance ->
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // this case helps verify the update (in the corresponding commit) that changes              //
+         // joinConnectionList.matchesJoinPath to allow flipped joins to match.                       //
+         // it isn't entirely a valid use-case (to have essentially the same join exposed twice),     //
+         // but, it makes sure to expose a case that would have failed without the referenced change. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         qInstance.addTable(newTable("A", "id")
+            .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B1").withJoinPath(List.of("AB")))
+            .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B2").withJoinPath(List.of("BA")))
+         );
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("B").withRightTable("A").withName("BA").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("aId", "id")));
       });
    }
 
@@ -2567,6 +2631,287 @@ public class QInstanceValidatorTest extends BaseTest
       // Verify the map is unmodifiable
       assertThatThrownBy(() -> qInstance.getScopedAuthenticationProviders().clear())
          .isInstanceOf(UnsupportedOperationException.class);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNestedAlternativeTableSections()
+   {
+      assertValidationFailureReasonsAllowingExtraReasons(qInstance ->
+      {
+         QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // set up a self-alternative section, which would stack-overflow in processing, unless we checked for it (which we do) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QFieldSection section = new QFieldSection().withName("mySection");
+         section.withAlternative(QFieldSectionAlternativeType.RECORD_VIEW, section);
+         table.withSection(section);
+      }, "is an alternative section, which itself has alternative sections, which is not allowed");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldOnlyAllowedInAlternativeSections()
+   {
+      QTableMetaData baseTable = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+
+      ////////////////////////////////////////////////////
+      // a virtual field name in a 'main' section fails //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(baseTable.clone()
+            .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id", "virtual")))
+            .withVirtualField(new QVirtualFieldMetaData("virtual", QFieldType.STRING))),
+         "specifies fieldName virtual, which is a virtual field, which is not allowed in a base section (only alternative sections)");
+
+      ///////////////////////////////////////////////////////////
+      // a virtual field name in an alternative section passes //
+      ///////////////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) -> qInstance.addTable(baseTable.clone()
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id"))
+            .withAlternative(QFieldSectionAlternativeType.RECORD_VIEW, s -> s.getFieldNames().add("virtual")))
+         .withVirtualField(new QVirtualFieldMetaData("virtual", QFieldType.STRING))));
+
+      //////////////////////////////////////////////
+      // an unrecognized virtual field name fails //
+      //////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(baseTable.clone()
+            .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id"))
+               .withAlternative(QFieldSectionAlternativeType.RECORD_VIEW, s -> s.getFieldNames().add("no-such-virtual")))
+            .withVirtualField(new QVirtualFieldMetaData("virtual", QFieldType.STRING))),
+         "specifies fieldName no-such-virtual, which is not a field (or virtual field) on this table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldNameUniqueness()
+   {
+      QTableMetaData baseTable = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+
+      /////////////////////////////////////////////////////////////////////////
+      // a virtual field colliding with a non-virtual field of the same name //
+      /////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(baseTable.clone()
+            .withVirtualField(new QVirtualFieldMetaData("id", QFieldType.STRING))),
+         "Virtual field [id] collides with a non-virtual field of the same name, in table test");
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // generally, since fields and virtual fields are in maps keyed by their names, and we do also //
+      // have checks that those keys are consistent with the names in the objects, we can't actually //
+      // put the same named field in either map both times, so, there's nothing else to check here.  //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithValidFieldFunction()
+   {
+      /////////////////////////////////////////////////
+      // a valid queryable virtual field should pass //
+      /////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) ->
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withVirtualField(new QVirtualFieldMetaData("firstNameLength", QFieldType.INTEGER)
+               .withIsQuerySelectable(true)
+               .withIsQueryCriteria(true)
+               .withFieldFunction(new FieldFunction()
+                  .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+                  .withFieldName("firstName"))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryCriteriaWithNoFieldFunction()
+   {
+      /////////////////////////////////////////////////////////////////////
+      // a queryCriteria virtual field with no fieldFunction should fail //
+      /////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)),
+         "To be a queryCriteria this virtual field must have a field function defined");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQuerySelectableWithNoFieldFunctionOrTableCustomizer()
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // a querySelectable virtual field with no fieldFunction or table post-query customizer should fail //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)),
+         "To be querySelectable (since its table does not have a POST_QUERY_RECORD customizer) this virtual field must have a field function defined");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQuerySelectableWithNoFieldFunctionButWithTableCustomizer()
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // a querySelectable virtual field with no fieldFunction but with a post-query customizer should pass //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerValid.class))
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithNullFunctionTypeIdentifier()
+   {
+      ///////////////////////////////////////////////////////////////////////////
+      // a queryable virtual field whose fieldFunction has no identifier fails //
+      ///////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFieldName("firstName"))),
+         "fieldFunction is missing a function type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithUnrecognizedFunctionType()
+   {
+      ///////////////////////////////////////////////////////////////
+      // a queryable virtual field with unrecognized function type //
+      ///////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(() -> "NoSuchFunction")
+                     .withFieldName("firstName"))),
+         "Unrecognized field function type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithTypeMismatch()
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // a queryable virtual field where source field type doesn't match function's allowed types should fail //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("birthWeekday", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER)
+                     .withFieldName("firstName"))),
+         "is not among the specified field function's allowed types");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithMissingSourceFieldName()
+   {
+      /////////////////////////////////////////////////////////////////////
+      // a queryable virtual field with no source field name should fail //
+      /////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQuerySelectable(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER))),
+         "fieldFunction is missing a source field name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldQueryableWithUnrecognizedSourceField()
+   {
+      ///////////////////////////////////////////////////////////////////////
+      // a queryable virtual field referencing a non-existent source field //
+      ///////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+            qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.INTEGER)
+                  .withIsQueryCriteria(true)
+                  .withFieldFunction(new FieldFunction()
+                     .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER)
+                     .withFieldName("noSuchField"))),
+         "fieldFunction's referenced source field name is not a defined field on this table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVirtualFieldNotQueryableSkipsValidation()
+   {
+      /////////////////////////////////////////////////////////////////
+      // a non-queryable virtual field with no fieldFunction is fine //
+      /////////////////////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) ->
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withVirtualField(new QVirtualFieldMetaData("myVirtual", QFieldType.STRING)));
    }
 
 

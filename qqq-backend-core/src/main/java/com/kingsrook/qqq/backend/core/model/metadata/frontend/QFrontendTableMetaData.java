@@ -44,8 +44,10 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.menus.QMenu;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
@@ -72,7 +74,9 @@ public class QFrontendTableMetaData
    private String  primaryKeyField;
    private QIcon   icon;
 
-   private Map<String, QFrontendFieldMetaData>     fields;
+   private Map<String, QFrontendFieldMetaData>        fields;
+   private Map<String, QFrontendVirtualFieldMetaData> virtualFields;
+
    private List<QFieldSection>                     sections;
    private List<QFrontendExposedJoin>              exposedJoins;
    private Map<String, QSupplementalTableMetaData> supplementalTableMetaData;
@@ -88,6 +92,7 @@ public class QFrontendTableMetaData
 
    private ShareableTableMetaData          shareableTableMetaData;
    private Map<String, List<QHelpContent>> helpContents;
+   private List<QMenu>                     menus;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -128,9 +133,21 @@ public class QFrontendTableMetaData
             }
          }
 
+         this.virtualFields = new HashMap<>();
+         for(Map.Entry<String, QVirtualFieldMetaData> entry : CollectionUtils.nonNullMap(tableMetaData.getVirtualFields()).entrySet())
+         {
+            QVirtualFieldMetaData field = entry.getValue();
+            if(!field.getIsHidden())
+            {
+               this.virtualFields.put(entry.getKey(), new QFrontendVirtualFieldMetaData(field));
+            }
+         }
+
          this.sections = tableMetaData.getSections();
 
          this.shareableTableMetaData = tableMetaData.getShareableTableMetaData();
+
+         this.menus = tableMetaData.getMenus();
       }
 
       if(includeJoins)
@@ -464,4 +481,25 @@ public class QFrontendTableMetaData
       return icon;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for virtualFields
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendVirtualFieldMetaData> getVirtualFields()
+   {
+      return virtualFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for menus
+    **
+    *******************************************************************************/
+   public List<QMenu> getMenus()
+   {
+      return menus;
+   }
 }

@@ -52,7 +52,7 @@ import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
-import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -197,12 +197,12 @@ public class QApplicationJavalinServer
          /////////////////////////////////////
          if(CollectionUtils.nullSafeHasContents(middlewareVersionList))
          {
-            config.router.apiBuilder(new QMiddlewareApiSpecHandler(middlewareVersionList).defineJavalinEndpointGroup());
             for(AbstractMiddlewareVersion version : middlewareVersionList)
             {
                version.setQInstance(qInstance);
                config.router.apiBuilder(version.getJavalinEndpointGroup(qInstance));
             }
+            config.router.apiBuilder(new QMiddlewareApiSpecHandler(middlewareVersionList).defineJavalinEndpointGroup());
          }
 
          ///////////////////////////////////////////////////////////////////////////////////////////

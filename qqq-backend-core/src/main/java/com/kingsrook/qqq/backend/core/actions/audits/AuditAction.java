@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditOutput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
+import com.kingsrook.qqq.backend.core.model.actions.audits.ProcessedAuditHandlerInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -78,7 +79,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     ** Execute to insert 1 audit, with no details (child records)
     *******************************************************************************/
-   public static void execute(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message)
+   public static void execute(String tableName, Serializable recordId, Map<String, Serializable> securityKeyValues, String message)
    {
       execute(tableName, recordId, securityKeyValues, message, null);
    }
@@ -88,7 +89,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     ** Execute to insert 1 audit, with a list of detail child records provided as just string messages
     *******************************************************************************/
-   public static void executeWithStringDetails(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<String> detailMessages)
+   public static void executeWithStringDetails(String tableName, Serializable recordId, Map<String, Serializable> securityKeyValues, String message, List<String> detailMessages)
    {
       List<QRecord> detailRecords = null;
       if(CollectionUtils.nullSafeHasContents(detailMessages))
@@ -103,7 +104,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     ** Execute to insert 1 audit, with a list of detail child records
     *******************************************************************************/
-   public static void execute(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<QRecord> details)
+   public static void execute(String tableName, Serializable recordId, Map<String, Serializable> securityKeyValues, String message, List<QRecord> details)
    {
       new AuditAction().execute(new AuditInput().withAuditSingleInput(new AuditSingleInput()
          .withAuditTableName(tableName)
@@ -125,7 +126,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
     *******************************************************************************/
    public static void appendToInput(AuditInput auditInput, QTableMetaData table, QRecord record, String auditMessage)
    {
-      appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record, Optional.empty()), auditMessage);
+      appendToInput(auditInput, table.getName(), record.getValue(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record, Optional.empty()), auditMessage);
    }
 
 
@@ -133,7 +134,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     ** Add 1 auditSingleInput to an AuditInput object - with no details (child records).
     *******************************************************************************/
-   public static void appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message)
+   public static void appendToInput(AuditInput auditInput, String tableName, Serializable recordId, Map<String, Serializable> securityKeyValues, String message)
    {
       appendToInput(auditInput, tableName, recordId, securityKeyValues, message, null);
    }
@@ -143,7 +144,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     ** Add 1 auditSingleInput to an AuditInput object - with a list of details (child records).
     *******************************************************************************/
-   public static AuditInput appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<QRecord> details)
+   public static AuditInput appendToInput(AuditInput auditInput, String tableName, Serializable recordId, Map<String, Serializable> securityKeyValues, String message, List<QRecord> details)
    {
       if(auditInput == null)
       {
@@ -359,6 +360,11 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                insertInput.setRecords(auditDetailRecords);
                new InsertAction().execute(insertInput);
             }
+
+            ////////////////////////////////
+            // execute processed handlers //
+            ////////////////////////////////
+            executeProcessedHandlers(input.getAuditSingleInputList());
          }
          catch(Exception e)
          {
@@ -367,6 +373,54 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
       }
 
       return (auditOutput);
+   }
+
+
+
+   /*******************************************************************************
+    ** Execute processed audit handlers for the given audit single inputs.
+    ** Handlers are grouped by table name since each handler registration
+    ** may be for specific tables.
+    *******************************************************************************/
+   private void executeProcessedHandlers(List<AuditSingleInput> auditSingleInputs)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(auditSingleInputs))
+      {
+         return;
+      }
+
+      try
+      {
+         //////////////////////////////////////////////////////////////////////
+         // group audit inputs by table name to call handlers appropriately //
+         //////////////////////////////////////////////////////////////////////
+         Map<String, List<AuditSingleInput>> inputsByTable = new HashMap<>();
+         for(AuditSingleInput auditSingleInput : auditSingleInputs)
+         {
+            inputsByTable.computeIfAbsent(auditSingleInput.getAuditTableName(), k -> new ArrayList<>()).add(auditSingleInput);
+         }
+
+         AuditHandlerExecutor executor = new AuditHandlerExecutor();
+         Instant              now      = Instant.now();
+
+         for(Map.Entry<String, List<AuditSingleInput>> entry : inputsByTable.entrySet())
+         {
+            String                  tableName = entry.getKey();
+            List<AuditSingleInput>  inputs    = entry.getValue();
+
+            ProcessedAuditHandlerInput handlerInput = new ProcessedAuditHandlerInput()
+               .withAuditSingleInputs(inputs)
+               .withTimestamp(now)
+               .withSession(QContext.getQSession())
+               .withSourceType("AuditAction");
+
+            executor.executeProcessedHandlers(tableName, handlerInput);
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error executing processed audit handlers", e);
+      }
    }
 
 

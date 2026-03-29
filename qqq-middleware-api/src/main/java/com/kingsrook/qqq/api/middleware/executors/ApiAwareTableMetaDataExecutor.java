@@ -111,7 +111,7 @@ public class ApiAwareTableMetaDataExecutor extends TableMetaDataExecutor impleme
             Map<String, QFieldMetaData> joinFieldMap    = getFieldsForApiVersion(tableName);
 
             com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput tableMetaDataInput = new com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput();
-            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(tableMetaDataInput, backendForTable, joinTable, true, true, joinFieldMap));
+            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(tableMetaDataInput, backendForTable, joinTable, true, false, joinFieldMap));
          }
          catch(QNotFoundException e)
          {

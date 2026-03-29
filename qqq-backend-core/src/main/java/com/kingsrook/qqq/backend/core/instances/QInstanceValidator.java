@@ -41,6 +41,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditHandlerInterface;
+import com.kingsrook.qqq.backend.core.actions.audits.ProcessedAuditHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -62,6 +64,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditHandlerType;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditHandlerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.AuthScope;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
@@ -75,13 +79,18 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.menus.QMenu;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -124,7 +133,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
-import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.quartz.CronExpression;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -205,6 +214,7 @@ public class QInstanceValidator
          validateAuthentication(qInstance);
          validateScopedAuthentication(qInstance);
          validateAutomationProviders(qInstance);
+         validateAuditHandlers(qInstance);
          validateTables(qInstance, joinGraph);
          validateProcesses(qInstance);
          validateReports(qInstance);
@@ -683,6 +693,39 @@ public class QInstanceValidator
 
 
    /*******************************************************************************
+    ** Validate audit handlers.
+    *******************************************************************************/
+   private void validateAuditHandlers(QInstance qInstance)
+   {
+      if(qInstance.getAuditHandlers() != null)
+      {
+         qInstance.getAuditHandlers().forEach((name, handler) ->
+         {
+            String prefix = "AuditHandler " + name + ": ";
+            assertCondition(Objects.equals(name, handler.getName()), prefix + "Inconsistent naming: " + name + "/" + handler.getName());
+            assertCondition(handler.getHandlerType() != null, prefix + "Missing handlerType");
+            assertCondition(handler.getHandlerCode() != null, prefix + "Missing handlerCode");
+
+            if(handler.getHandlerCode() != null)
+            {
+               if(handler.getHandlerType() == AuditHandlerType.DML)
+               {
+                  validateSimpleCodeReference(prefix + "handlerCode ", handler.getHandlerCode(), DMLAuditHandlerInterface.class);
+               }
+               else if(handler.getHandlerType() == AuditHandlerType.PROCESSED)
+               {
+                  validateSimpleCodeReference(prefix + "handlerCode ", handler.getHandlerCode(), ProcessedAuditHandlerInterface.class);
+               }
+            }
+
+            runPlugins(QAuditHandlerMetaData.class, handler, qInstance);
+         });
+      }
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private void validateAuthentication(QInstance qInstance)
@@ -931,12 +974,40 @@ public class QInstanceValidator
             //////////////////////////////////
             // validate fields in the table //
             //////////////////////////////////
+            Set<String> usedFieldNames = new HashSet<>();
             if(assertCondition(CollectionUtils.nullSafeHasContents(table.getFields()), "At least 1 field must be defined in table " + tableName + "."))
             {
                table.getFields().forEach((fieldName, field) ->
                {
+                  if(usedFieldNames.contains(fieldName))
+                  {
+                     errors.add("Duplicated field name [" + fieldName + "] in table " + tableName);
+                  }
+                  usedFieldNames.add(fieldName);
+
                   validateTableField(qInstance, tableName, fieldName, table, field);
                });
+            }
+
+            /////////////////////////////
+            // validate virtual fields //
+            /////////////////////////////
+            Set<String> usedVirtualFieldNames = new HashSet<>();
+            for(Map.Entry<String, QVirtualFieldMetaData> entry : CollectionUtils.nonNullMap(table.getVirtualFields()).entrySet())
+            {
+               String fieldName = entry.getKey();
+               if(usedFieldNames.contains(fieldName))
+               {
+                  errors.add("Virtual field [" + fieldName + "] collides with a non-virtual field of the same name, in table " + tableName);
+               }
+               if(usedVirtualFieldNames.contains(fieldName))
+               {
+                  errors.add("Duplicated virtual field name [" + fieldName + "] in table " + tableName);
+               }
+               usedVirtualFieldNames.add(fieldName);
+
+               validateTableField(qInstance, tableName, fieldName, table, entry.getValue());
+               validateTableVirtualField(qInstance, tableName, fieldName, table, entry.getValue());
             }
 
             //////////////////////////////////////////
@@ -950,7 +1021,7 @@ public class QInstanceValidator
             {
                for(QFieldSection section : table.getSections())
                {
-                  validateTableSection(qInstance, table, section, fieldNamesInSections);
+                  validateTableSection(qInstance, table, section, fieldNamesInSections, false);
                   if(assertCondition(section.getTier() != null, "Table " + tableName + " " + section.getName() + " is missing its tier"))
                   {
                      if(section.getTier().equals(Tier.T1))
@@ -1016,9 +1087,70 @@ public class QInstanceValidator
                table.getShareableTableMetaData().validate(qInstance, table, this);
             }
 
+            for(QMenu menu : CollectionUtils.nonNullList(table.getMenus()))
+            {
+               menu.validate(this, qInstance, table);
+            }
+
             runPlugins(QTableMetaData.class, table, qInstance);
          });
       }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void validateTableVirtualField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QVirtualFieldMetaData virtualFieldMetaData)
+   {
+      String prefix = "Table [" + tableName + "], Virtual field [" + fieldName + "]: ";
+
+      boolean requireFieldFunction = false;
+      String requireFieldFunctionReason = null;
+      if(virtualFieldMetaData.getIsQueryCriteria())
+      {
+         requireFieldFunction = true;
+         requireFieldFunctionReason = "To be a queryCriteria";
+      }
+      else if(virtualFieldMetaData.getIsQuerySelectable())
+      {
+         if(table.getCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole()).isEmpty())
+         {
+            requireFieldFunction = true;
+            requireFieldFunctionReason = "To be querySelectable (since its table does not have a POST_QUERY_RECORD customizer)";
+         }
+      }
+
+      FieldFunction fieldFunction = virtualFieldMetaData.getFieldFunction();
+      if(requireFieldFunction)
+      {
+         assertCondition(fieldFunction != null, prefix + requireFieldFunctionReason + " this virtual field must have a field function defined");
+      }
+
+      if(fieldFunction != null)
+      {
+         if(assertCondition(fieldFunction.getFunctionTypeIdentifier() != null, "fieldFunction is missing a function type"))
+         {
+            FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(qInstance).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+            if(assertCondition(fieldFunctionType != null, prefix + "Unrecognized field function type: " + fieldFunction.getFunctionTypeIdentifier()))
+            {
+               if(CollectionUtils.nullSafeHasContents(fieldFunctionType.getAllowedFieldTypes()))
+               {
+                  String sourceFieldName = virtualFieldMetaData.getFieldFunction().getFieldName();
+                  if(assertCondition(StringUtils.hasContent(sourceFieldName), "fieldFunction is missing a source field name"))
+                  {
+                     if(assertCondition(table.getFields().containsKey(sourceFieldName), "fieldFunction's referenced source field name is not a defined field on this table"))
+                     {
+                        QFieldMetaData sourceField = table.getField(sourceFieldName);
+                        assertCondition(fieldFunctionType.getAllowedFieldTypes().contains(sourceField.getType()), prefix + "source field [" + sourceFieldName + "]'s type [" + sourceField.getType() + "] is not among the specified field function's allowed types [" + fieldFunctionType.getAllowedFieldTypes() + "]");
+                     }
+                  }
+               }
+            }
+         }
+      }
+
    }
 
 
@@ -1050,7 +1182,7 @@ public class QInstanceValidator
                      boolean foundJoinConnection = false;
                      for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
                      {
-                        if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
+                        if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath(), joinGraph, qInstance))
                         {
                            foundJoinConnection = true;
                         }
@@ -1058,7 +1190,7 @@ public class QInstanceValidator
                      assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
                   }
 
-                  assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one join with the joinPath: " + exposedJoin.getJoinPath());
+                  assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one exposed join with the joinPath: " + exposedJoin.getJoinPath());
                   usedJoinPaths.add(exposedJoin.getJoinPath());
                }
             }
@@ -1814,7 +1946,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableSection(QInstance qInstance, QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
+   private void validateTableSection(QInstance qInstance, QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections, boolean isAlternativeSection)
    {
       assertCondition(StringUtils.hasContent(section.getName()), "Missing a name for field section in table " + table.getName() + ".");
       assertCondition(StringUtils.hasContent(section.getLabel()), "Missing a label for field section in table " + table.getLabel() + ".");
@@ -1847,22 +1979,71 @@ public class QInstanceValidator
                      {
                         assertCondition(!matchedExposedJoins.get(0).getIsMany(qInstance), sectionPrefix + "join-field " + fieldName + " references an is-many join, which is not supported.");
                      }
-                     assertCondition(qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName), sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
+
+                     boolean foreignTableHasField = qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName);
+                     boolean foreignTableHasVirtualField = CollectionUtils.nonNullMap(qInstance.getTable(otherTableName).getVirtualFields()).containsKey(foreignFieldName);
+                     assertCondition(foreignTableHasField || foreignTableHasVirtualField, sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
                   }
                }
                else
                {
-                  assertCondition(table.getFields().containsKey(fieldName), sectionPrefix + "specifies fieldName " + fieldName + ", which is not a field on this table.");
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // for alternative sections, allow virtual fields.                                                     //
+                  // this is our first pass at rules for virtual fields... eventually they may be supported more broadly //
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  boolean isField = table.getFields().containsKey(fieldName);
+                  boolean isVirtualField = CollectionUtils.nonNullMap(table.getVirtualFields()).containsKey(fieldName);
+                  if(isAlternativeSection)
+                  {
+                     assertCondition(isField || isVirtualField, sectionPrefix + "specifies fieldName " + fieldName + ", which is not a field (or virtual field) on this table.");
+                  }
+                  else
+                  {
+                     ////////////////////////////////////////////////////////////////////////////////
+                     // else, "main" sections, they only (at this time) support non-virtual fields //
+                     ////////////////////////////////////////////////////////////////////////////////
+                     if(!isField)
+                     {
+                        if(isVirtualField)
+                        {
+                           errors.add(sectionPrefix + "specifies fieldName " + fieldName + ", which is a virtual field, which is not allowed in a base section (only alternative sections)");
+                        }
+                        else
+                        {
+                           errors.add(sectionPrefix + "specifies fieldName " + fieldName + ", which is not a field on this table.");
+                        }
+                     }
+                  }
                }
 
-               assertCondition(!fieldNamesInSections.contains(fieldName), "Table " + table.getName() + " has field " + fieldName + " listed more than once in its field sections.");
-
-               fieldNamesInSections.add(fieldName);
+               if(!isAlternativeSection)
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // don't consider field names in alternative sections as part of the set of field names in some-section //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  assertCondition(!fieldNamesInSections.contains(fieldName), "Table " + table.getName() + " has field " + fieldName + " listed more than once in its field sections.");
+                  fieldNamesInSections.add(fieldName);
+               }
             }
          }
          else if(hasWidget)
          {
             assertCondition(qInstance.getWidget(section.getWidgetName()) != null, sectionPrefix + "specifies widget " + section.getWidgetName() + ", which is not a widget in this instance.");
+         }
+      }
+
+      if(isAlternativeSection)
+      {
+         assertCondition(CollectionUtils.nullSafeIsEmpty(section.getAlternatives()), sectionPrefix + "is an alternative section, which itself has alternative sections, which is not allowed");
+      }
+      else
+      {
+         ////////////////////////////////////////////////////////////////
+         // recursively process alternative sections for main sections //
+         ////////////////////////////////////////////////////////////////
+         for(QFieldSection alternativeSection : CollectionUtils.nonNullMap(section.getAlternatives()).values())
+         {
+            validateTableSection(qInstance, table, alternativeSection, fieldNamesInSections, true);
          }
       }
    }

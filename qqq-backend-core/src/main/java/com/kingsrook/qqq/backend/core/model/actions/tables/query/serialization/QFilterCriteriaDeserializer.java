@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -84,6 +85,7 @@ public class QFilterCriteriaDeserializer extends StdDeserializer<QFilterCriteria
       String            fieldName      = objectMapper.treeToValue(node.get("fieldName"), String.class);
       QCriteriaOperator operator       = objectMapper.treeToValue(node.get("operator"), QCriteriaOperator.class);
       String            otherFieldName = objectMapper.treeToValue(node.get("otherFieldName"), String.class);
+      FieldFunction     fieldFunction  = objectMapper.treeToValue(node.get("fieldFunction"), FieldFunction.class);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // look at all the values - if any of them are actually meant to be an Expression (instance of subclass of AbstractFilterExpression)     //
@@ -124,6 +126,7 @@ public class QFilterCriteriaDeserializer extends StdDeserializer<QFilterCriteria
       criteria.setOperator(operator);
       criteria.setValues(values);
       criteria.setOtherFieldName(otherFieldName);
+      criteria.setFieldFunction(fieldFunction);
 
       return (criteria);
    }

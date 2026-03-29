@@ -30,7 +30,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** Entity bean for the saved filter table
+ ** Entity bean for the saved view table
  *******************************************************************************/
 public class SavedView extends QRecordEntity
 {

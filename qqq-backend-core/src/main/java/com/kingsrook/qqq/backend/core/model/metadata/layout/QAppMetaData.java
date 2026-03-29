@@ -28,8 +28,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -44,10 +48,12 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
+   public static final Integer DEFAULT_SORT_ORDER = 500;
+
    private String name;
    private String label;
 
-   private Integer sortOrder = 500;
+   private Integer sortOrder = DEFAULT_SORT_ORDER;
 
    private QPermissionRules permissionRules;
 
@@ -59,7 +65,10 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
    private List<String>      widgets;
    private List<QAppSection> sections;
 
-   private Map<String, QSupplementalAppMetaData> supplementalMetaData;
+   private Map<String, Integer> childAppAffinities;
+
+   private   Map<String, QSupplementalAppMetaData> supplementalMetaData;
+   protected Map<String, List<QHelpContent>>       helpContent;
 
 
 
@@ -394,6 +403,7 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -521,4 +531,113 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
       return (this);
    }
 
+
+
+   /***************************************************************************
+    * set an appAffinity for a child.  Higher values are higher affinity, with
+    * null (the default) considered the lowest. Tiebreaking behavior is not
+    * specified and may differ by use-case (e.g., by front-end), though app
+    * sort-order is recommended.
+    *
+    * <p>The purpose of this appAffinity is not about ordering the children of this
+    * app - but rather - for cases where the same object (e.g. a table) is
+    * referenced by multiple apps, and we want to control which app should be
+    * displayed first when the object is referenced.</p>
+    *
+    * @param childName name of child (e.g., a table name) to set appAffinity for
+    * @param appAffinity appAffinity level, or null to clear any existing appAffinity.
+    *                 Higher values are higher affinity.  null is lowest.
+    ***************************************************************************/
+   public void setChildAppAffinity(String childName, Integer appAffinity)
+   {
+      if(this.childAppAffinities == null)
+      {
+         this.childAppAffinities = new HashMap<>();
+      }
+
+      this.childAppAffinities.put(childName, appAffinity);
+   }
+
+
+
+   /***************************************************************************
+    * get the appAffinity assigned to this child (by name) for this app - null if not set.
+    *
+    * @param childName name of child (e.g., a table name) to get appAffinity for
+    * @return appAffinity level, or null if not set.
+    ***************************************************************************/
+   public Integer getChildAppAffinity(String childName)
+   {
+      return (this.childAppAffinities == null ? null : this.childAppAffinities.get(childName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    *******************************************************************************/
+   public Map<String, List<QHelpContent>> getHelpContent()
+   {
+      return (this.helpContent);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContent
+    *******************************************************************************/
+   public void setHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContent
+    *******************************************************************************/
+   public QAppMetaData withHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent (for a slot)
+    *******************************************************************************/
+   public QAppMetaData withHelpContent(String slot, QHelpContent helpContent)
+   {
+      if(this.helpContent == null)
+      {
+         this.helpContent = new HashMap<>();
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.computeIfAbsent(slot, (k) -> new ArrayList<>());
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, listForSlot);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a helpContent for a slot based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(String slot, Set<HelpRole> roles)
+   {
+      if(this.helpContent == null)
+      {
+         return;
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.get(slot);
+      if(listForSlot == null)
+      {
+         return;
+      }
+
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
+   }
 }

@@ -44,10 +44,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.menus.QMenu;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.qbits.SourceQBitAware;
@@ -80,6 +82,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    private List<UniqueKey>             uniqueKeys;
    private List<Association>           associations;
 
+   private Map<String, QVirtualFieldMetaData> virtualFields;
+
    private List<RecordSecurityLock> recordSecurityLocks;
    private QPermissionRules         permissionRules;
    private QAuditRules              auditRules;
@@ -110,6 +114,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    private ShareableTableMetaData shareableTableMetaData;
 
    protected Map<String, List<QHelpContent>> helpContent;
+
+   private List<QMenu> menus;
 
 
 
@@ -144,6 +150,49 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       }
 
       QFieldMetaData field = getFields().get(fieldName);
+      if(field == null)
+      {
+         throw (new IllegalArgumentException("Field [" + fieldName + "] was not found in table [" + name + "]."));
+      }
+
+      return (field);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QVirtualFieldMetaData getVirtualField(String fieldName)
+   {
+      if(virtualFields == null)
+      {
+         return (null);
+      }
+
+      QVirtualFieldMetaData virtualField = getVirtualFields().get(fieldName);
+      return (virtualField);
+   }
+
+
+
+   /***************************************************************************
+    * Return either a field, or virtual field, for a given name.
+    *
+    ***************************************************************************/
+   public QFieldMetaData getFieldOrVirtualField(String fieldName)
+   {
+      if(fields == null)
+      {
+         throw (new IllegalArgumentException("Table [" + name + "] does not have its fields defined."));
+      }
+
+      QFieldMetaData field = getFields().get(fieldName);
+      if(field == null)
+      {
+         field = getVirtualField(fieldName);
+      }
+
       if(field == null)
       {
          throw (new IllegalArgumentException("Field [" + fieldName + "] was not found in table [" + name + "]."));
@@ -428,6 +477,56 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
          this.fields = new LinkedHashMap<>();
       }
       this.fields.put(field.getName(), field);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withVirtualFields(List<QVirtualFieldMetaData> virtualFields)
+   {
+      this.virtualFields = new LinkedHashMap<>();
+      for(QVirtualFieldMetaData virtualField : virtualFields)
+      {
+         this.addVirtualField(virtualField);
+      }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addVirtualField(QVirtualFieldMetaData virtualField)
+   {
+      if(this.virtualFields == null)
+      {
+         this.virtualFields = new LinkedHashMap<>();
+      }
+
+      if(this.virtualFields.containsKey(virtualField.getName()))
+      {
+         throw (new IllegalArgumentException("Attempt to add a second virtualField with name [" + virtualField.getName() + "] to table [" + name + "]."));
+      }
+
+      this.virtualFields.put(virtualField.getName(), virtualField);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withVirtualField(QVirtualFieldMetaData virtualField)
+   {
+      if(this.virtualFields == null)
+      {
+         this.virtualFields = new LinkedHashMap<>();
+      }
+      this.virtualFields.put(virtualField.getName(), virtualField);
       return (this);
    }
 
@@ -1630,6 +1729,16 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
             clone.setFields(clonedFields);
          }
 
+         if(virtualFields != null)
+         {
+            Map<String, QVirtualFieldMetaData> clonedVirtualFields = new LinkedHashMap<>();
+            for(Map.Entry<String, QVirtualFieldMetaData> entry : virtualFields.entrySet())
+            {
+               clonedVirtualFields.put(entry.getKey(), entry.getValue().clone());
+            }
+            clone.setVirtualFields(clonedVirtualFields);
+         }
+
          if(uniqueKeys != null)
          {
             List<UniqueKey> clonedUniqueKeys = new ArrayList<>();
@@ -1775,12 +1884,121 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
             clone.setHelpContent(clonedHelpContent);
          }
 
+         if(menus != null)
+         {
+            List<QMenu> clonedMenus = new ArrayList<>();
+            for(QMenu menu : menus)
+            {
+               clonedMenus.add(menu.clone());
+            }
+            clone.setMenus(clonedMenus);
+         }
+
          return clone;
       }
       catch(CloneNotSupportedException e)
       {
          throw new RuntimeException(e);
       }
+   }
+
+
+
+
+   /*******************************************************************************
+    * Getter for virtualFields
+    * @see #withVirtualFields(Map)
+    *******************************************************************************/
+   public Map<String, QVirtualFieldMetaData> getVirtualFields()
+   {
+      return (this.virtualFields);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for virtualFields
+    * @see #withVirtualFields(Map)
+    *******************************************************************************/
+   public void setVirtualFields(Map<String, QVirtualFieldMetaData> virtualFields)
+   {
+      this.virtualFields = virtualFields;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for virtualFields
+    *
+    * @param virtualFields
+    * Map of virtual fields - keyed by the virtual field's name, value is meta data
+    * for the virtual field.
+    * <p>Virtual fields do not exist in the backend system.  Rather, they
+    * are (or at least tend to be) computed from other fields - e.g., math operations
+    * (like a percentage based on 2 numbers), or concatenation of strings, or mappings
+    * from e.g., booleans to strings - or more complex logic based on multiple fields</p>
+    * @return this
+    *******************************************************************************/
+   public QTableMetaData withVirtualFields(Map<String, QVirtualFieldMetaData> virtualFields)
+   {
+      this.virtualFields = virtualFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for menus
+    * @see #withMenus(List)
+    *******************************************************************************/
+   public List<QMenu> getMenus()
+   {
+      return (this.menus);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for menus
+    * @see #withMenus(List)
+    *******************************************************************************/
+   public void setMenus(List<QMenu> menus)
+   {
+      this.menus = menus;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for menus
+    *
+    * @param menus
+    * Specialized menus to be used for this table in UI's.
+    * @return this
+    *******************************************************************************/
+   public QTableMetaData withMenus(List<QMenu> menus)
+   {
+      this.menus = menus;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Fluently add a single menu
+    *
+    * @param menu
+    * A Specialized menu to be used for this table in UI's.
+    * @return this
+    *******************************************************************************/
+   public QTableMetaData withMenu(QMenu menu)
+   {
+      if(this.menus == null)
+      {
+         this.menus = new ArrayList<>();
+      }
+      this.menus.add(menu);
+      return (this);
    }
 
 }

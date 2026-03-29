@@ -23,10 +23,15 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 
 
 import java.io.Serializable;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaOption;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -34,6 +39,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.junit.jupiter.api.Test;
@@ -446,6 +457,66 @@ class BackendQueryFilterUtilsTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testDoesCriteriaMatchWithFieldFunctions() throws Exception
+   {
+      QFieldMetaData firstNameField = new QFieldMetaData("firstName", QFieldType.STRING);
+      QFieldMetaData birthDateField = new QFieldMetaData("birthDate", QFieldType.DATE);
+      QVirtualFieldMetaData firstInitialField = new QVirtualFieldMetaData("firstInitial", QFieldType.STRING)
+         .withIsQueryCriteria(true)
+         .withFieldFunction(new FieldFunction().withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER).withFieldName(firstNameField.getName())
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 1, SubStringFunction.LENGTH_PARAM, 1)));
+
+      QRecord darinRecord     = new QRecord().withValue("firstName", "Darin").withValue("birthDate", LocalDate.of(1980, Month.MAY, 31));
+      QRecord timRecord       = new QRecord().withValue("firstName", "Tim").withValue("birthDate", LocalDate.of(1976, Month.MAY, 28));
+      QRecord anonymousRecord = new QRecord();
+
+      FieldFunction substring2 = new FieldFunction().withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER).withFieldName(firstNameField.getName())
+         .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 2));
+
+      FieldFunction substring2For1 = new FieldFunction().withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER).withFieldName(firstNameField.getName())
+         .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 2, SubStringFunction.LENGTH_PARAM, 1));
+
+      FieldFunction weekdayOfDate  = new FieldFunction().withFunctionTypeIdentifier(WeekdayOfDateFunction.IDENTIFIER).withFieldName(birthDateField.getName());
+
+      //////////////////////////////////////////
+      // field function specified in criteria //
+      //////////////////////////////////////////
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstNameField.getName(), QCriteriaOperator.EQUALS, "arin").withFieldFunction(substring2), firstNameField, darinRecord));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstNameField.getName(), QCriteriaOperator.EQUALS, "a").withFieldFunction(substring2For1), firstNameField, darinRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstNameField.getName(), QCriteriaOperator.EQUALS, "arin").withFieldFunction(substring2), firstNameField, timRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstNameField.getName(), QCriteriaOperator.EQUALS, "a").withFieldFunction(substring2For1), firstNameField, timRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstNameField.getName(), QCriteriaOperator.EQUALS, "a").withFieldFunction(substring2For1), firstNameField, anonymousRecord));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstNameField.getName(), QCriteriaOperator.IS_BLANK).withFieldFunction(substring2For1), firstNameField, anonymousRecord));
+
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(birthDateField.getName(), QCriteriaOperator.EQUALS, DayOfWeek.SATURDAY.getValue()).withFieldFunction(weekdayOfDate), birthDateField, darinRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(birthDateField.getName(), QCriteriaOperator.EQUALS, DayOfWeek.SATURDAY.getValue()).withFieldFunction(weekdayOfDate), birthDateField, timRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(birthDateField.getName(), QCriteriaOperator.EQUALS, DayOfWeek.FRIDAY.getValue()).withFieldFunction(weekdayOfDate), birthDateField, darinRecord));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(birthDateField.getName(), QCriteriaOperator.EQUALS, DayOfWeek.FRIDAY.getValue()).withFieldFunction(weekdayOfDate), birthDateField, timRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(birthDateField.getName(), QCriteriaOperator.EQUALS, DayOfWeek.FRIDAY.getValue()).withFieldFunction(weekdayOfDate), birthDateField, anonymousRecord));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(birthDateField.getName(), QCriteriaOperator.IS_BLANK).withFieldFunction(weekdayOfDate), birthDateField, anonymousRecord));
+
+      ////////////////////////////////////////////////
+      // implicit field function from virtual field //
+      ////////////////////////////////////////////////
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstInitialField.getName(), QCriteriaOperator.EQUALS, "D"), firstInitialField, darinRecord));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstInitialField.getName(), QCriteriaOperator.EQUALS, "T"), firstInitialField, timRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstInitialField.getName(), QCriteriaOperator.EQUALS, "T"), firstInitialField, darinRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstInitialField.getName(), QCriteriaOperator.EQUALS, "D"), firstInitialField, timRecord));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstInitialField.getName(), QCriteriaOperator.EQUALS, "A"), firstInitialField, anonymousRecord));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstInitialField.getName(), QCriteriaOperator.IS_BLANK), firstInitialField, anonymousRecord));
+
+      ////////////////////////////////////////////////////////////////////
+      // field function on criteria takes precedence over virtual field //
+      ////////////////////////////////////////////////////////////////////
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria(firstInitialField.getName(), QCriteriaOperator.EQUALS, "arin").withFieldFunction(substring2), firstInitialField, darinRecord));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testApplyBooleanOperator()
    {
       /////////////////////////////
@@ -562,6 +633,23 @@ class BackendQueryFilterUtilsTest extends BaseTest
          new QQueryFilter()
             .withCriteria(lineItemCriteria)
             .withOrderBy(new QFilterOrderBy(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC + ".id"))));
+
+      //////////////////////////////////////////////////////////////////////////
+      // virtual fields in criteria should not cause an exception (bug fix)   //
+      // previously, identifyJoinTablesInFilter used FieldAndJoinTable.get()  //
+      // without allowVirtualFields=true, so virtual field names would throw. //
+      //////////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER)
+         .withVirtualField(new QVirtualFieldMetaData("firstInitial", QFieldType.STRING)
+            .withIsQueryCriteria(true)
+            .withFieldFunction(new FieldFunction().withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER).withFieldName("orderNo")
+               .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 1, SubStringFunction.LENGTH_PARAM, 1))));
+
+      assertEquals(Set.of(), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter(new QFilterCriteria("firstInitial", QCriteriaOperator.EQUALS, "A"))));
+
+      assertEquals(Set.of(), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter(new QFilterCriteria("orderNo", QCriteriaOperator.EQUALS).withOtherFieldName("firstInitial"))));
 
    }
 

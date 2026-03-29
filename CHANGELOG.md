@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-03-29
+
+### Breaking Changes
+- **TableBasedAuthenticationModule** - Removed SHA1 backward compatibility for password hashing. Only SHA256 format (`sha256:iterations:salt:hash`) is now supported. Users with legacy SHA1-hashed passwords must reset their passwords.
+
+### Added
+- **Field Functions** - Virtual computed fields with backend-specific implementations (core, RDBMS, PostgreSQL, MongoDB). Supports `StringLength`, `WeekdayOfDate`, and more.
+- **OAuth2 externalBaseUrl** - Split internal/external URL deployments for Kubernetes environments where pods cannot reach LoadBalancer VIPs
+- **Collapsible Elements** - New `Collapsible` metadata class applied to `QFieldSection` and `QWidgetMetaData`
+- **SpotBugs + PMD** - Static analysis integrated into CI pipeline via `qqq-orb/static_analysis` job
+- **Branding** - `accentColorLight` and `gravatarDefault` fields added to branding metadata
+- **Virtual Fields as PVS** - Virtual fields supported in possible value sources and `TableMetaData` API
+- **Join Validation** - `JoinGraph` tracks flipped joins, `matchesJoinPath` considers flipped joins for matching
+- **Saved Views** - `QuerySavedViewProcess` single-view mode adds quick-view attributes
+
+### Fixed
+- **JoinsContext** - Clone incoming `QueryJoin` objects to prevent shared-state mutation; prevent double-flip of multi-hop security join metadata; exclude implicit security lock joins from join cross product
+- **MemoryRecordStore** - Clear stale display values on queried records; add virtual fields after stripping unrecognized fields; use `JoinsContext` query joins for cross product
+- **RDBMS** - Paginate over primary keys in `doDeleteList` to avoid oversized queries; fix param binding in set-operation queries with virtual fields; fix order-by for grouped fields with field functions
+- **Joins** - Normalize self-joins correctly by comparing fields; flipped joins respect `joinOn` fields
+- **TableMetaDataAction** - Exclude deeply-nested exposed joins from response
+- **MetaData Production** - Add class name tie-breaking for stable producer ordering
+
+### Changed
+- **Theme Refactor** - `QThemeMetaData` moved from `qqq-backend-core` to `qqq-frontend-material-dashboard` (frontend-specific)
+- **License** - Migrated from AGPL-3.0 to Apache-2.0
+
+### Security
+- **Jetty 11.0.26** - Upgraded from 11.0.25 to fix HTTP/2 vulnerability (HIGH)
+- **WireMock 3.13.2** - Upgraded from 3.13.0 to fix commons-fileupload vulnerability (HIGH)
+- **commons-lang 2.x removed** - Migrated to commons-lang3 3.20.0 (no fix available for 2.x MEDIUM CVE)
+- **iq80 snappy excluded** - Excluded vulnerable snappy from checkstyle plugin dependencies (MEDIUM)
+- **mysql-connector-j 8.4.0** - Migrated from deprecated mysql:mysql-connector-java 8.0.30 (HIGH)
+- **protobuf-java 3.25.5** - Override to fix DoS vulnerability (HIGH)
+- **PasswordHasher SHA1 removed** - Eliminated weak cryptographic algorithm (CodeQL alert)
+- **RapiDoc XSS hardened** - Strengthened URL validation with origin checking
+
+### Notes
+- commons-lang3 alert dismissed - already at 3.20.0
+- commons-beanutils alerts dismissed - already at fix version 1.11.0
+- jetty-http alerts dismissed - requires Jetty 12.x (Javalin 7.x)
+
 ## [0.35.0] - 2025-12-28
 
 ### Changed

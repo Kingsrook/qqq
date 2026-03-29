@@ -735,4 +735,20 @@ public class CollectionUtils
          destination.addAll(source);
       }
    }
+
+
+
+   /***************************************************************************
+    * Add an object to a list after another object already in the list
+    ***************************************************************************/
+   public static <T> void addAfter(List<T> list, T target, T elementToInsert)
+   {
+      int idx = list.indexOf(target);
+      if(idx == -1)
+      {
+         throw new IllegalArgumentException("Target element not found");
+      }
+      list.add(idx + 1, elementToInsert);
+   }
+
 }

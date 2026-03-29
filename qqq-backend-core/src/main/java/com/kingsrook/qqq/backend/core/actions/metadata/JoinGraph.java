@@ -26,23 +26,60 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- ** Object to represent the graph of joins in a QQQ Instance.  e.g., all of the
- ** connections among tables through joins.
+ ** Represents the graph of table-to-table joins in a QQQ Instance, treating
+ ** each join as a non-directional edge between two tables.
+ **
+ ** <p>The primary purpose of this class is to answer the question: "given a
+ ** starting table, what other tables can be reached through joins, and via
+ ** which paths?"  This is used during instance enrichment and validation to
+ ** discover multi-hop join paths (e.g., order → orderLine → item).</p>
+ **
+ ** <p>Key behaviors:</p>
+ ** <ul>
+ **    <li><b>Deduplication:</b> If the instance defines both A → B and B → A
+ **        joins (on the same fields), they are normalized into a single edge
+ **        so the graph does not contain redundant paths.</li>
+ **    <li><b>Flipped-join awareness:</b> Even though duplicate joins are
+ **        collapsed into one edge, the {@code flippedJoins} map remembers all
+ **        original join names for each table pair, so that
+ **        {@link JoinConnectionList#matchesJoinPath(List, JoinGraph, QInstance)}
+ **        can match a path by any equivalent join name, not just the one
+ **        stored in the edge.</li>
+ **    <li><b>Path-length limiting:</b> To keep traversal performant on large
+ **        instances, paths longer than {@code maxPathLength} (default 3) are
+ **        pruned.  This limit is configurable via the system property
+ **        {@code qqq.instance.joinGraph.maxPathLength} or environment variable
+ **        {@code QQQ_INSTANCE_JOIN_GRAPH_MAX_PATH_LENGTH}.</li>
+ ** </ul>
  *******************************************************************************/
 public class JoinGraph
 {
+   private static final QLogger LOG = QLogger.getLogger(JoinGraph.class);
+
    private Set<Edge> edges = new HashSet<>();
+
+   //////////////////////////////////////////////////////////////////////////////
+   // since the joins are considered non-directional edges, if an instance has //
+   // joins A -> B, and B -> A, only one of them gets built (say, A -> B)      //
+   // But then later, in {@code JoinConnectionList.matchesJoinPath}, a false   //
+   // negative could be returned if the other one (B -> A) was tested for.     //
+   // so - this listing hash keeps track of all joins that are equivalent      //
+   // to one another from this POV, so that any/all can be considered to match //
+   //////////////////////////////////////////////////////////////////////////////
+   private ListingHash<NormalizedJoin, String> flippedJoins = new ListingHash<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // as an instance grows, with the number of joins (say, more than 50?), especially as they may have a lot of connections, //
@@ -66,81 +103,71 @@ public class JoinGraph
 
 
 
-   /*******************************************************************************
+   /***************************************************************************
     ** In this class, we are treating joins as non-directional graph edges - so -
     ** use this class to "normalize" what may otherwise be duplicated joins in the
     ** qInstance (e.g., A -> B and B -> A -- in the instance, those are valid, but
     ** in our graph here, we want to consider those the same).
-    *******************************************************************************/
-   private static class NormalizedJoin
+    ***************************************************************************/
+   private record NormalizedJoin(String tableA, String tableB, List<String> joinFieldA, List<String> joinFieldB)
    {
-      private String tableA;
-      private String tableB;
-      private String joinFieldA;
-      private String joinFieldB;
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      public NormalizedJoin(QJoinMetaData joinMetaData)
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      static NormalizedJoin build(QJoinMetaData joinMetaData)
       {
-         boolean needFlip     = false;
+         List<String> leftFields  = joinMetaData.getJoinOns().stream().map(jo -> jo.getLeftField()).toList();
+         List<String> rightFields = joinMetaData.getJoinOns().stream().map(jo -> jo.getRightField()).toList();
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // to normalize the join, we'll first compare table names.  if they match (a self-join), then we'll compare join fields //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Boolean leftFirst    = null;
          int     tableCompare = joinMetaData.getLeftTable().compareTo(joinMetaData.getRightTable());
          if(tableCompare < 0)
          {
-            needFlip = true;
+            leftFirst = true;
          }
-         else if(tableCompare == 0)
+         else if(tableCompare > 0)
          {
-            int fieldCompare = joinMetaData.getJoinOns().get(0).getLeftField().compareTo(joinMetaData.getJoinOns().get(0).getRightField());
-            if(fieldCompare < 0)
+            leftFirst = false;
+         }
+         else
+         {
+            for(int i = 0; i < Math.min(leftFields.size(), rightFields.size()); i++)
             {
-               needFlip = true;
+               int fieldCompare = leftFields.get(i).compareTo(rightFields.get(i));
+               if(fieldCompare < 0)
+               {
+                  leftFirst = true;
+                  break;
+               }
+               else if(fieldCompare > 0)
+               {
+                  leftFirst = false;
+                  break;
+               }
             }
          }
 
-         if(needFlip)
+         if(leftFirst == null)
          {
-            joinMetaData = joinMetaData.flip();
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the sides of the joins were identical (e.g., foo.id -> foo.id), that's probably bad setup. //
+            // so warn the user about it, and choose something...                                            //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            LOG.warn("There appears to be a join between a table and itself, with all matching join-fields.  This could introduce unexpected behavior.", logPair("joinName", joinMetaData.getName()));
+            leftFirst = true;
          }
 
-         tableA = joinMetaData.getLeftTable();
-         tableB = joinMetaData.getRightTable();
-         joinFieldA = joinMetaData.getJoinOns().get(0).getLeftField();
-         joinFieldB = joinMetaData.getJoinOns().get(0).getRightField();
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public boolean equals(Object o)
-      {
-         if(this == o)
+         if(leftFirst)
          {
-            return true;
+            return (new NormalizedJoin(joinMetaData.getLeftTable(), joinMetaData.getRightTable(), leftFields, rightFields));
          }
-         if(o == null || getClass() != o.getClass())
+         else
          {
-            return false;
+            return (new NormalizedJoin(joinMetaData.getRightTable(), joinMetaData.getLeftTable(), rightFields, leftFields));
          }
-         NormalizedJoin that = (NormalizedJoin) o;
-         return Objects.equals(tableA, that.tableA) && Objects.equals(tableB, that.tableB) && Objects.equals(joinFieldA, that.joinFieldA) && Objects.equals(joinFieldB, that.joinFieldB);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public int hashCode()
-      {
-         return Objects.hash(tableA, tableB, joinFieldA, joinFieldB);
       }
    }
 
@@ -155,7 +182,9 @@ public class JoinGraph
       Set<NormalizedJoin> usedJoins = new HashSet<>();
       for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
       {
-         NormalizedJoin normalizedJoin = new NormalizedJoin(join);
+         NormalizedJoin normalizedJoin = NormalizedJoin.build(join);
+         flippedJoins.add(normalizedJoin, join.getName());
+
          if(usedJoins.contains(normalizedJoin))
          {
             continue;
@@ -244,6 +273,58 @@ public class JoinGraph
             {
                return (false);
             }
+         }
+
+         return (true);
+      }
+
+
+
+      /*******************************************************************************
+       * version of matchesJoinPath that considers flippedJoins, rather than only
+       * strictly matching the exact join names in the path (which, given the fact that
+       * the join graph may contain flipped joins, this allows for more flexible
+       * (and probably accurate for what you're looking for) matching).
+       *******************************************************************************/
+      public boolean matchesJoinPath(List<String> joinPath, JoinGraph joinGraph, QInstance qInstance)
+      {
+         if(list.size() != joinPath.size())
+         {
+            return (false);
+         }
+
+         OUTER:
+         for(int i = 0; i < list.size(); i++)
+         {
+            JoinConnection joinConnection = list.get(i);
+            if(joinConnection.viaJoinName().equals(joinPath.get(i)))
+            {
+               /////////////////////////////////////////////////////////////////////////
+               // if the name is an exact match, move on to the next join in the path //
+               /////////////////////////////////////////////////////////////////////////
+               continue OUTER;
+            }
+
+            ///////////////////////////////////////////////////////////////////////////////
+            // else consider if any flipped joins match this entry - and if so, continue //
+            ///////////////////////////////////////////////////////////////////////////////
+            QJoinMetaData join = qInstance.getJoin(joinConnection.viaJoinName);
+            if(join != null)
+            {
+               List<String> joinNames = joinGraph.flippedJoins.get(NormalizedJoin.build(join));
+               for(String joinName : CollectionUtils.nonNullList(joinNames))
+               {
+                  if(joinName.equals(joinPath.get(i)))
+                  {
+                     continue OUTER;
+                  }
+               }
+            }
+
+            /////////////////////////////////////////////////////////////////
+            // if both checks above fail, then the join path doesn't match //
+            /////////////////////////////////////////////////////////////////
+            return (false);
          }
 
          return (true);

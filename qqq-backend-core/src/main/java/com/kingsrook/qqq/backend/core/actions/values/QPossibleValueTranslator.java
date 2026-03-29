@@ -129,7 +129,7 @@ public class QPossibleValueTranslator
 
       for(QRecord record : records)
       {
-         for(QFieldMetaData field : table.getFields().values())
+         for(QFieldMetaData field : getFieldsAndVirtualFields(table))
          {
             if(field.getPossibleValueSourceName() != null)
             {
@@ -147,7 +147,7 @@ public class QPossibleValueTranslator
                try
                {
                   QTableMetaData joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
-                  for(QFieldMetaData field : joinTable.getFields().values())
+                  for(QFieldMetaData field : getFieldsAndVirtualFields(joinTable))
                   {
                      String joinFieldName = Objects.requireNonNullElse(queryJoin.getAlias(), joinTable.getName()) + "." + field.getName();
                      if(field.getPossibleValueSourceName() != null)
@@ -176,6 +176,21 @@ public class QPossibleValueTranslator
          }
 
       }
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static List<QFieldMetaData> getFieldsAndVirtualFields(QTableMetaData table)
+   {
+      List<QFieldMetaData> fields = new ArrayList<>(table.getFields().values());
+      if(table.getVirtualFields() != null)
+      {
+         fields.addAll(table.getVirtualFields().values());
+      }
+      return fields;
    }
 
 
@@ -495,7 +510,7 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    private void primePvsCacheTableListingHashLoader(QTableMetaData table, ListingHash<String, Pair<String, QFieldMetaData>> fieldsByPvsTable, ListingHash<String, QPossibleValueSource> pvsesByTable, String fieldNamePrefix, String tableName, Set<String> limitedToFieldNames)
    {
-      for(QFieldMetaData field : table.getFields().values())
+      for(QFieldMetaData field : getFieldsAndVirtualFields(table))
       {
          QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
          if(possibleValueSource != null && possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))

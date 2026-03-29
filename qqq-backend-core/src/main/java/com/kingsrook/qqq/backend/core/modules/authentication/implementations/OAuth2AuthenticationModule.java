@@ -34,9 +34,12 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
@@ -44,8 +47,12 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.OAuth2AuthenticationMetaData;
@@ -53,7 +60,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.authentication.QSessionStoreHelper;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.model.UserSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
@@ -75,6 +84,7 @@ import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -94,6 +104,12 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
 
    private static final Memoization<String, OIDCProviderMetadata> oidcProviderMetadataMemoization = new Memoization<String, OIDCProviderMetadata>()
       .withMayStoreNullValues(false);
+
+   //////////////////////////////////////////////////////////////////////////////////
+   // do not use this var directly - rather - always call the getCustomizer method //
+   //////////////////////////////////////////////////////////////////////////////////
+   private QAuthenticationModuleCustomizerInterface _customizer                = null;
+   private boolean                                  customizerHasBeenRequested = false;
 
 
 
@@ -124,6 +140,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
                QRecord redirectStateRecord = GetAction.execute(oauth2MetaData.getRedirectStateTableName(), Map.of("state", context.get("state")));
                if(redirectStateRecord == null)
                {
+                  LOG.warn("OAuth callback state not found", logPair("state", context.get("state")));
                   throw (new QAuthenticationException("State not found"));
                }
                redirectUri.set(redirectStateRecord.getValueString("redirectUri"));
@@ -170,6 +187,19 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
                Objects.requireNonNullElseGet(context.get("sessionId"), () ->
                   context.get("uuid")));
 
+            ///////////////////////////////////////////////////////////////////////////
+            // if session store is enabled, try to load cached session first         //
+            // this avoids re-deriving security keys and other expensive operations  //
+            ///////////////////////////////////////////////////////////////////////////
+            if(Boolean.TRUE.equals(oauth2MetaData.getSessionStoreEnabled()))
+            {
+               Optional<QSession> cachedSession = QSessionStoreHelper.loadAndTouchSession(uuid);
+               if(cachedSession.isPresent())
+               {
+                  return cachedSession.get();
+               }
+            }
+
             String   accessToken = getAccessTokenFromSessionUUID(uuid);
             QSession session     = createSessionFromToken(accessToken);
             session.setUuid(uuid);
@@ -182,6 +212,20 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
             //////////////////////////////////////////////////////////////////
             // todo - do we need to validate its age or ping the provider?? //
             //////////////////////////////////////////////////////////////////
+
+            //////////////////////////////////////////////////////////////
+            // allow customizer to do custom things here, if so desired //
+            //////////////////////////////////////////////////////////////
+            finalCustomizeSession(qInstance, session);
+
+            ///////////////////////////////////////////////////////////////////////
+            // if session store is enabled, store the session for future use    //
+            // this happens after finalCustomizeSession so security keys cached //
+            ///////////////////////////////////////////////////////////////////////
+            if(Boolean.TRUE.equals(oauth2MetaData.getSessionStoreEnabled()))
+            {
+               QSessionStoreHelper.storeSession(uuid, session, QSessionStoreHelper.getDefaultTtl());
+            }
 
             return (session);
          }
@@ -198,6 +242,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
       }
       catch(Exception e)
       {
+         LOG.warn("Failed to create session", e, logPair("contextKeys", context.keySet()));
          throw (new QAuthenticationException("Failed to create session (token)", e));
       }
    }
@@ -209,10 +254,20 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
     ***************************************************************************/
    private QSession createSessionFromTokenRequest(TokenRequest tokenRequest) throws ParseException, IOException, QException
    {
+      ///////////////////////////////////////////////////////////////////////////
+      // log token request details before sending to aid debugging auth issues //
+      ///////////////////////////////////////////////////////////////////////////
+      LOG.debug("Sending token request",
+         logPair("tokenEndpoint", tokenRequest.getEndpointURI()),
+         logPair("clientId", tokenRequest.getClientAuthentication() != null ? tokenRequest.getClientAuthentication().getClientID() : null),
+         logPair("grantType", tokenRequest.getAuthorizationGrant() != null ? tokenRequest.getAuthorizationGrant().getType() : null));
+
       TokenResponse tokenResponse = TokenResponse.parse(tokenRequest.toHTTPRequest().send());
 
       if(tokenResponse.indicatesSuccess())
       {
+         LOG.debug("Token request succeeded", logPair("tokenEndpoint", tokenRequest.getEndpointURI()));
+
          AccessToken accessToken = tokenResponse.toSuccessResponse().getTokens().getAccessToken();
 
          ////////////////////////////////////////////////////////////////////
@@ -220,14 +275,57 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
          ////////////////////////////////////////////////////////////////////
          // RefreshToken refreshToken = tokenResponse.toSuccessResponse().getTokens().getRefreshToken();
 
-         QSession session = createSessionFromToken(accessToken.getValue());
+         ///////////////////////////////////////////////////////////////////////
+         // extract id token claims if available (for OIDC flows)             //
+         // this gives customizers access to claims that OIDC providers       //
+         // typically place in the ID token (groups, permissions, custom claims) //
+         ///////////////////////////////////////////////////////////////////////
+         JSONObject idTokenPayload = null;
+         try
+         {
+            OIDCTokens oidcTokens = tokenResponse.toSuccessResponse().getTokens().toOIDCTokens();
+            if(oidcTokens != null && oidcTokens.getIDToken() != null)
+            {
+               idTokenPayload = new JSONObject(oidcTokens.getIDToken().getJWTClaimsSet().toJSONObject());
+            }
+         }
+         catch(Exception e)
+         {
+            ////////////////////////////////////////////////////////////////////
+            // not an OIDC flow or ID token parsing failed - continue without //
+            ////////////////////////////////////////////////////////////////////
+            LOG.debug("Could not extract ID token from token response", e);
+         }
+
+         QSession session = createSessionFromToken(accessToken.getValue(), accessToken.getValue(), idTokenPayload);
          insertUserSession(accessToken.getValue(), session);
+
+         //////////////////////////////////////////////////////////////
+         // allow customizer to do custom things here, if so desired //
+         //////////////////////////////////////////////////////////////
+         finalCustomizeSession(QContext.getQInstance(), session);
+
+         ///////////////////////////////////////////////////////////////////////
+         // if session store is enabled, store the session for future use    //
+         // this happens after finalCustomizeSession so security keys cached //
+         ///////////////////////////////////////////////////////////////////////
+         OAuth2AuthenticationMetaData oauth2MetaData = (OAuth2AuthenticationMetaData) QContext.getQInstance().getAuthentication();
+         if(Boolean.TRUE.equals(oauth2MetaData.getSessionStoreEnabled()))
+         {
+            QSessionStoreHelper.storeSession(session.getUuid(), session, QSessionStoreHelper.getDefaultTtl());
+         }
+
          return (session);
       }
       else
       {
          ErrorObject errorObject = tokenResponse.toErrorResponse().getErrorObject();
-         LOG.info("Token request failed", logPair("code", errorObject.getCode()), logPair("description", errorObject.getDescription()));
+         LOG.warn("Token request failed",
+            logPair("code", errorObject.getCode()),
+            logPair("description", errorObject.getDescription()),
+            logPair("httpStatus", errorObject.getHTTPStatusCode()),
+            logPair("tokenEndpoint", tokenRequest.getEndpointURI()),
+            logPair("clientId", tokenRequest.getClientAuthentication() != null ? tokenRequest.getClientAuthentication().getClientID() : null));
          throw (new QAuthenticationException(errorObject.getDescription()));
       }
    }
@@ -280,6 +378,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
          QTableMetaData stateTable = QContext.getQInstance().getTable(oauth2MetaData.getRedirectStateTableName());
          if(stateTable == null)
          {
+            LOG.error("OAuth redirect state table not defined in QInstance", logPair("tableName", oauth2MetaData.getRedirectStateTableName()));
             throw (new QAuthenticationException("The table specified as the oauthRedirectStateTableName [" + oauth2MetaData.getRedirectStateTableName() + "] is not defined in the QInstance"));
          }
 
@@ -301,6 +400,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
                .withValue("redirectUri", originalUrl))).getRecords().get(0);
             if(CollectionUtils.nullSafeHasContents(insertedState.getErrors()))
             {
+               LOG.warn("Error storing OAuth redirect state", logPair("errors", insertedState.getErrorsAsString()));
                throw (new QAuthenticationException("Error storing redirect state: " + insertedState.getErrorsAsString()));
             }
          });
@@ -322,9 +422,25 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
 
 
    /***************************************************************************
-    **
+    ** Create session from access token only (for session resume path)
     ***************************************************************************/
    private QSession createSessionFromToken(String accessToken) throws QException
+   {
+      return createSessionFromToken(accessToken, null, null);
+   }
+
+
+
+   /***************************************************************************
+    ** Create session from access token with optional tokens for customizer.
+    **
+    ** @param accessToken the JWT access token to decode for session info
+    ** @param accessTokenValue raw access token string to pass to customizer
+    **        (for calling userinfo endpoint). May be null on session resume.
+    ** @param idTokenPayload decoded ID token claims to pass to customizer.
+    **        May be null if not an OIDC flow or on session resume.
+    ***************************************************************************/
+   private QSession createSessionFromToken(String accessToken, String accessTokenValue, JSONObject idTokenPayload) throws QException
    {
       DecodedJWT     jwt           = JWT.decode(accessToken);
       Base64.Decoder decoder       = Base64.getUrlDecoder();
@@ -336,10 +452,11 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
       session.setUser(user);
 
       user.setFullName("Unknown");
-      String email = Objects.requireNonNullElseGet(payload.optString("email", null), () -> payload.optString("sub", null));
-      String name  = payload.optString("name", email);
+      String sub   = Objects.requireNonNullElseGet(payload.optString("sub", null), () -> payload.optString("email", null));
+      String email = payload.optString("email", sub);
+      String name  = payload.optString("name", sub);
 
-      user.setIdReference(email);
+      user.setIdReference(sub);
       user.setFullName(name);
 
       ////////////////////////////////////////////////////////////
@@ -352,6 +469,33 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
       // a non-null value for use in cookies and session management               //
       //////////////////////////////////////////////////////////////////////////////
       session.setIdReference(session.getUuid());
+
+      //////////////////////////////////////////////////////////////
+      // allow customizer to do custom things here, if so desired //
+      //////////////////////////////////////////////////////////////
+      if(getCustomizer() != null)
+      {
+         Map<String, Object> context = new HashMap<>();
+         context.put("jwtPayloadJsonObject", payload);
+
+         ///////////////////////////////////////////////////////////////////////
+         // pass access token string so customizer can call userinfo endpoint //
+         ///////////////////////////////////////////////////////////////////////
+         if(accessTokenValue != null)
+         {
+            context.put("accessToken", accessTokenValue);
+         }
+
+         ////////////////////////////////////////////////////////////////////
+         // pass ID token claims if available (contains custom OIDC claims) //
+         ////////////////////////////////////////////////////////////////////
+         if(idTokenPayload != null)
+         {
+            context.put("idToken", idTokenPayload);
+         }
+
+         getCustomizer().customizeSession(QContext.getQInstance(), session, context);
+      }
 
       return session;
    }
@@ -437,6 +581,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
          if(userSessionRecord != null)
          {
             accessToken = userSessionRecord.getValueString("accessToken");
+            String storedUserId = userSessionRecord.getValueString("userId");
 
             ////////////////////////////////////////////////////////////
             // decode the accessToken and make sure it is not expired //
@@ -446,7 +591,24 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
                DecodedJWT jwt = JWT.decode(accessToken);
                if(jwt.getExpiresAtAsInstant().isBefore(Instant.now()))
                {
+                  LOG.warn("Session accessToken is expired", logPair("sessionUUID", sessionUUID));
                   throw (new QAuthenticationException("accessToken is expired"));
+               }
+
+               ///////////////////////////////////////////////////////////////////
+               // validate that the token's identity matches the stored userId  //
+               // this prevents session hijacking if data becomes inconsistent  //
+               // prefer sub (OIDC standard, guaranteed unique) over email      //
+               ///////////////////////////////////////////////////////////////////
+               Base64.Decoder decoder       = Base64.getUrlDecoder();
+               String         payloadString = new String(decoder.decode(jwt.getPayload()));
+               JSONObject     payload       = new JSONObject(payloadString);
+               String         tokenIdentity = Objects.requireNonNullElseGet(payload.optString("sub", null), () -> payload.optString("email", null));
+
+               if(storedUserId != null && tokenIdentity != null && !storedUserId.equals(tokenIdentity))
+               {
+                  LOG.warn("Session userId mismatch", logPair("sessionUUID", sessionUUID), logPair("storedUserId", storedUserId), logPair("tokenIdentity", tokenIdentity));
+                  throw (new QAuthenticationException("Session identity mismatch"));
                }
             }
          }
@@ -492,6 +654,106 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
          OIDCProviderMetadata metadata = OIDCProviderMetadata.resolve(issuer);
          return (metadata);
       })).orElseThrow(() -> new GeneralException("Could not resolve OIDCProviderMetadata for " + oAuth2AuthenticationMetaData.getName()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QAuthenticationModuleCustomizerInterface getCustomizer()
+   {
+      try
+      {
+         if(!customizerHasBeenRequested)
+         {
+            customizerHasBeenRequested = true;
+
+            OAuth2AuthenticationMetaData oauth2MetaData = (OAuth2AuthenticationMetaData) QContext.getQInstance().getAuthentication();
+
+            if(oauth2MetaData.getCustomizer() != null)
+            {
+               _customizer = QCodeLoader.getAdHoc(QAuthenticationModuleCustomizerInterface.class, oauth2MetaData.getCustomizer());
+            }
+         }
+
+         return (_customizer);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error getting customizer", e);
+         return (null);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void finalCustomizeSession(QInstance qInstance, QSession qSession)
+   {
+      if(getCustomizer() != null)
+      {
+         QContext.withTemporaryContext(QContext.capture(), () ->
+         {
+            QContext.setQSession(new QSystemUserSession());
+            getCustomizer().finalCustomizeSession(qInstance, qSession);
+         });
+      }
+   }
+
+
+
+   /***************************************************************************
+    ** Logout a session by deleting it from the database and clearing the
+    ** memoization cache.
+    ***************************************************************************/
+   @Override
+   public void logout(QInstance qInstance, String sessionUUID)
+   {
+      if(sessionUUID == null)
+      {
+         return;
+      }
+
+      QSession beforeSession = QContext.getQSession();
+      try
+      {
+         QContext.setQSession(new QSystemUserSession());
+
+         /////////////////////////////////////////////
+         // delete the session record from database //
+         /////////////////////////////////////////////
+         new DeleteAction().execute(new DeleteInput(UserSession.TABLE_NAME)
+            .withQueryFilter(new QQueryFilter(new QFilterCriteria("uuid", QCriteriaOperator.EQUALS, sessionUUID))));
+
+         ///////////////////////////////////////////
+         // clear the session from memoization cache //
+         ///////////////////////////////////////////
+         getAccessTokenFromSessionUUIDMemoization.clearKey(sessionUUID);
+
+         LOG.debug("Logged out session", logPair("sessionUUID", sessionUUID));
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error during logout", e, logPair("sessionUUID", sessionUUID));
+      }
+      finally
+      {
+         QContext.setQSession(beforeSession);
+      }
+   }
+
+
+
+   /***************************************************************************
+    ** Clear cached OIDC provider metadata. Primarily for testing purposes
+    ** when WireMock servers restart on different ports between tests.
+    ***************************************************************************/
+   public static void clearOIDCProviderMetadataCache()
+   {
+      oidcProviderMetadataMemoization.clear();
    }
 
 }

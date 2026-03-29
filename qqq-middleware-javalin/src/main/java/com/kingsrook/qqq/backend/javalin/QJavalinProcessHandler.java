@@ -88,8 +88,8 @@ import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.jetty.http.HttpStatus;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static io.javalin.apibuilder.ApiBuilder.get;
@@ -618,7 +618,7 @@ public class QJavalinProcessHandler
       /////////////////////////////////////////////////////////////
       // deal with params that specify an initial-records filter //
       /////////////////////////////////////////////////////////////
-      QQueryFilter initialRecordsFilter = buildProcessInitRecordsFilter(context, runProcessInput);
+      QQueryFilter initialRecordsFilter = buildProcessInitRecordsFilter(runProcessInput);
       if(initialRecordsFilter != null)
       {
          runProcessInput.setCallback(new QProcessCallback()
@@ -645,7 +645,7 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QQueryFilter buildProcessInitRecordsFilter(Context context, RunProcessInput runProcessInput) throws IOException
+   private static QQueryFilter buildProcessInitRecordsFilter(RunProcessInput runProcessInput) throws IOException
    {
       QInstance        instance = QContext.getQInstance();
       QProcessMetaData process  = instance.getProcess(runProcessInput.getProcessName());
@@ -658,11 +658,10 @@ public class QJavalinProcessHandler
       }
       String primaryKeyField = table.getPrimaryKeyField();
 
-      String recordsParam = context.queryParam("recordsParam");
+      String recordsParam = runProcessInput.getValueString("recordsParam");
       if(StringUtils.hasContent(recordsParam))
       {
-         @SuppressWarnings("ConstantConditions")
-         String paramValue = context.queryParam(recordsParam);
+         String paramValue = runProcessInput.getValueString(recordsParam);
          if(!StringUtils.hasContent(paramValue))
          {
             throw (new IllegalArgumentException("Missing value in query parameter: " + recordsParam + " (which was specified as the recordsParam)"));
@@ -671,7 +670,6 @@ public class QJavalinProcessHandler
          switch(recordsParam)
          {
             case "recordIds":
-               @SuppressWarnings("ConstantConditions")
                Serializable[] idStrings = paramValue.split(",");
                return (new QQueryFilter().withCriteria(new QFilterCriteria()
                   .withFieldName(primaryKeyField)

@@ -32,9 +32,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
+import com.kingsrook.qqq.backend.core.model.common.DayOfWeekPossibleValueSourceMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -80,7 +83,7 @@ public class QQueryFilterFormatter
       QFieldType     fieldType  = null;
       try
       {
-         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(table, criteria.getFieldName());
+         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(table, criteria.getFieldName(), null, true);
          fieldLabel = fieldAndJoinTable.getLabel(table);
          field = fieldAndJoinTable.field();
          fieldType = field.getType();
@@ -98,8 +101,22 @@ public class QQueryFilterFormatter
       {
          case EQUALS -> rs.append(" equals ");
          case NOT_EQUALS, NOT_EQUALS_OR_IS_NULL -> rs.append(" does not equal ");
-         case IN -> rs.append(" is any of ");
-         case NOT_IN -> rs.append(" is none of ");
+         case IN ->
+         {
+            if(hasWeekdayFunction(criteria))
+            {
+               rs.append(" day");
+            }
+            rs.append(" is any of ");
+         }
+         case NOT_IN ->
+         {
+            if(hasWeekdayFunction(criteria))
+            {
+               rs.append(" day");
+            }
+            rs.append(" is none of ");
+         }
          case IS_NULL_OR_IN -> rs.append(" is blank or any of ");
          case LIKE -> rs.append(" is like ");
          case NOT_LIKE -> rs.append(" is not like ");
@@ -125,18 +142,28 @@ public class QQueryFilterFormatter
       List<Serializable> values = criteria.getValues();
       if(values.size() == 1)
       {
-         rs.append(formatValue(field, values.get(0)));
+         rs.append(formatValue(field, criteria, values.get(0)));
       }
       else if(values.size() == 2)
       {
-         rs.append(formatValue(field, values.get(0))).append(" and ").append(formatValue(field, values.get(1)));
+         rs.append(formatValue(field, criteria, values.get(0))).append(" and ").append(formatValue(field, criteria, values.get(1)));
       }
       else if(values.size() > 1)
       {
-         rs.append(formatValue(field, values.get(0))).append(" and ").append(values.size() - 1).append(" other values");
+         rs.append(formatValue(field, criteria, values.get(0))).append(" and ").append(values.size() - 1).append(" other values");
       }
 
       return (rs.toString());
+   }
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static boolean hasWeekdayFunction(QFilterCriteria criteria)
+   {
+      String functionTypeIdentifier = ObjectUtils.tryElse(() -> criteria.getFieldFunction().getFunctionTypeIdentifier().getName(), null);
+      return WeekdayOfDateTimeFunction.IDENTIFIER.getName().equals(functionTypeIdentifier) || WeekdayOfDateFunction.IDENTIFIER.getName().equals(functionTypeIdentifier);
    }
 
 
@@ -144,15 +171,21 @@ public class QQueryFilterFormatter
    /***************************************************************************
     **
     ***************************************************************************/
-   private static String formatValue(QFieldMetaData field, Serializable value)
+   private static String formatValue(QFieldMetaData field, QFilterCriteria criteria, Serializable value)
    {
       try
       {
-         if(field != null && StringUtils.hasContent(field.getPossibleValueSourceName()))
+         String possibleValueSourceName = (field == null ? null : field.getPossibleValueSourceName());
+         if(hasWeekdayFunction(criteria))
+         {
+            possibleValueSourceName = DayOfWeekPossibleValueSourceMetaDataProducer.NAME;
+         }
+
+         if(StringUtils.hasContent(possibleValueSourceName))
          {
             SearchPossibleValueSourceOutput searchPossibleValueSourceOutput = new SearchPossibleValueSourceAction().execute(new SearchPossibleValueSourceInput()
                .withIdList(List.of(value))
-               .withPossibleValueSourceName(field.getPossibleValueSourceName()));
+               .withPossibleValueSourceName(possibleValueSourceName));
             if(CollectionUtils.nullSafeHasContents(searchPossibleValueSourceOutput.getResults()))
             {
                return searchPossibleValueSourceOutput.getResults().get(0).getLabel();

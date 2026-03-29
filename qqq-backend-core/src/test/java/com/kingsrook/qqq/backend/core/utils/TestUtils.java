@@ -59,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
+import com.kingsrook.qqq.backend.core.model.common.DayOfWeekPossibleValueSourceMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -232,6 +233,7 @@ public class TestUtils
       qInstance.addJoin(defineJoinOrderOrderExtrinsic());
 
       qInstance.addPossibleValueSource(defineAutomationStatusPossibleValueSource());
+      qInstance.addPossibleValueSource(new DayOfWeekPossibleValueSourceMetaDataProducer().produce(qInstance));
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
       qInstance.addPossibleValueSource(defineShapePossibleValueSource());
       qInstance.addPossibleValueSource(defineCustomPossibleValueSource());

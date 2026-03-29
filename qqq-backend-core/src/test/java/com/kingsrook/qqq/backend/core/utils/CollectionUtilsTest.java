@@ -673,4 +673,42 @@ class CollectionUtilsTest extends BaseTest
       assertEquals(Set.of(1, 2, 3), doAddAllIfNotNull.apply(new HashSet<>(List.of(1)), List.of(2, 3)));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAddAfter()
+   {
+      ///////////////////////////////////
+      // insert after a middle element //
+      ///////////////////////////////////
+      ArrayList<String> list = new ArrayList<>(List.of("a", "b", "c"));
+      CollectionUtils.addAfter(list, "b", "x");
+      assertEquals(List.of("a", "b", "x", "c"), list);
+
+      ///////////////////////////////////
+      // insert after the last element //
+      ///////////////////////////////////
+      list = new ArrayList<>(List.of("a", "b", "c"));
+      CollectionUtils.addAfter(list, "c", "z");
+      assertEquals(List.of("a", "b", "c", "z"), list);
+
+      ////////////////////////////////////
+      // insert after the first element //
+      ////////////////////////////////////
+      list = new ArrayList<>(List.of("a", "b", "c"));
+      CollectionUtils.addAfter(list, "a", "y");
+      assertEquals(List.of("a", "y", "b", "c"), list);
+
+      ///////////////////////////////////////////////
+      // target not found throws IllegalArgumentException //
+      ///////////////////////////////////////////////
+      ArrayList<String> list2 = new ArrayList<>(List.of("a", "b"));
+      assertThatThrownBy(() -> CollectionUtils.addAfter(list2, "x", "y"))
+         .isInstanceOf(IllegalArgumentException.class)
+         .hasMessage("Target element not found");
+   }
+
 }

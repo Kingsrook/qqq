@@ -57,7 +57,18 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- ** Help work with MetaDataProducers.
+ * Help work with MetaDataProducers.
+ *
+ * <p>Note that all of the public methods here use {@code sortMetaDataProducers},
+ * which by default will sort by the sortOrder specified in the producer objects,
+ * then by the type that they return, and finally by their class simple name, then
+ * full name.</p>
+ *
+ * <p>But - this sorting by class names was added in 0.40.0. Prior to that,
+ * there was no tie breaker on the sort.  To restore the previous behavior, set
+ * the system property {@code qqq.MetaDataProducerHelper.disableNameTiebreaker}
+ * to {@code true}.</p>
+ *
  *******************************************************************************/
 public class MetaDataProducerHelper
 {
@@ -66,10 +77,12 @@ public class MetaDataProducerHelper
    private static Map<Class<?>, Integer> comparatorValuesByType = new HashMap<>();
    private static Integer                defaultComparatorValue;
 
+   private static boolean didLogAboutDisabledTiebreaker = false;
+
    static
    {
       ////////////////////////////////////////////////////////////////////////////////////////
-      // define how we break ties in sort-order based on the meta-dta type.  e.g., do apps  //
+      // define how we break ties in sort-order based on the meta-data type.  e.g., do apps //
       // after all other types (as apps often try to get other types from the instance)     //
       // also - do backends earlier than others (e.g., tables may expect backends to exist) //
       // any types not in the map get the default value.                                    //
@@ -109,6 +122,7 @@ public class MetaDataProducerHelper
       processAllMetaDataProducersInPackage(instance, packageName);
       MetaDataProducerHelper.tableMetaDataCustomizer = null;
    }
+
 
 
    /***************************************************************************
@@ -190,11 +204,18 @@ public class MetaDataProducerHelper
 
 
    /***************************************************************************
-    **
+    * sort a list of producers: First by the sortOrder specified in the producer objects.
+    * Second based on their types, so kinds that depend on other kinds come later.
+    * Third, by class simple name, and 4th by full class name, to give stable ordering
+    * (unless opt'ed out by system property).
+    *
+    * <p>Note, we use simple name before full name, in case, for some reason, you
+    * wanted to control the sort by naming your classes a certain way - easier
+    * to change Simple names than packages.</p>
     ***************************************************************************/
    public static void sortMetaDataProducers(List<MetaDataProducerInterface<?>> producers)
    {
-      producers.sort(Comparator
+      Comparator<MetaDataProducerInterface<?>> comparator = Comparator
          .comparing((MetaDataProducerInterface<?> p) -> p.getSortOrder())
          .thenComparing((MetaDataProducerInterface<?> p) ->
          {
@@ -207,7 +228,32 @@ public class MetaDataProducerHelper
             {
                return (0);
             }
-         }));
+         });
+
+      //////////////////////////////////////////////////////////////////////////
+      // read this system property each time this method is called.           //
+      // normally we might read it once into a static var - but, e.g., tests  //
+      // might need to change the value over time.  and this isn't a hot code //
+      // path at all, so we can bear the cost each time we're called in here. //
+      //////////////////////////////////////////////////////////////////////////
+      String  propertyName          = "qqq.MetaDataProducerHelper.disableNameTiebreaker";
+      boolean disableNameTiebreaker = Boolean.getBoolean(propertyName);
+      if(disableNameTiebreaker)
+      {
+         if(!didLogAboutDisabledTiebreaker)
+         {
+            didLogAboutDisabledTiebreaker = true;
+            LOG.warn("Name tiebreaker is disabled for MetaDataProducerHelper.sortMetaDataProducers.  This is legacy behavior, activated by system property [" + propertyName + "], which may be removed in a future release.");
+         }
+      }
+      else
+      {
+         comparator = comparator
+            .thenComparing(p -> p.getClass().getSimpleName())
+            .thenComparing(p -> p.getClass().getName());
+      }
+
+      producers.sort(comparator);
    }
 
 
@@ -387,8 +433,8 @@ public class MetaDataProducerHelper
       String                         parentTableName  = getTableNameStaticFieldValue(sourceClass);
       String                         childTableName   = getTableNameStaticFieldValue(childEntityClass);
 
-      ChildRecordListWidget childRecordListWidget = childTable.childRecordListWidget();
-      ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer producer = new ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, childRecordListWidget);
+      ChildRecordListWidget                                        childRecordListWidget = childTable.childRecordListWidget();
+      ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer producer              = new ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, childRecordListWidget);
       producer.setSourceClass(sourceClass);
       return producer;
    }

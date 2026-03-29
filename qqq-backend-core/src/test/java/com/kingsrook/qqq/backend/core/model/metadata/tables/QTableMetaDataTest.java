@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
@@ -51,8 +52,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -219,6 +222,75 @@ class QTableMetaDataTest extends BaseTest
       /////////////////////////////////////////////////////
       assertAllStrings.accept(table, "a");
       assertAllStrings.accept(clone, "b");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetFieldOrVirtualFieldReturnsRegularField()
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withName("test")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING));
+
+      QFieldMetaData field = table.getFieldOrVirtualField("name");
+      assertNotNull(field);
+      assertEquals("name", field.getName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetFieldOrVirtualFieldFallsBackToVirtualField()
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withName("test")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withVirtualField(new QVirtualFieldMetaData("nameLength", QFieldType.INTEGER));
+
+      QFieldMetaData field = table.getFieldOrVirtualField("nameLength");
+      assertNotNull(field);
+      assertEquals("nameLength", field.getName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetFieldOrVirtualFieldThrowsForUnknown()
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withName("test")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+
+      assertThatThrownBy(() -> table.getFieldOrVirtualField("noSuchField"))
+         .isInstanceOf(IllegalArgumentException.class)
+         .hasMessageContaining("noSuchField")
+         .hasMessageContaining("not found");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetFieldOrVirtualFieldThrowsWhenFieldsNull()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test");
+
+      assertThatThrownBy(() -> table.getFieldOrVirtualField("anything"))
+         .isInstanceOf(IllegalArgumentException.class)
+         .hasMessageContaining("does not have its fields defined");
    }
 
 }

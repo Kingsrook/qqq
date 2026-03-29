@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
@@ -56,8 +57,61 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- ** Helper object used throughout query (and related (count, aggregate, reporting))
- ** actions that need to track joins and aliases.
+ ** Helper object used throughout query, count, aggregate, and reporting actions
+ ** to assemble the full set of joins needed for a query, manage table aliases,
+ ** and enforce record-level security.
+ **
+ ** <p><b>Overview:</b> When a backend action (e.g., {@code RDBMSQueryAction},
+ ** {@code RDBMSCountAction}, {@code RDBMSAggregateAction}) needs to generate
+ ** SQL (or an equivalent query for other backends), it constructs a
+ ** {@code JoinsContext} from the main table name, the caller-supplied list of
+ ** {@link QueryJoin} objects, and the {@link QQueryFilter}.  During construction,
+ ** this class modifies the join list and the filter to include everything
+ ** needed for a correct, secure query.</p>
+ **
+ ** <p><b>Initialization pipeline ({@code init()}):</b></p>
+ ** <ol>
+ **   <li><b>Process existing QueryJoins</b>: validates that each join's
+ **       table exists, and populates the {@code aliasToTableNameMap} so that
+ **       later steps can resolve aliases to real table names.</li>
+ **   <li><b>{@code ensureFilterIsRepresented}</b>: scans all filter
+ **       criteria, other-field-names, and order-bys for {@code table.field}
+ **       references.  If a referenced table is not yet in the join list, a
+ **       join is added for it (with metadata resolved from the instance).</li>
+ **   <li><b>{@code ensureRecordSecurityLockIsRepresented}</b> (main table):
+ **      for each read-scope {@link RecordSecurityLock} on the main
+ **       table, ensures that any joins needed to reach the lock's security
+ **       field are present, and builds security filter criteria.</li>
+ **   <li><b>{@code fillInMissingJoinMetaData}</b>: for joins that were
+ **       added without explicit {@link QJoinMetaData} (e.g., only a table
+ **       name was specified), finds matching metadata from the
+ **       {@link QInstance}'s joins.  Also resolves indirect/multi-hop joins
+ **       via {@link ExposedJoin} paths on the main table.</li>
+ **   <li><b>{@code ensureAllJoinRecordSecurityLocksAreRepresented}</b>:
+ **       iterates over all joined tables and applies their security locks as
+ **       well, potentially adding further implicit joins.</li>
+ **   <li><b>{@code addSecurityFiltersToInputFilter}</b>: merges the
+ **       accumulated security filter into the original input filter.  If the
+ **       input filter uses {@code OR}, it is wrapped in a new {@code AND}
+ **       alongside the security filter.</li>
+ ** </ol>
+ **
+ ** <p><b>Alias management:</b> The internal {@code aliasToTableNameMap} maps
+ ** both aliases and bare table names to actual table names.  It is populated
+ ** as joins are processed.  Use {@link #resolveTableNameOrAliasToTableName}
+ ** to convert any alias/name to the real table name.</p>
+ **
+ ** <p><b>Security lock pipeline:</b> When a {@link RecordSecurityLock} has a
+ ** non-empty {@code joinNameChain}, the chain is walked (in reverse) to add
+ ** {@link ImplicitQueryJoinForSecurityLock} joins as needed.  The resulting
+ ** security criteria are placed either in the JOIN's {@code ON} clause (via
+ ** {@link QueryJoin#withSecurityCriteria}) or in the {@code WHERE} clause,
+ ** depending on whether the lock is part of an {@code OR} filter or applies
+ ** to the main table directly.</p>
+ **
+ ** <p><b>Key consumers:</b> {@code AbstractRDBMSAction} (uses this context to
+ ** build {@code FROM}, {@code WHERE}, {@code ORDER BY}, and {@code GROUP BY}
+ ** clauses), {@code MemoryRecordStore}, and {@code GenerateReportAction}.</p>
  *******************************************************************************/
 public class JoinsContext
 {
@@ -93,8 +147,13 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    ** Constructor - same as original, but assumes the QInstance from QContext.
+    ** Constructor that obtains the {@link QInstance} from {@link QContext}.
     **
+    ** @param tableName  the main (root) table for the query.
+    ** @param queryJoins caller-supplied list of joins; may be empty.  Additional
+    **                   joins may be added during initialization.
+    ** @param filter     the query filter; may be mutated to include security criteria.
+    ** @throws QException if a referenced table or join cannot be resolved.
     *******************************************************************************/
    public JoinsContext(String tableName, List<QueryJoin> queryJoins, QQueryFilter filter) throws QException
    {
@@ -104,14 +163,26 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    * Constructor - original.
-    *
+    ** Primary constructor.
+    **
+    ** @param instance   the QInstance containing table and join metadata.
+    ** @param tableName  the main (root) table for the query.
+    ** @param queryJoins caller-supplied list of joins; may be empty.  Additional
+    **                   joins may be added during initialization.
+    ** @param filter     the query filter; may be mutated to include security criteria.
+    ** @throws QException if a referenced table or join cannot be resolved.
     *******************************************************************************/
    public JoinsContext(QInstance instance, String tableName, List<QueryJoin> queryJoins, QQueryFilter filter) throws QException
    {
       this.instance = instance;
       this.mainTableName = tableName;
-      this.queryJoins = new MutableList<>(queryJoins);
+
+      /////////////////////////////////////////////////////////////////////////////
+      // clone the incoming query joins - as this class will mutate them!  so in //
+      // case they came from some meta-data, we don't want to change them there. //
+      /////////////////////////////////////////////////////////////////////////////
+      this.queryJoins = new ArrayList<>(CollectionUtils.nonNullList(queryJoins).stream().map(QueryJoin::clone).toList());
+
       this.securityFilter = new QQueryFilter();
       this.securityFilterCursor = this.securityFilter;
 
@@ -121,9 +192,16 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    * Constructor - allows you to omit security, and doesn't pre-assume any
-    * query joins.
-    *
+    ** Constructor that starts with an empty join list and optionally skips
+    ** security-lock processing.  Obtains the {@link QInstance} from {@link QContext}.
+    **
+    ** @param tableName    the main (root) table for the query.
+    ** @param filter       the query filter; may be mutated to include security criteria
+    **                     (unless {@code omitSecurity} is {@code true}).
+    ** @param omitSecurity if {@code true}, the initialization pipeline will not
+    **                     process any {@link RecordSecurityLock}s or add security
+    **                     filters.
+    ** @throws QException if a referenced table or join cannot be resolved.
     *******************************************************************************/
    public JoinsContext(String tableName, QQueryFilter filter, boolean omitSecurity) throws QException
    {
@@ -550,15 +628,6 @@ public class JoinsContext
       boolean haveAllAccessKey = hasAllAccessKey(recordSecurityLock);
       if(haveAllAccessKey)
       {
-         if(sourceQueryJoin != null)
-         {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // in case the queryJoin object is re-used between queries, and its security criteria need to be different (!!), reset it //
-            // this can be exposed in tests - maybe not entirely expected in real-world, but seems safe enough                        //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            sourceQueryJoin.withSecurityCriteria(new ArrayList<>());
-         }
-
          ////////////////////////////////////////////////////////////////////////////////////////
          // if we're in an AND filter, then we don't need a criteria for this lock, so return. //
          ////////////////////////////////////////////////////////////////////////////////////////
@@ -761,6 +830,8 @@ public class JoinsContext
 
                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // check the other joins in this query - if any of them have this join's left-table as their baseTable, then set the flag to true //
+               // also check if any other join's join-table resolves to this left table (handles aliased joins, e.g., security joins that bring  //
+               // a table into the query under an alias like "orderLine_forSecurityJoin_lineItemLineItemExtrinsic")                              //
                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                for(QueryJoin otherJoin : queryJoins)
                {
@@ -770,6 +841,13 @@ public class JoinsContext
                   }
 
                   if(Objects.equals(otherJoin.getBaseTableOrAlias(), joinMetaDataLeftTable))
+                  {
+                     isJoinLeftTableInQuery = true;
+                     break;
+                  }
+
+                  String otherJoinTableName = resolveTableNameOrAliasToTableName(otherJoin.getJoinTableOrItsAlias());
+                  if(Objects.equals(otherJoinTableName, joinMetaDataLeftTable))
                   {
                      isJoinLeftTableInQuery = true;
                      break;
@@ -807,20 +885,23 @@ public class JoinsContext
                   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                   QTableMetaData mainTable          = instance.getTable(mainTableName);
                   boolean        addedAnyQueryJoins = false;
-                  for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(mainTable.getExposedJoins()))
+                  boolean        foundJoinMetaData  = false;
+
+                  List<JoinTableAndPath> joinTablesAndPaths = getJoinTablesAndPaths(mainTable, true);
+                  for(JoinTableAndPath joinTableAndPath : joinTablesAndPaths)
                   {
-                     if(queryJoin.getJoinTable().equals(exposedJoin.getJoinTable()))
+                     if(queryJoin.getJoinTable().equals(joinTableAndPath.joinTable()))
                      {
-                        log("- - Found an exposed join", logPair("mainTable", mainTableName), logPair("joinTable", queryJoin.getJoinTable()), logPair("joinPath", exposedJoin.getJoinPath()));
+                        log("- - Found an exposed join", logPair("mainTable", mainTableName), logPair("joinTable", queryJoin.getJoinTable()), logPair("joinPath", joinTableAndPath.joinPath()));
 
                         /////////////////////////////////////////////////////////////////////////////////////
                         // loop backward through the join path (from the joinTable back to the main table) //
                         // adding joins to the table (if they aren't already in the query)                 //
                         /////////////////////////////////////////////////////////////////////////////////////
                         String tmpTable = queryJoin.getJoinTable();
-                        for(int i = exposedJoin.getJoinPath().size() - 1; i >= 0; i--)
+                        for(int i = joinTableAndPath.joinPath().size() - 1; i >= 0; i--)
                         {
-                           String        joinName  = exposedJoin.getJoinPath().get(i);
+                           String joinName = joinTableAndPath.joinPath().get(i);
                            QJoinMetaData joinToAdd = instance.getJoin(joinName);
                            log("- - - evaluating joinPath element", logPair("i", i), logPair("joinName", joinName));
 
@@ -844,7 +925,7 @@ public class JoinsContext
                               // if this is the last element in the joinPath, then we want to set this joinMetaData on the outer queryJoin //
                               // - else, we need to add a new queryJoin to this context                                                    //
                               ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                              if(i == exposedJoin.getJoinPath().size() - 1)
+                              if(i == joinTableAndPath.joinPath().size() - 1)
                               {
                                  if(queryJoin.getBaseTableOrAlias() == null)
                                  {
@@ -870,7 +951,19 @@ public class JoinsContext
 
                            tmpTable = nextTable;
                         }
+
+                        ////////////////////////////////////////////////////////////////
+                        // break the loop over exposed joins - and mark that we found //
+                        // join meta data for this query join that was missing it.    //
+                        ////////////////////////////////////////////////////////////////
+                        foundJoinMetaData = true;
+                        break;
                      }
+                  }
+
+                  if(!foundJoinMetaData)
+                  {
+                     LOG.warn("Unable to find joinMetaData for queryJoin", logPair("mainTable", mainTable), logPair("queryJoin", queryJoin));
                   }
 
                   ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -936,8 +1029,11 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    ** Getter for queryJoins
+    ** Returns the live list of {@link QueryJoin} objects in this context.  This
+    ** includes both caller-supplied joins and any that were added automatically
+    ** (for filters, security locks, or exposed-join paths).
     **
+    ** @return the mutable list of query joins.
     *******************************************************************************/
    public List<QueryJoin> getQueryJoins()
    {
@@ -947,8 +1043,12 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    ** For a given name (whether that's a table name or an alias in the query),
-    ** get the actual table name (e.g., that could be passed to qInstance.getTable())
+    ** Resolves a name (which may be an alias or an actual table name) to the
+    ** real table name that can be passed to {@code qInstance.getTable()}.
+    ** If the name is not found in the alias map, it is returned as-is.
+    **
+    ** @param nameOrAlias  an alias or table name present in this context.
+    ** @return the actual table name.
     *******************************************************************************/
    public String resolveTableNameOrAliasToTableName(String nameOrAlias)
    {
@@ -962,10 +1062,44 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    ** For a given fieldName, which we expect may start with a tableNameOrAlias + '.',
-    ** find the QFieldMetaData and the tableNameOrAlias that it corresponds to.
+    ** Parses a field reference (optionally prefixed with {@code tableOrAlias.})
+    ** and returns the resolved {@link QFieldMetaData} together with the table
+    ** name or alias it belongs to.
+    **
+    ** <p>If {@code fieldName} contains a dot (e.g., {@code "department.name"}),
+    ** the part before the dot is treated as a table name or alias and resolved
+    ** via the alias map.  If there is no dot, the field is looked up on the main
+    ** table.</p>
+    **
+    ** @param fieldName  a field name, optionally qualified as {@code table.field}.
+    ** @return a {@link FieldAndTableNameOrAlias} record.
+    ** @throws IllegalArgumentException if the name has more than one dot, or the
+    **         table/field cannot be found.
     *******************************************************************************/
    public FieldAndTableNameOrAlias getFieldAndTableNameOrAlias(String fieldName)
+   {
+      return getFieldAndTableNameOrAlias(fieldName, false);
+   }
+
+
+
+   /***************************************************************************
+    ** Parses a field reference (optionally prefixed with {@code tableOrAlias.})
+    ** and returns the resolved {@link QFieldMetaData} together with the table
+    ** name or alias it belongs to.
+    **
+    ** <p>If {@code fieldName} contains a dot (e.g., {@code "department.name"}),
+    ** the part before the dot is treated as a table name or alias and resolved
+    ** via the alias map.  If there is no dot, the field is looked up on the main
+    ** table.</p>
+    **
+    ** @param fieldName  a field name, optionally qualified as {@code table.field}.
+    ** @param allowVirtualFields  whether to allow virtual fields in the lookup
+    ** @return a {@link FieldAndTableNameOrAlias} record.
+    ** @throws IllegalArgumentException if the name has more than one dot, or the
+    **         table/field cannot be found.
+    ***************************************************************************/
+   public FieldAndTableNameOrAlias getFieldAndTableNameOrAlias(String fieldName, boolean allowVirtualFields)
    {
       if(fieldName.contains("."))
       {
@@ -986,10 +1120,43 @@ public class JoinsContext
             dumpDebug(false, true);
             throw new IllegalArgumentException("Could not find table [" + tableName + "] in instance for query");
          }
-         return new FieldAndTableNameOrAlias(table.getField(baseFieldName), tableOrAlias);
+
+         return getFieldAndTableNameOrAlias(baseFieldName, table, tableOrAlias, allowVirtualFields);
       }
 
-      return new FieldAndTableNameOrAlias(instance.getTable(mainTableName).getField(fieldName), mainTableName);
+      return getFieldAndTableNameOrAlias(fieldName, instance.getTable(mainTableName), mainTableName, allowVirtualFields);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private FieldAndTableNameOrAlias getFieldAndTableNameOrAlias(String fieldName, QTableMetaData tableMetaData, String tableNameOrAlias, boolean allowVirtualFields)
+   {
+      QFieldMetaData field;
+
+      try
+      {
+         field = tableMetaData.getField(fieldName);
+      }
+      catch(IllegalArgumentException e)
+      {
+         if(allowVirtualFields)
+         {
+            field = tableMetaData.getVirtualField(fieldName);
+            if(field == null)
+            {
+               throw e;
+            }
+         }
+         else
+         {
+            throw e;
+         }
+      }
+
+      return new FieldAndTableNameOrAlias(field, tableNameOrAlias);
    }
 
 
@@ -1134,7 +1301,23 @@ public class JoinsContext
 
 
    /*******************************************************************************
+    ** Searches the {@link QInstance}'s joins for a {@link QJoinMetaData} that
+    ** connects {@code baseTableName} to {@code joinTableName} (checking both
+    ** directions and flipping if needed).
     **
+    ** <p>If multiple matches are found and {@code useExposedJoins} is
+    ** {@code true}, the main table's {@link ExposedJoin} list is consulted to
+    ** disambiguate.  If disambiguation fails, a {@link RuntimeException} is
+    ** thrown.</p>
+    **
+    ** @param baseTableName   the "left" / base table (may be {@code null} to
+    **                        match any table already in this context).
+    ** @param joinTableName   the "right" / target table.
+    ** @param useExposedJoins whether to use exposed joins for disambiguation
+    **                        when multiple matches are found.
+    ** @return the matching {@link QJoinMetaData}, or {@code null} if none found.
+    ** @throws RuntimeException if more than one join matches and disambiguation
+    **         fails.
     *******************************************************************************/
    public QJoinMetaData findJoinMetaData(String baseTableName, String joinTableName, boolean useExposedJoins)
    {
@@ -1219,7 +1402,12 @@ public class JoinsContext
 
 
    /*******************************************************************************
+    ** Record pairing a resolved {@link QFieldMetaData} with the table name or
+    ** alias from which it was resolved.
     **
+    ** @param field            the field's metadata.
+    ** @param tableNameOrAlias the table name or alias that the field belongs to,
+    **                         as it should appear in generated SQL.
     *******************************************************************************/
    public record FieldAndTableNameOrAlias(QFieldMetaData field, String tableNameOrAlias)
    {
@@ -1310,5 +1498,56 @@ public class JoinsContext
       {
          System.out.println(StringUtils.safeTruncate("-".repeat(full), full));
       }
+   }
+
+
+
+   /***************************************************************************
+    * For a given table, get a list of tables that can be joined to it, along
+    * with a path of joins that go from the input table to the join table.
+    *
+    * Per the @{code onlyExposedJoins} parameter, this method will only consider
+    * exposed joins on the table, or it may also include all joins that are
+    * available in the instance, based on the join graph.
+    *
+    * @param table the table to get joins for.
+    * @param onlyExposedJoins whether to only consider exposed joins.
+    * @return a list of joins that can be used to join to the given table.
+    ***************************************************************************/
+   private List<JoinTableAndPath> getJoinTablesAndPaths(QTableMetaData table, boolean onlyExposedJoins)
+   {
+      List<JoinTableAndPath> rs = new ArrayList<>();
+
+      for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+      {
+         rs.add(new JoinTableAndPath(exposedJoin.getJoinTable(), exposedJoin.getJoinPath()));
+      }
+
+      if(!onlyExposedJoins)
+      {
+         JoinGraph                         joinGraph       = QContext.getQInstance().getJoinGraph();
+         Set<JoinGraph.JoinConnectionList> joinConnections = joinGraph.getJoinConnections(table.getName());
+         for(JoinGraph.JoinConnectionList joinConnection : joinConnections)
+         {
+            List<String>  joinNamesAsList = joinConnection.getJoinNamesAsList();
+            String        lastJoinName    = joinNamesAsList.getLast();
+            QJoinMetaData lastJoin        = QContext.getQInstance().getJoin(lastJoinName);
+
+            rs.add(new JoinTableAndPath(lastJoin.getLeftTable(), joinNamesAsList));
+            rs.add(new JoinTableAndPath(lastJoin.getRightTable(), joinNamesAsList));
+         }
+      }
+
+      return (rs);
+   }
+
+
+
+   /***************************************************************************
+    * helper record that connects a joinTable to a path of join names that
+    * get from a source table to that joinTable.
+    ***************************************************************************/
+   private record JoinTableAndPath(String joinTable, List<String> joinPath)
+   {
    }
 }

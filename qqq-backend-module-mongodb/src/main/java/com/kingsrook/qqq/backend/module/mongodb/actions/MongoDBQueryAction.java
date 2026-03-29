@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.module.mongodb.actions;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
@@ -35,19 +37,28 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.module.mongodb.fieldfunctions.MongoDBFieldFunctionAdapterInterface;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
-import com.mongodb.client.FindIterable;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Projections;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
 
 /*******************************************************************************
- **
+ * Execute a Query action against a MongoDB backend.
+ * 
+ * <p>Note that this a {@code collection.aggregate()} even if it could maybe do
+ * a {@code collection.find()}, to keep the code paths simpler in here, and to
+ * support {@link FieldFunction}s (which require {@code aggregate}).  The performance
+ * difference is hopefully not so bad, but this could potentially be a future
+ * optimization if it was found to be worthwhile.</p>
  *******************************************************************************/
 public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryInterface
 {
@@ -87,38 +98,86 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
          /////////////////////////
          // set up filter/query //
          /////////////////////////
-         QQueryFilter filter      = queryInput.getFilter();
-         Bson         searchQuery = makeSearchQueryDocument(table, filter);
-         queryToLog.add(searchQuery);
-         setQueryInQueryStat(searchQuery);
+         QQueryFilter filter = queryInput.getFilter();
 
-         ////////////////////////////////////////////////////////////
-         // create cursor - further adjustments to it still follow //
-         ////////////////////////////////////////////////////////////
-         FindIterable<Document> cursor = collection.find(mongoClientContainer.getMongoSession(), searchQuery);
+         /////////////////////////////////////
+         // build the aggregation pipeline  //
+         /////////////////////////////////////
+         List<Bson> pipeline = new ArrayList<>();
 
-         ///////////////////////////////////////////////////////////////////////////////////////////////
-         // if input specifies a set of field names to include, then add a 'projection' to the cursor //
-         ///////////////////////////////////////////////////////////////////////////////////////////////
-         if(queryInput.getFieldNamesToInclude() != null)
+         ////////////////////////////////////////////////////////////////////////////////////
+         // if there are virtual fields or criteria-level fieldFunctions, add $addFields   //
+         ////////////////////////////////////////////////////////////////////////////////////
+         Document addFieldsDocument = buildAddFieldsDocument(table, backend, filter);
+         if(!addFieldsDocument.isEmpty())
          {
-            List<String> backendFieldNames = queryInput.getFieldNamesToInclude().stream().map(f -> getFieldBackendName(table.getField(f))).toList();
-            cursor.projection(Projections.include(backendFieldNames));
+            pipeline.add(new Document("$addFields", addFieldsDocument));
+         }
+
+         ////////////////////
+         // $match stage   //
+         ////////////////////
+         Bson searchQuery = makeSearchQueryDocument(table, filter);
+         setQueryInQueryStat(searchQuery);
+         if(!searchQuery.toBsonDocument().isEmpty())
+         {
+            pipeline.add(new Document("$match", searchQuery));
          }
 
          ///////////////////////////////////
          // add a sort operator if needed //
          ///////////////////////////////////
+         Set<String> tempSortFieldNames = new HashSet<>();
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
-            Document sortDocument = new Document();
-            queryToLog.add(sortDocument);
+            Document sortDocument      = new Document();
+            Document extraAddFields    = new Document();
+
             for(QFilterOrderBy orderBy : filter.getOrderBys())
             {
-               String fieldBackendName = getFieldBackendName(table.getField(orderBy.getFieldName()));
-               sortDocument.put(fieldBackendName, orderBy.getIsAscending() ? 1 : -1);
+               QFieldMetaData field = table.getFieldOrVirtualField(orderBy.getFieldName());
+
+               if(field instanceof QVirtualFieldMetaData virtualField)
+               {
+                  FieldFunction fieldFunction = virtualField.getFieldFunction();
+                  MongoDBFieldFunctionAdapterInterface adapter = backend.getFieldFunctionAdapter(fieldFunction.getFunctionTypeIdentifier());
+                  if(adapter != null)
+                  {
+                     Object orderByExpression = adapter.getExpressionForOrderBy(getFieldReference(table, fieldFunction.getFieldName()), fieldFunction, fieldName -> getFieldReference(table, fieldName));
+                     Object selectExpression  = adapter.getExpression(getFieldReference(table, fieldFunction.getFieldName()), fieldFunction, fieldName -> getFieldReference(table, fieldName));
+
+                     if(!orderByExpression.equals(selectExpression))
+                     {
+                        //////////////////////////////////////////////////////////////////////////////////
+                        // the order-by expression differs from select — add a temp field to sort on   //
+                        //////////////////////////////////////////////////////////////////////////////////
+                        String tempFieldName = "__sort_" + virtualField.getName();
+                        tempSortFieldNames.add(tempFieldName);
+                        extraAddFields.append(tempFieldName, orderByExpression);
+                        sortDocument.put(tempFieldName, orderBy.getIsAscending() ? 1 : -1);
+                     }
+                     else
+                     {
+                        sortDocument.put(virtualField.getName(), orderBy.getIsAscending() ? 1 : -1);
+                     }
+                  }
+               }
+               else
+               {
+                  String fieldBackendName = getFieldBackendName(field);
+                  sortDocument.put(fieldBackendName, orderBy.getIsAscending() ? 1 : -1);
+               }
             }
-            cursor.sort(sortDocument);
+
+            if(!extraAddFields.isEmpty())
+            {
+               pipeline.add(new Document("$addFields", extraAddFields));
+            }
+
+            if(!sortDocument.isEmpty())
+            {
+               pipeline.add(new Document("$sort", sortDocument));
+            }
          }
 
          ////////////////////////
@@ -128,18 +187,61 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
          {
             if(filter.getSkip() != null)
             {
-               cursor.skip(filter.getSkip());
+               pipeline.add(new Document("$skip", filter.getSkip()));
             }
 
             if(filter.getLimit() != null)
             {
-               cursor.limit(filter.getLimit());
+               pipeline.add(new Document("$limit", filter.getLimit()));
             }
          }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // if input specifies a set of field names to include, then add a $project stage              //
+         // also remove any temp sort fields                                                           //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         if(queryInput.getFieldNamesToInclude() != null || !tempSortFieldNames.isEmpty())
+         {
+            Document projectDocument = new Document();
+
+            if(queryInput.getFieldNamesToInclude() != null)
+            {
+               for(String fieldName : queryInput.getFieldNamesToInclude())
+               {
+                  String backendFieldName = getFieldBackendName(table.getField(fieldName));
+                  projectDocument.append(backendFieldName, 1);
+               }
+
+               /////////////////////////////////////////////////////
+               // also include virtual fields in the projection   //
+               /////////////////////////////////////////////////////
+               for(QVirtualFieldMetaData virtualField : CollectionUtils.nonNullMap(table.getVirtualFields()).values())
+               {
+                  if(virtualField.getIsQuerySelectable())
+                  {
+                     projectDocument.append(virtualField.getName(), 1);
+                  }
+               }
+            }
+
+            for(String tempFieldName : tempSortFieldNames)
+            {
+               projectDocument.append(tempFieldName, 0);
+            }
+
+            if(!projectDocument.isEmpty())
+            {
+               pipeline.add(new Document("$project", projectDocument));
+            }
+         }
+
+         queryToLog = pipeline;
 
          ////////////////////////////////////////////
          // iterate over results, building records //
          ////////////////////////////////////////////
+         AggregateIterable<Document> cursor = collection.aggregate(mongoClientContainer.getMongoSession(), pipeline);
+
          for(Document document : cursor)
          {
             /////////////////////////////////////////////////////////////////////////
@@ -167,16 +269,6 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
             setQueryStatFirstResultTime();
             throw (new QUserFacingException("Query timed out."));
          }
-
-         /*
-         /////////////////////////////////////////////////////////////////////////////////////
-         // this was copied from RDBMS - not sure where/how/if it's being used there though //
-         /////////////////////////////////////////////////////////////////////////////////////
-         if(isCancelled)
-         {
-            throw (new QUserFacingException("Query was cancelled."));
-         }
-         */
 
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);

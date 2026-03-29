@@ -26,9 +26,10 @@ import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang3.BooleanUtils;
 
 
 /*******************************************************************************
@@ -51,6 +52,25 @@ public class ApiFieldUtils
       }
 
       return (true);
+   }
+
+
+
+   /*******************************************************************************
+    * determine if a virtual field should be included in the api.
+    *
+    * <p>Note that the logic here is stricter than for normal fields. a virtual field
+    * must explicitly have api field meta data applied to it to be in the api.</p>
+    *******************************************************************************/
+   public static boolean isVirtualFieldIncluded(String apiName, QVirtualFieldMetaData field)
+   {
+      ApiFieldMetaData apiFieldMetaData = getApiFieldMetaData(apiName, field);
+      if(apiFieldMetaData != null && !BooleanUtils.isTrue(apiFieldMetaData.getIsExcluded()))
+      {
+         return (true);
+      }
+
+      return (false);
    }
 
 

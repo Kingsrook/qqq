@@ -64,6 +64,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -137,6 +140,11 @@ public class QInstanceEnricher
    private static final Map<String, String> labelMappings = new LinkedHashMap<>();
 
    private static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> enricherPlugins = new ListingHash<>();
+
+   /////////////////////////////////////////////////////////////////////////////////
+   // in case a section references itself as an alternative, avoid stack overflow //
+   /////////////////////////////////////////////////////////////////////////////////
+   private Set<QFieldSection> visitedSections = new HashSet<>();
 
 
 
@@ -251,6 +259,8 @@ public class QInstanceEnricher
             }
          }
       }
+
+      registerFieldFunctionTypes(qInstance);
 
       runPlugins(QInstance.class, qInstance, qInstance);
    }
@@ -387,11 +397,30 @@ public class QInstanceEnricher
 
             enrichField(field);
          }
+      }
 
-         for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
+      if(table.getVirtualFields() != null)
+      {
+         for(Map.Entry<String, QVirtualFieldMetaData> entry : table.getVirtualFields().entrySet())
          {
-            supplementalTableMetaData.enrich(qInstance, table);
+            String         name  = entry.getKey();
+            QFieldMetaData field = entry.getValue();
+
+            ////////////////////////////////////////////////////////////////////////////
+            // in case the field wasn't given a name, use its key from the fields map //
+            ////////////////////////////////////////////////////////////////////////////
+            if(!StringUtils.hasContent(field.getName()))
+            {
+               field.setName(name);
+            }
+
+            enrichField(field);
          }
+      }
+
+      for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
+      {
+         supplementalTableMetaData.enrich(qInstance, table);
       }
 
       if(CollectionUtils.nullSafeIsEmpty(table.getSections()))
@@ -784,9 +813,21 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void enrichFieldSection(QFieldSection section)
    {
+      if(visitedSections.contains(section))
+      {
+         return;
+      }
+
+      visitedSections.add(section);
+
       if(!StringUtils.hasContent(section.getLabel()))
       {
          section.setLabel(nameToLabel(section.getName()));
+      }
+
+      for(QFieldSection alternativeSection : CollectionUtils.nonNullMap(section.getAlternatives()).values())
+      {
+         enrichFieldSection(alternativeSection);
       }
    }
 
@@ -1911,4 +1952,39 @@ public class QInstanceEnricher
       field.withPossibleValueSourceFilter(newFilter);
       return field;
    }
+
+
+
+   /***************************************************************************
+    * Scan for {@link FieldFunctionType} classes in the package where FieldFunctionType
+    * itself lives, and register them with the {@link FieldFunctionTypeRegistry}
+    ***************************************************************************/
+   private static void registerFieldFunctionTypes(QInstance qInstance)
+   {
+      try
+      {
+         FieldFunctionTypeRegistry registry = FieldFunctionTypeRegistry.ofOrWithNew(qInstance);
+         for(Class<?> c : ClassPathUtils.getClassesInPackage(FieldFunctionType.class.getPackageName()))
+         {
+            if(FieldFunctionType.class.isAssignableFrom(c) && !c.isInterface())
+            {
+               try
+               {
+                  FieldFunctionType fieldFunctionType = (FieldFunctionType) c.getConstructor().newInstance();
+                  registry.register(fieldFunctionType.getIdentifier(), fieldFunctionType.getClass());
+               }
+               catch(Exception e)
+               {
+                  LOG.info("Exception registering FieldFunctionType class", e, logPair("className",c.getName()));
+               }
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.error("Error registering field function types", e);
+      }
+   }
+
+
 }

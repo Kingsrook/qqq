@@ -78,12 +78,15 @@ public record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable)
     ** that table - or an alias insteaad of tableName) - get back the pair of
     ** table & field metaData that the input string is talking about.
     ***************************************************************************/
-   public static FieldAndJoinTable get(QTableMetaData mainTable, String fieldName, Collection<QueryJoin> queryJoins) throws QException
+   public static FieldAndJoinTable get(QTableMetaData mainTable, String fieldName, Collection<QueryJoin> queryJoins, boolean allowVirtualFields) throws QException
    {
+      QTableMetaData table                 = mainTable;
+      String         fieldNameWithoutTable = fieldName;
+
       if(fieldName.indexOf('.') > -1)
       {
          String joinTableName = fieldName.replaceAll("\\..*", "");
-         String joinFieldName = fieldName.replaceAll(".*\\.", "");
+         fieldNameWithoutTable = fieldName.replaceAll(".*\\.", "");
 
          QTableMetaData joinTable = QContext.getQInstance().getTable(joinTableName);
          if(joinTable == null)
@@ -105,11 +108,25 @@ public record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable)
             throw (new QException("Unrecognized join table name: " + joinTableName));
          }
 
-         return new FieldAndJoinTable(joinTable.getField(joinFieldName), joinTable);
+         table = joinTable;
       }
-      else
+
+      try
       {
-         return new FieldAndJoinTable(mainTable.getField(fieldName), mainTable);
+         return new FieldAndJoinTable(table.getField(fieldNameWithoutTable), table);
+      }
+      catch(IllegalArgumentException e)
+      {
+         if(allowVirtualFields)
+         {
+            QVirtualFieldMetaData virtualField = table.getVirtualField(fieldNameWithoutTable);
+            if(virtualField != null)
+            {
+               return new FieldAndJoinTable(virtualField, table);
+            }
+         }
+
+         throw (e);
       }
    }
 

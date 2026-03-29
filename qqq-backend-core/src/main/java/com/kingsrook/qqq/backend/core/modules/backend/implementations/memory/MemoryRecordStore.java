@@ -62,6 +62,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.ImplicitQueryJoinForSecurityLock;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -74,6 +75,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -112,6 +116,16 @@ public class MemoryRecordStore
 
    public static final ListingHash<Class<? extends AbstractActionInput>, AbstractActionInput> actionInputs = new ListingHash<>();
 
+   ////////////////////////////////////////////////////////////////////////
+   // this flag controls whether MemoryRecordStore builds its join cross //
+   // product from the JoinsContext's query joins (which includes joins  //
+   // needed for security) or from the QueryInput's query joins (which   //
+   // only has explicitly-requested joins).  Originally defaulted to     //
+   // false while we gained confidence; now defaults to true.  If a test //
+   // needs the old behavior, it can set this to false on the singleton. //
+   ////////////////////////////////////////////////////////////////////////
+   public static boolean BUILD_JOIN_CROSS_PRODUCT_FROM_JOIN_CONTEXT_DEFAULT = true;
+   private       boolean buildJoinCrossProductFromJoinContext               = BUILD_JOIN_CROSS_PRODUCT_FROM_JOIN_CONTEXT_DEFAULT;
 
 
    /*******************************************************************************
@@ -168,8 +182,8 @@ public class MemoryRecordStore
    private Map<Serializable, QRecord> getTableData(QTableMetaData table) throws QException
    {
       BackendIdentifier                       backendIdentifier = getBackendIdentifier(table);
-      Map<String, Map<Serializable, QRecord>> dataForBackend    = data.computeIfAbsent(backendIdentifier, k -> new HashMap<>());
-      return (dataForBackend.computeIfAbsent(table.getName(), k -> new HashMap<>()));
+      Map<String, Map<Serializable, QRecord>> dataForBackend = data.computeIfAbsent(backendIdentifier, k -> Collections.synchronizedMap(new HashMap<>()));
+      return (dataForBackend.computeIfAbsent(table.getName(), k -> Collections.synchronizedMap(new HashMap<>())));
    }
 
 
@@ -206,9 +220,20 @@ public class MemoryRecordStore
 
       QQueryFilter filter       = clonedOrNewFilter(input.getFilter());
       JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), input.getTableName(), input.getQueryJoins(), filter);
-      if(CollectionUtils.nullSafeHasContents(input.getQueryJoins()))
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // see comment on #withBuildJoinCrossProductFromJoinContext for full history. //
+      // when true, use joinsContext's query joins (includes security joins);       //
+      // when false, use the input's query joins (original behavior).               //
+      ////////////////////////////////////////////////////////////////////////////////
+      List<QueryJoin> queryJoins = buildJoinCrossProductFromJoinContext ? joinsContext.getQueryJoins() : input.getQueryJoins();
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // if there are query joins, then use the cross product of those joins as the table data //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(queryJoins))
       {
-         tableData = buildJoinCrossProduct(input);
+         tableData = buildJoinCrossProduct(input.getTable(), queryJoins, joinsContext);
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -217,7 +242,7 @@ public class MemoryRecordStore
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       Map<String, QTableMetaData> personalizedTables = new HashMap<>();
       personalizedTables.put(input.getTableName(), input.getTableMetaData());
-      for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+      for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
       {
          QTableMetaData joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
          joinTable = TableMetaDataPersonalizerAction.execute(new TableMetaDataPersonalizerInput().withTableMetaData(joinTable).withInputSource(input.getInputSource()));
@@ -253,16 +278,19 @@ public class MemoryRecordStore
                //////////////////////////////////////////////////////////////////////////////////
                // make sure we're not giving back records that are all full of associations... //
                // or fields that the user isn't supposed to get (e.g., from personalization)   //
+               // or old display values (or just ones that wern't requested)                   //
                //////////////////////////////////////////////////////////////////////////////////
                QRecord recordToReturn = new QRecord(qRecord);
                stripUnrecognizedFieldsFromRecords(List.of(recordToReturn), personalizedTables, input.getTable());
+               addVirtualFieldsToRecords(List.of(recordToReturn), input.getTable());
                recordToReturn.setAssociatedRecords(new HashMap<>());
+               recordToReturn.setDisplayValues(new HashMap<>());
                records.add(recordToReturn);
             }
          }
       }
 
-      BackendQueryFilterUtils.sortRecordList(input.getFilter(), records);
+      BackendQueryFilterUtils.sortRecordList(joinsContext, input.getFilter(), records);
       records = BackendQueryFilterUtils.applySkipAndLimit(input.getFilter(), records);
 
       return (records);
@@ -270,15 +298,51 @@ public class MemoryRecordStore
 
 
 
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void addVirtualFieldsToRecords(List<QRecord> records, QTableMetaData table) throws QException
+   {
+      for(QVirtualFieldMetaData virtualField : CollectionUtils.nonNullMap(table.getVirtualFields()).values())
+      {
+         if(virtualField.getIsQuerySelectable() && virtualField.getFieldFunction() != null)
+         {
+            FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(virtualField.getFieldFunction().getFunctionTypeIdentifier());
+
+            for(QRecord record : records)
+            {
+               Serializable value = fieldFunctionType.apply(virtualField.getFieldFunction(), record);
+               record.withValue(virtualField.getName(), value);
+            }
+         }
+      }
+   }
+
+
+
    /*******************************************************************************
-    **
+    * Given a table and a list of query joins, build a collection of records that
+    * make up a cross-product necessary to perform the join query.
+    *
+    * <p>Note that this can potentially be explosively huge... which is why the memory
+    * backend is not meant for use with large production data sets...</p>
+    *
+    * <p>Of course, I suppose, we could probably stream through the cross-product,
+    * or take an altogether different approach, but, this serves us for the time being.</p>
+    *
+    * <p>Note that INNER & LEFT joins should work but, RIGHT joins will not work
+    * at this time.</p>
+    *
+    * @param table the main-table being queried for
+    * @param queryJoins the list of joins to cross against the main table.
+    * @param joinsContext more details about the join.
     *******************************************************************************/
-   private Collection<QRecord> buildJoinCrossProduct(QueryInput input) throws QException
+   private Collection<QRecord> buildJoinCrossProduct(QTableMetaData table, List<QueryJoin> queryJoins, JoinsContext joinsContext) throws QException
    {
       QInstance qInstance = QContext.getQInstance();
 
       List<QRecord>  crossProduct = new ArrayList<>();
-      QTableMetaData leftTable    = input.getTable();
+      QTableMetaData leftTable    = table;
       for(QRecord record : getTableData(leftTable).values())
       {
          QRecord productRecord = new QRecord();
@@ -286,11 +350,17 @@ public class MemoryRecordStore
          crossProduct.add(productRecord);
       }
 
-      for(QueryJoin queryJoin : input.getQueryJoins())
+      for(QueryJoin queryJoin : queryJoins)
       {
          QTableMetaData      nextTable        = qInstance.getTable(queryJoin.getJoinTable());
          Collection<QRecord> nextTableRecords = getTableData(nextTable).values();
-         QJoinMetaData       joinMetaData     = Objects.requireNonNull(queryJoin.getJoinMetaData(), () -> "Could not find a join between tables [" + leftTable + "][" + queryJoin.getJoinTable() + "]");
+
+         QJoinMetaData joinMetaData = queryJoin.getJoinMetaData();
+         if(joinMetaData == null)
+         {
+            joinMetaData = joinsContext.findJoinMetaData(table.getName(), queryJoin.getJoinTable(), false);
+            Objects.requireNonNull(joinMetaData, () -> "Did not have, and could not find a join metaData between tables in QueryJoin object base=[" + leftTable + "], join=[" + queryJoin.getJoinTable() + "]");
+         }
 
          List<QRecord> nextLevelProduct = new ArrayList<>();
          for(QRecord productRecord : crossProduct)
@@ -309,7 +379,11 @@ public class MemoryRecordStore
 
             if(!matchFound)
             {
-               // todo - Left & Right joins
+               if(QueryJoin.Type.LEFT.equals(queryJoin.getType()))
+               {
+                  QRecord joinRecord = new QRecord(productRecord);
+                  nextLevelProduct.add(joinRecord);
+               }
             }
          }
 
@@ -556,7 +630,7 @@ public class MemoryRecordStore
    private void setNextSerial(QTableMetaData table, Integer nextSerial) throws QException
    {
       BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
-      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> Collections.synchronizedMap(new HashMap<>()));
       nextSerialsForBackend.put(table.getName(), nextSerial);
    }
 
@@ -568,7 +642,7 @@ public class MemoryRecordStore
    private Integer getNextSerial(QTableMetaData table) throws QException
    {
       BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
-      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> Collections.synchronizedMap(new HashMap<>()));
       return (nextSerialsForBackend.get(table.getName()));
    }
 
@@ -1185,5 +1259,55 @@ public class MemoryRecordStore
    private record Variant(String type, Serializable id) implements BackendIdentifier
    {
    }
+
+
+
+   /*******************************************************************************
+    * Getter for buildJoinCrossProductFromJoinContext
+    * @see #withBuildJoinCrossProductFromJoinContext(boolean)
+    *******************************************************************************/
+   public boolean getBuildJoinCrossProductFromJoinContext()
+   {
+      return (this.buildJoinCrossProductFromJoinContext);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for buildJoinCrossProductFromJoinContext
+    * @see #withBuildJoinCrossProductFromJoinContext(boolean)
+    *******************************************************************************/
+   public void setBuildJoinCrossProductFromJoinContext(boolean buildJoinCrossProductFromJoinContext)
+   {
+      this.buildJoinCrossProductFromJoinContext = buildJoinCrossProductFromJoinContext;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for buildJoinCrossProductFromJoinContext
+    *
+    * <p>The original implementation of this class only built cross-products for
+    * joins explicitly added to the QueryInput.  This meant that joins needed for
+    * security locks (added by JoinsContext) were not included, causing incorrect
+    * query results for tables with join-chain security locks.</p>
+    *
+    * <p>The corrected behavior (using joins from JoinsContext, which includes
+    * security joins) is now the default ({@code true}).  Originally this defaulted
+    * to {@code false} while we gained confidence, but after fixing a double-flip
+    * bug in {@code JoinsContext.fillInMissingJoinMetaData} that was causing
+    * multi-hop security chain failures, all tests pass with the new default.</p>
+    *
+    * <p>If a test needs the old behavior, it can set this to {@code false} on the
+    * MemoryRecordStore singleton instance.</p>
+    *
+    * @return this
+    *******************************************************************************/
+   public MemoryRecordStore withBuildJoinCrossProductFromJoinContext(boolean buildJoinCrossProductFromJoinContext)
+   {
+      this.buildJoinCrossProductFromJoinContext = buildJoinCrossProductFromJoinContext;
+      return (this);
+   }
+
 
 }

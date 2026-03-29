@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -36,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaOption;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
@@ -48,11 +50,16 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunctionTypeRegistry;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -103,26 +110,6 @@ public class BackendQueryFilterUtils
       ///////////////////////////////////////
       for(QFilterCriteria criterion : CollectionUtils.nonNullList(filter.getCriteria()))
       {
-         String       fieldName = criterion.getFieldName();
-         Serializable value     = qRecord.getValue(fieldName);
-         if(value == null)
-         {
-            ///////////////////////////////////////////////////////////////////////////////////////////////////
-            // if the value isn't in the record - check, if it looks like a table.fieldName, but none of the //
-            // field names in the record are fully qualified - OR - the table name portion of the field name //
-            // matches the record's field name, then just use the field-name portion...                      //
-            ///////////////////////////////////////////////////////////////////////////////////////////////////
-            if(fieldName.contains("."))
-            {
-               String[]                  parts  = fieldName.split("\\.");
-               Map<String, Serializable> values = qRecord.getValues();
-               if(values.keySet().stream().noneMatch(n -> n.contains(".")) || parts[0].equals(qRecord.getTableName()))
-               {
-                  value = qRecord.getValue(parts[1]);
-               }
-            }
-         }
-
          ///////////////////////////////////////////////////////////////////////////////////////////////
          // Test if this criteria(on) matches the record.                                             //
          // As criteria have become more sophisticated over time, we would like to be able to know    //
@@ -136,7 +123,7 @@ public class BackendQueryFilterUtils
             JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = null;
             try
             {
-               fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName());
+               fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName(), true);
             }
             catch(Exception e)
             {
@@ -145,13 +132,17 @@ public class BackendQueryFilterUtils
 
             if(fieldAndTableNameOrAlias != null)
             {
-               criterionMatches = doesCriteriaMatch(criterion, fieldAndTableNameOrAlias.field(), value);
+               criterionMatches = doesCriteriaMatch(criterion, fieldAndTableNameOrAlias.field(), qRecord);
             }
          }
 
+         /////////////////////////////////////////////////////////////////////////////////////
+         // this is the "couldn't figure out the field, so criterionMatches didn't get set, //
+         // so try to set it now using just field name as input" path alluded to above.     //
+         /////////////////////////////////////////////////////////////////////////////////////
          if(criterionMatches == null)
          {
-            criterionMatches = doesCriteriaMatch(criterion, criterion.getFieldName(), value);
+            criterionMatches = doesCriteriaMatch(criterion, criterion.getFieldName(), getValue(criterion, null, qRecord));
          }
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,20 +178,57 @@ public class BackendQueryFilterUtils
 
 
    /***************************************************************************
-    **
+    * Public interface - where a caller has a criteria, and a fieldName, and
+    * a value - and they want to apply criteria-operators against that value.
+    *
+    * <p>The {@code fieldName} is kinda not used, other than for some error messages.</p>
+    *
+    * <p>The real point is, so you can do EQUALS, or STARTS_WITH, or CONTAINS,
+    * or GREATER_THAN, etc type operations against a value easily</p>
+    *
+    * @param criterion with the condition (operator & value(s)) to apply
+    * @param fieldName not really used, other than in some error messages.
+    * @param value     to apply the criterion against.
     ***************************************************************************/
    public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
    {
       QFieldMetaData field = new QFieldMetaData(fieldName, ValueUtils.inferQFieldTypeFromValue(value, QFieldType.STRING));
-      return doesCriteriaMatch(criterion, field, value);
+      return doesCriteriaMatchValue(criterion, field, value);
    }
 
 
 
    /*******************************************************************************
-    **
+    * (package) private interface, where we have a field (which may be virtual) and
+    * a criterion (which might have a fieldFunction in it) - so we'll get the value
+    * from the record (where it could even be a join field), and apply any needed
+    * fieldFunction to it, then apply the criteria.
+    *
+    * @param criterion the condition (operator & value(s)) to apply
+    * @param field     the field metadata (which may be virtual)
+    * @param qRecord   record containing value for the field (and possibly others,
+    *                  in case a fieldFunction looks at others).
     *******************************************************************************/
-   private static boolean doesCriteriaMatch(QFilterCriteria criterion, QFieldMetaData field, Serializable value)
+   static boolean doesCriteriaMatch(QFilterCriteria criterion, QFieldMetaData field, QRecord qRecord)
+   {
+      Serializable value = getValue(criterion, field, qRecord);
+      return doesCriteriaMatchValue(criterion, field, value);
+   }
+
+
+
+   /*******************************************************************************
+    * private, "final" version of applying a criterion to a value.  So the
+    * value needs to be the final version - e.g., with any fieldFunction applied.
+    *
+    * The field is used (1) as a source of the fieldName for error messages, and (2)
+    * to help evaluate expression-type criteria values ({@link AbstractFilterExpression}s).
+    *
+    * @param criterion the condition (operator & value(s)) to apply
+    * @param field     that the value came from
+    * @param value     to apply the criterion against.
+    *******************************************************************************/
+   private static boolean doesCriteriaMatchValue(QFilterCriteria criterion, QFieldMetaData field, Serializable value)
    {
       String fieldName = field == null ? "__unknownField" : field.getName();
 
@@ -263,6 +291,64 @@ public class BackendQueryFilterUtils
       };
       return criterionMatches;
    }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static Serializable getValue(QFilterCriteria criterion, QFieldMetaData field, QRecord qRecord)
+   {
+      String       fieldName = criterion.getFieldName();
+      Serializable value     = qRecord.getValue(fieldName);
+
+      if(value == null)
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the value isn't in the record - check, if it looks like a table.fieldName, but none of the //
+         // field names in the record are fully qualified - OR - the table name portion of the field name //
+         // matches the record's field name, then just use the field-name portion...                      //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         if(fieldName.contains("."))
+         {
+            String[]                  parts  = fieldName.split("\\.");
+            Map<String, Serializable> values = qRecord.getValues();
+            if(values.keySet().stream().noneMatch(n -> n.contains(".")) || parts[0].equals(qRecord.getTableName()))
+            {
+               value = qRecord.getValue(parts[1]);
+            }
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////////
+      // if the criterion specifies a field function (or, is for a virtual field //
+      // that has a field function), then get it, and apply it to the value.     //
+      /////////////////////////////////////////////////////////////////////////////
+      FieldFunction fieldFunction = criterion.getFieldFunction();
+      if(fieldFunction == null && field instanceof QVirtualFieldMetaData virtualField)
+      {
+         fieldFunction = virtualField.getFieldFunction();
+      }
+
+      if(fieldFunction != null)
+      {
+         FieldFunction finalFieldFunction = fieldFunction;
+
+         try
+         {
+            FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+            Objects.requireNonNull(fieldFunctionType, "Missing field function type for identifier [" + ObjectUtils.tryElse(() -> finalFieldFunction.getFunctionTypeIdentifier().getName(), "unknown") + "]");
+            value = fieldFunctionType.apply(fieldFunction, qRecord);
+         }
+         catch(QException e)
+         {
+            throw new QRuntimeException("Error applying fieldFunction [" + ObjectUtils.tryElse(() -> finalFieldFunction.getFunctionTypeIdentifier().getName(), "unknown") + "]", e);
+         }
+      }
+
+      return (value);
+   }
+
 
 
 
@@ -635,17 +721,80 @@ public class BackendQueryFilterUtils
     *******************************************************************************/
    public static void sortRecordList(QQueryFilter filter, List<QRecord> recordList)
    {
+      sortRecordList(null,  filter, recordList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Sort list of records based on filter.
+    *******************************************************************************/
+   public static void sortRecordList(JoinsContext joinsContext, QQueryFilter filter, List<QRecord> recordList)
+   {
       if(filter == null || CollectionUtils.nullSafeIsEmpty(filter.getOrderBys()))
       {
          return;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      // figure out if any order-bys need to have a field-function used to apply to valuels for sorting //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      Map<String, FieldFunctionType> fieldFunctionTypes = new HashMap<>();
+      Map<String, FieldFunction>     fieldFunctions     = new HashMap<>();
+      if(joinsContext != null)
+      {
+         for(QFilterOrderBy orderBy : filter.getOrderBys())
+         {
+            if(orderBy.getFieldName() == null)
+            {
+               continue;
+            }
+
+            JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(orderBy.getFieldName(), true);
+            if(fieldAndTableNameOrAlias.field() instanceof QVirtualFieldMetaData virtualField)
+            {
+               FieldFunction fieldFunction = virtualField.getFieldFunction();
+               if(fieldFunction != null)
+               {
+                  FieldFunctionType fieldFunctionType = FieldFunctionTypeRegistry.ofOrWithNew(QContext.getQInstance()).getFieldFunctionType(fieldFunction.getFunctionTypeIdentifier());
+                  Objects.requireNonNull(fieldFunctionType, "Missing field function type for identifier [" + ObjectUtils.tryElse(() -> fieldFunction.getFunctionTypeIdentifier().getName(), "unknown") + "]");
+                  fieldFunctionTypes.put(orderBy.getFieldName(), fieldFunctionType);
+                  fieldFunctions.put(orderBy.getFieldName(), fieldFunction);
+               }
+            }
+         }
       }
 
       recordList.sort((a, b) ->
       {
          for(QFilterOrderBy orderBy : filter.getOrderBys())
          {
+            if(orderBy.getFieldName() == null)
+            {
+               continue;
+            }
+
             Serializable valueA = a.getValue(orderBy.getFieldName());
             Serializable valueB = b.getValue(orderBy.getFieldName());
+
+            //////////////////////////////////////
+            // apply a field function if needed //
+            //////////////////////////////////////
+            if(fieldFunctionTypes.containsKey(orderBy.getFieldName()))
+            {
+               FieldFunctionType fieldFunctionType = fieldFunctionTypes.get(orderBy.getFieldName());
+
+               try
+               {
+                  valueA = fieldFunctionType.applyForSorting(fieldFunctions.get(orderBy.getFieldName()), a);
+                  valueB = fieldFunctionType.applyForSorting(fieldFunctions.get(orderBy.getFieldName()), b);
+               }
+               catch(Exception e)
+               {
+                  throw new QRuntimeException("Error applying fieldFunction [" + ObjectUtils.tryElse(() -> fieldFunctionType.getIdentifier().getName(), "unknown") + "] for sorting", e);
+               }
+            }
+
             if(Objects.equals(valueA, valueB))
             {
                continue;
@@ -745,7 +894,7 @@ public class BackendQueryFilterUtils
 
       for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
       {
-         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getFieldName());
+         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getFieldName(), null, true);
          if(!fieldAndJoinTable.joinTable().getName().equals(mainTableName))
          {
             rs.add(fieldAndJoinTable.joinTable().getName());
@@ -753,7 +902,7 @@ public class BackendQueryFilterUtils
 
          if(StringUtils.hasContent(criteria.getOtherFieldName()))
          {
-            FieldAndJoinTable otherFieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getOtherFieldName());
+            FieldAndJoinTable otherFieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getOtherFieldName(), null, true);
             if(!otherFieldAndJoinTable.joinTable().getName().equals(mainTableName))
             {
                rs.add(otherFieldAndJoinTable.joinTable().getName());

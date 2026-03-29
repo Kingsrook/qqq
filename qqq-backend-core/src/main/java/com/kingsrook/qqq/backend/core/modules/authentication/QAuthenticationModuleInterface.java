@@ -29,7 +29,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 
 
@@ -87,6 +87,23 @@ public interface QAuthenticationModuleInterface
    default String getLoginRedirectUrl(String originalUrl) throws QAuthenticationException
    {
       throw (new NotImplementedException("The method getLoginRedirectUrl() is not implemented in the authentication module: " + this.getClass().getSimpleName()));
+   }
+
+
+
+   /***************************************************************************
+    ** Logout a session, invalidating it server-side.
+    **
+    ** @param qInstance the QInstance (provided for implementations that need it)
+    ** @param sessionUUID the session UUID to invalidate
+    ***************************************************************************/
+   default void logout(QInstance qInstance, String sessionUUID)
+   {
+      ///////////////////////////////////////////////////////////////////////////
+      // default implementation is a no-op - modules may override if they need //
+      // to clear caches or delete session records. qInstance is part of the   //
+      // interface contract for implementations that require instance context. //
+      ///////////////////////////////////////////////////////////////////////////
    }
 
 }

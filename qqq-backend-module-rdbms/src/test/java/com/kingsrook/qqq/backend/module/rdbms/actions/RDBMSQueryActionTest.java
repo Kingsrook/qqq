@@ -23,9 +23,12 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +37,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -50,10 +55,20 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.Now
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.ThisOrLastPeriod;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QVirtualFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.FieldFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.StringLengthFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.SubStringFunction;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.functions.implementations.WeekdayOfDateTimeFunction;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1142,6 +1157,324 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       assertFalse(record.getValues().containsKey("firstName"));
       assertFalse(record.getValues().containsKey("createDate"));
       assertEquals(1, record.getValues().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterByNameLengthAsCriteriaWithFieldFunction() throws Exception
+   {
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_PERSON).withQueryFilter(new QQueryFilter()));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "-").withValue("firstName", "Darin").withValue("lastName", "K"),
+         new QRecord().withValue("email", "-").withValue("firstName", "Who").withValue("lastName", "Dr.")
+      )));
+
+      List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, 5)
+            .withFieldFunction(new FieldFunction().withFieldName("firstName").withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER))));
+      assertEquals(1, records.size());
+      assertEquals("Darin", records.get(0).getValue("firstName"));
+
+      records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstName", QCriteriaOperator.LESS_THAN, 7)
+            .withFieldFunction(new FieldFunction().withFieldName("firstName").withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER))));
+      assertEquals(2, records.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterBySubStringAsVirtualField() throws Exception
+   {
+      //////////////////////////////////////
+      // add a virtual field to the table //
+      //////////////////////////////////////
+      QVirtualFieldMetaData firstNameSubString2Field = new QVirtualFieldMetaData("firstNameSubString2", QFieldType.STRING)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER)
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 2)));
+
+      QVirtualFieldMetaData firstNameSubString3For2Field = new QVirtualFieldMetaData("firstNameSubString3For2", QFieldType.STRING)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(SubStringFunction.IDENTIFIER)
+            .withArguments(Map.of(SubStringFunction.FROM_INDEX_PARAM, 3, SubStringFunction.LENGTH_PARAM, 2)));
+
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .withVirtualField(firstNameSubString2Field)
+         .withVirtualField(firstNameSubString3For2Field);
+
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_PERSON).withQueryFilter(new QQueryFilter()));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "-").withValue("firstName", "Darin").withValue("lastName", "K").withValue("modifyDate", Instant.parse("2026-02-23T15:08:51Z")),
+         new QRecord().withValue("email", "-").withValue("firstName", "Timothy").withValue("lastName", "Dr.")
+      )));
+
+      {
+         List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+            new QFilterCriteria(firstNameSubString2Field.getName(), QCriteriaOperator.EQUALS, "arin")));
+         assertEquals(1, records.size());
+         assertEquals("Darin", records.get(0).getValue("firstName"));
+         assertEquals("arin", records.get(0).getValue(firstNameSubString2Field.getName()));
+      }
+
+      {
+         List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter()
+            .withOrderBy(new QFilterOrderBy(firstNameSubString2Field.getName(), false)));
+         assertEquals(2, records.size());
+         assertEquals("imothy", records.get(0).getValue(firstNameSubString2Field.getName()));
+         assertEquals("arin", records.get(1).getValue(firstNameSubString2Field.getName()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterByNameLengthAsVirtualField() throws Exception
+   {
+      //////////////////////////////////////
+      // add a virtual field to the table //
+      //////////////////////////////////////
+      QVirtualFieldMetaData firstNameLengthField = new QVirtualFieldMetaData("firstNameLength", QFieldType.INTEGER)
+         .withIsQueryCriteria(true)
+         .withIsQuerySelectable(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("firstName")
+            .withFunctionTypeIdentifier(StringLengthFunction.IDENTIFIER));
+
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .withVirtualField(firstNameLengthField);
+
+      //////////////////////
+      // manage test data //
+      //////////////////////
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_PERSON).withQueryFilter(new QQueryFilter()));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "-").withValue("firstName", "Darin").withValue("lastName", "K"),
+         new QRecord().withValue("email", "-").withValue("firstName", "Who").withValue("lastName", "Dr.")
+      )));
+
+      //////////////////////////////////////////
+      // filter by virtual field equals value //
+      //////////////////////////////////////////
+      List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstNameLength", QCriteriaOperator.EQUALS, 5)));
+      assertEquals(1, records.size());
+      assertEquals("Darin", records.get(0).getValue("firstName"));
+      assertEquals(5, records.get(0).getValue("firstNameLength"));
+
+      ///////////////////////////////////////////////////////////////////////
+      // just for test, use a different operator against the virtual field //
+      ///////////////////////////////////////////////////////////////////////
+      records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstNameLength", QCriteriaOperator.LESS_THAN, 7))
+         .withOrderBy(new QFilterOrderBy("id")));
+      assertEquals(2, records.size());
+      assertEquals(5, records.get(0).getValue("firstNameLength"));
+      assertEquals(3, records.get(1).getValue("firstNameLength"));
+
+      /////////////////////////////////////
+      // next order by the virtual field //
+      /////////////////////////////////////
+      records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+         new QFilterCriteria("firstNameLength", QCriteriaOperator.LESS_THAN, 7))
+         .withOrderBy(new QFilterOrderBy("firstNameLength")));
+      assertEquals(2, records.size());
+      assertEquals(3, records.get(0).getValue("firstNameLength"));
+      assertEquals(5, records.get(1).getValue("firstNameLength"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Test WeekdayOfDateTime virtual field with PARAM_ZONE_ID_FROM_FIELD_NAME,
+    ** which reads the timezone from another column on the same row.
+    ** Verifies that the generated SQL uses the properly escaped backend column
+    ** name (e.g., `home_town`) rather than the QQQ field name (homeTown).
+    **
+    ** Uses the existing `homeTown` (backend: `home_town`) column to hold
+    ** timezone IDs, and registers H2 aliases for MySQL's WEEKDAY and CONVERT_TZ.
+    *******************************************************************************/
+   @Test
+   void testWeekdayOfDateTimeWithZoneIdFromFieldName() throws Exception
+   {
+      /////////////////////////////////////////////////////////////////////////////////////
+      // H2 doesn't natively support MySQL's WEEKDAY or CONVERT_TZ functions.            //
+      // Register simple H2 aliases pointing to static methods in this class so that the //
+      // SQL generated by RDBMSWeekdayOfDateTimeFunction can actually execute.           //
+      /////////////////////////////////////////////////////////////////////////////////////
+      Connection connection = new ConnectionManager().getConnection(TestUtils.defineBackend());
+      QueryManager.executeUpdate(connection, "CREATE ALIAS IF NOT EXISTS WEEKDAY FOR \"" + getClass().getName() + ".h2Weekday\"");
+      QueryManager.executeUpdate(connection, "CREATE ALIAS IF NOT EXISTS CONVERT_TZ FOR \"" + getClass().getName() + ".h2ConvertTz\"");
+      connection.close();
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // set up: define a virtual field that computes the weekday of createDate, using the timezone    //
+      // stored in the homeTown field (backend column: home_town).  This exercises the column-name     //
+      // resolver — the generated SQL must reference `home_town` (escaped backend name), not homeTown. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      QTableMetaData personTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON);
+      QContext.getQInstance().setDefaultTimeZoneId("UTC");
+
+      QVirtualFieldMetaData weekdayField = new QVirtualFieldMetaData("createDayOfWeek", QFieldType.INTEGER)
+         .withIsQuerySelectable(true)
+         .withIsQueryCriteria(true)
+         .withFieldFunction(new FieldFunction()
+            .withFieldName("createDate")
+            .withFunctionTypeIdentifier(WeekdayOfDateTimeFunction.IDENTIFIER)
+            .withArguments(Map.of(
+               WeekdayOfDateTimeFunction.PARAM_ZONE_ID_FROM_FIELD_NAME, "homeTown",
+               WeekdayOfDateTimeFunction.PARAM_USE_SESSION_ZONE_ID, false)));
+      personTable.withVirtualField(weekdayField);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // insert test records, then set create_date via raw SQL so we have known timestamp values.             //
+      // 2026-03-02 is a Monday; 2026-03-06 is a Friday; 2026-03-04 is a Wednesday.                           //
+      // when home_town is null, the fallback bind parameter (instance default "UTC") should be used via NVL. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_PERSON).withQueryFilter(new QQueryFilter()));
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "a@test.com").withValue("firstName", "A").withValue("lastName", "A").withValue("homeTown", "UTC"),
+         new QRecord().withValue("email", "b@test.com").withValue("firstName", "B").withValue("lastName", "B").withValue("homeTown", "UTC"),
+         new QRecord().withValue("email", "c@test.com").withValue("firstName", "C").withValue("lastName", "C").withValue("homeTown", null)
+      )));
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // set create_date via raw SQL to have deterministic, known timestamp values //
+      ///////////////////////////////////////////////////////////////////////////////
+      connection = new ConnectionManager().getConnection(TestUtils.defineBackend());
+      QueryManager.executeUpdate(connection, "UPDATE person SET create_date = '2026-03-02 12:00:00' WHERE first_name = 'A'"); // Monday
+      QueryManager.executeUpdate(connection, "UPDATE person SET create_date = '2026-03-06 12:00:00' WHERE first_name = 'B'"); // Friday
+      QueryManager.executeUpdate(connection, "UPDATE person SET create_date = '2026-03-04 12:00:00' WHERE first_name = 'C'"); // Wednesday
+      connection.close();
+
+      /////////////////////////////////////////////////////////////////
+      // SELECT: verify the virtual field is populated in the result //
+      /////////////////////////////////////////////////////////////////
+      {
+         List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter()
+            .withOrderBy(new QFilterOrderBy("id")));
+         assertEquals(3, records.size());
+         assertEquals(1, records.get(0).getValue("createDayOfWeek"), "Monday");
+         assertEquals(5, records.get(1).getValue("createDayOfWeek"), "Friday");
+         assertEquals(3, records.get(2).getValue("createDayOfWeek"), "Wednesday (null tz → fallback)");
+      }
+
+      ////////////////////////////////////////
+      // WHERE: filter by the weekday value //
+      ////////////////////////////////////////
+      {
+         List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(
+            new QFilterCriteria("createDayOfWeek", QCriteriaOperator.EQUALS, 1)));
+         assertEquals(1, records.size());
+         assertEquals("A", records.get(0).getValue("firstName"));
+      }
+
+      /////////////////////////////////////////
+      // ORDER BY: sort by the weekday value //
+      /////////////////////////////////////////
+      {
+         List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter()
+            .withOrderBy(new QFilterOrderBy("createDayOfWeek")));
+         assertEquals(3, records.size());
+         assertEquals(1, records.get(0).getValue("createDayOfWeek"), "Monday first");
+         assertEquals(3, records.get(1).getValue("createDayOfWeek"), "Wednesday second");
+         assertEquals(5, records.get(2).getValue("createDayOfWeek"), "Friday third");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Verify that a querySelectable virtual field with no fieldFunction (relying
+    ** on a POST_QUERY_RECORD customizer) does not NPE during query.
+    *******************************************************************************/
+   @Test
+   void testQuerySelectableVirtualFieldWithoutFieldFunction() throws Exception
+   {
+      ////////////////////////////////////////////////////////////
+      // set up a querySelectable virtual field with NO function //
+      // but WITH a post-query customizer (to satisfy validator) //
+      ////////////////////////////////////////////////////////////
+      QTableMetaData personTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON);
+      personTable.withVirtualField(new QVirtualFieldMetaData("customComputed", QFieldType.STRING)
+         .withIsQuerySelectable(true));
+      personTable.withCustomizer("postQueryRecord", new QCodeReference(NoOpPostQueryCustomizer.class));
+
+      //////////////////////////////////////////////////
+      // query should succeed without NPE and return   //
+      // records (the virtual field won't be selected  //
+      // by the backend since it has no fieldFunction) //
+      //////////////////////////////////////////////////
+      List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter());
+      assertFalse(records.isEmpty());
+   }
+
+
+
+   /***************************************************************************
+    * Minimal post-query customizer that does nothing — just satisfies the
+    * validator requirement for querySelectable virtual fields without a
+    * fieldFunction.
+    ***************************************************************************/
+   public static class NoOpPostQueryCustomizer extends com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer
+   {
+      @Override
+      public List<QRecord> apply(List<QRecord> records)
+      {
+         return (records);
+      }
+   }
+
+
+
+   /***************************************************************************
+    * H2 alias for MySQL's WEEKDAY function.
+    * MySQL WEEKDAY returns Monday=0 … Sunday=6.
+    ***************************************************************************/
+   @SuppressWarnings("unused") // called by H2 via CREATE ALIAS
+   public static int h2Weekday(Timestamp ts)
+   {
+      // MySQL convention: Monday=0, Sunday=6
+      return ts.toLocalDateTime().getDayOfWeek().getValue() - 1;
+   }
+
+
+
+   /***************************************************************************
+    * H2 alias for MySQL's CONVERT_TZ function.
+    * Performs actual timezone conversion so weekday calculations work correctly.
+    * Returns the input unchanged if either timezone ID is invalid (mirrors
+    * MySQL's CONVERT_TZ which returns NULL for unknown zones).
+    ***************************************************************************/
+   @SuppressWarnings("unused") // called by H2 via CREATE ALIAS
+   public static Timestamp h2ConvertTz(Timestamp ts, String fromTz, String toTz)
+   {
+      try
+      {
+         ZonedDateTime zdt = ts.toInstant().atZone(ZoneId.of(fromTz));
+         ZonedDateTime converted = zdt.withZoneSameInstant(ZoneId.of(toTz));
+         return Timestamp.valueOf(converted.toLocalDateTime());
+      }
+      catch(Exception e)
+      {
+         return ts;
+      }
    }
 
 }
