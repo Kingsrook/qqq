@@ -1,0 +1,112 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-04-22T15:05:30.059Z",
+  "context": "research",
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "workflow_in_progress": "/gsd-new-project",
+  "workflow_progress": {
+    "completed_steps": [
+      "Step 1: Setup + init probe",
+      "Step 2: Brownfield mapping (skipped — already mapped in prior commit c867b5f03)",
+      "Step 2b: Prior spike/sketch detection (none)",
+      "Step 3: Deep questioning",
+      "Step 4: Write & commit PROJECT.md",
+      "Step 5: Collect workflow preferences → config.json",
+      "Step 6: Research decision (skipped project-level fan-out — codebase map already covers domain)",
+      "Step 7: Define & commit REQUIREMENTS.md",
+      "Step 8: Create & commit ROADMAP.md via gsd-roadmapper"
+    ],
+    "current_step": "Step 9: Wrap-up (CLAUDE.md generation + Next Up presentation) — PAUSED",
+    "reason_paused": "User raised broader strategic question mid-wrap-up about sibling-repos/monorepo reorg; launched research + BOM audit to inform it; patterns research blocked on web permissions."
+  },
+  "commits_this_session": [
+    {"hash": "068779caf", "message": "docs: initialize project", "files": [".planning/PROJECT.md"]},
+    {"hash": "76f486b09", "message": "chore: add project config", "files": [".planning/config.json"]},
+    {"hash": "a6ec988c7", "message": "docs: define v1 requirements", "files": [".planning/REQUIREMENTS.md"]},
+    {"hash": "38c7caf9c", "message": "docs: create roadmap (8 phases)", "files": [".planning/ROADMAP.md", ".planning/STATE.md", ".planning/REQUIREMENTS.md"]}
+  ],
+  "uncommitted_files": [
+    ".planning/research/bom-audit.md"
+  ],
+  "blockers": [
+    {
+      "description": "WebSearch and WebFetch permissions denied — blocks re-spawn of multi-repo-patterns research agent",
+      "type": "human_action",
+      "workaround": "User can grant via /permissions, settings.json, or approving prompts; then say 'retry research'"
+    },
+    {
+      "description": "gsd-sdk query generate-claude-md --output <path> does not write a file — only returns JSON sections. Project-level CLAUDE.md generation for /gsd-new-project Step 9 needs a workaround.",
+      "type": "technical",
+      "workaround": "Write CLAUDE.md manually from templates/claude-md.md, assembling sections from .planning/codebase/*.md + PROJECT.md. Or investigate whether there's a different CLI command (gsd-tools is not installed)."
+    }
+  ],
+  "human_actions_pending": [
+    {
+      "action": "Grant WebSearch + WebFetch permissions",
+      "context": "Needed for the multi-repo-patterns research agent to produce a properly cited report. Agent refused to substitute from training data without web verification (correct behavior).",
+      "blocking": true
+    },
+    {
+      "action": "Decide milestone 1 scope: should downstream sibling Java repos (QBits, starters, qctl) be updated to run on 4.0 as part of this milestone?",
+      "context": "The original milestone 1 scope treats qqq repo as the whole scope. If downstream consumers are in your care, they likely need 4.0-compat fixes inside this milestone rather than waiting. User deferred this with 'let's brainstorm first' and asked for the research + BOM audit before deciding.",
+      "blocking": false
+    },
+    {
+      "action": "Decide: update PROJECT.md Context section now to capture the 40+ sibling-repo reality, or defer to /gsd-new-milestone (milestone 2 setup)?",
+      "context": "Context info would sharpen milestone-2 reorg discussions later. Deferred during the brainstorm — not answered.",
+      "blocking": false
+    }
+  ],
+  "decisions_made": [
+    {"decision": "Ship next release as 4.0.0 (not 0.42.0)", "rationale": "Corrects long-standing version-number drift ('0.40 should have been 4.0') and marks the start of the semver contract."},
+    {"decision": "Fold breaking renames (javalin + picocli packages) + full @Deprecated sweep + targeted API-shape cleanups into 4.0", "rationale": "Post-4.0 under the semver contract, these become multi-year-deferred. Consumer pain paid once, cleanly."},
+    {"decision": "Include qqq-sample-project update in 4.0 scope (runs on 4.0 with current qfmd)", "rationale": "Part of the stable-release 'works out of the box' story."},
+    {"decision": "Hold JaCoCo coverage at current baseline — no regression, but no raise", "rationale": "4.0 is stability, not quality-improvement."},
+    {"decision": "Defer mono-repo / QBit + UI reorg to milestone 2 via /gsd-new-milestone", "rationale": "Reorg is large enough to warrant its own milestone. 4.0 provides a stable regression base."},
+    {"decision": "Use GitHub bug/defect issue labels on this repo as source of truth for 'blocking bugs'", "rationale": "Single authoritative list; triage happens during Phase 1."},
+    {"decision": "Reuse existing publishing pipeline (central-publishing-maven-plugin → Sonatype Central); no new registries", "rationale": "Pipeline is mature; adding registries is scope creep."},
+    {"decision": "Skip project-level 4-agent research fan-out (STACK/FEATURES/ARCHITECTURE/PITFALLS)", "rationale": "Brownfield with existing codebase map in .planning/codebase/. Per-phase research still on in config."},
+    {"decision": "8-phase roadmap with explicit dependencies for parallel execution", "rationale": "Phase 1 discovery → breaks (2,3) || bugs (5) → deprecation+API (4) → docs (6) || sample (7) → release (8)."}
+  ],
+  "roadmap_snapshot": {
+    "milestone": "4.0.0 — Stabilize & Publish",
+    "phases": [
+      {"n": 1, "name": "Baseline & Triage", "requirements": [], "depends_on": []},
+      {"n": 2, "name": "Javalin Package Consolidation", "requirements": ["BREAK-01"], "depends_on": [1]},
+      {"n": 3, "name": "PicoCLI Package Rename", "requirements": ["BREAK-02"], "depends_on": [1]},
+      {"n": 4, "name": "Deprecation Sweep & API Shape Cleanups", "requirements": ["BREAK-03", "BREAK-04"], "depends_on": [2, 3]},
+      {"n": 5, "name": "Bug Fix Execution", "requirements": ["STAB-01", "STAB-02"], "depends_on": [1]},
+      {"n": 6, "name": "Documentation", "requirements": ["DOC-01", "DOC-02"], "depends_on": [4, 5]},
+      {"n": 7, "name": "Sample Project", "requirements": ["SAMP-01"], "depends_on": [2, 3, 4]},
+      {"n": 8, "name": "Release Engineering", "requirements": ["STAB-03", "STAB-04", "REL-01", "REL-02"], "depends_on": [1, 2, 3, 4, 5, 6, 7]}
+    ],
+    "requirements_count": 13,
+    "coverage": "13/13"
+  },
+  "research_state": {
+    "bom_audit": {"status": "complete", "path": ".planning/research/bom-audit.md", "committed": false, "summary": "Facts-only audit. BOM manages 11 qqq modules via ${revision}. Gaps: 5 internal modules missing; 20 QBits + qbit-build-parent + qctl + frontend version properties not managed. Version drift: 4 different qbit-build-parent versions across QBits (1.1.0/1.4.0/1.5.1/1.6.0). qqq-app-starter pinned to qqq-bom 0.24.0-SNAPSHOT (~18 versions stale). Template QBits pin qqq.version=0.35.0 directly. qbit-worm-audit is an uncustomized duplicate of qbit-template-extension. Four groupIds span the ecosystem. ${revision} is reactor-scoped — can't cross repos."},
+    "multi_repo_patterns": {"status": "blocked", "path": ".planning/research/multi-repo-patterns.md (not yet written)", "blocker": "WebSearch + WebFetch permissions denied", "agent_id_last_try": "acaf13450bac145ee"}
+  },
+  "critical_anti_patterns": [
+    {
+      "pattern": "Spawning general-purpose agents with prompts that trigger skill auto-invocation",
+      "description": "First BOM-audit spawn (agent a33c54037a25a945b) returned with an unrelated 'needs Bash + Read on ~/.claude/projects/' ask — looked like the fewer-permission-prompts skill auto-fired instead of executing the actual task prompt. Resolved by doing the audit inline with direct tool calls.",
+      "severity": "advisory",
+      "prevention": "For finite file-reading work, prefer inline tool calls over general-purpose agent spawns. If spawning, be explicit that the agent should perform ONLY the task in the prompt and not invoke any skills."
+    },
+    {
+      "pattern": "Meridian-family subagent_type without explicit model parameter",
+      "description": "First research agent spawn with subagent_type=researcher failed with 'gpt-5.4-mini not available' — meridian-family agents default to a different model family. Resolved by using subagent_type=general-purpose with explicit model=sonnet.",
+      "severity": "advisory",
+      "prevention": "For external web research, use subagent_type=general-purpose with model=sonnet explicitly; do not use meridian-family agents (researcher, brainstormer, etc.) in non-meridian projects."
+    }
+  ],
+  "next_action": "Check whether WebSearch + WebFetch permissions have been granted (try a trivial WebFetch, or inspect settings.json). If yes, re-spawn the multi-repo-patterns research agent with the same prompt and subagent_type=general-purpose, model=sonnet, run_in_background=true. If not, ask user to grant them. After research lands, summarize findings + resume the deferred scope discussion: 'should downstream sibling repos be updated as part of 4.0?' Then finish GSD init: commit bom-audit.md (if not already), write project-level CLAUDE.md manually (gsd-sdk generate-claude-md is broken), commit, present Next Up for Phase 1.",
+  "context_notes": "User is initializing GSD on top of an existing brownfield project (QQQ framework, 0.42.0-SNAPSHOT → targeting 4.0.0). Mid-init, they flagged that ~40 sibling repos (QBits, frontends, starters, qctl) live outside this mono and the versioning story is painful. I kicked off parallel research (multi-repo patterns + qqq-bom audit) to inform the scope decision. BOM audit produced striking data — the ecosystem is already doing cross-repo BOM coordination (qbit-bom imports qqq-bom), it's just fragmented (4 qbit-build-parent versions, 5 missing internal modules from BOM, stale starter). Research patterns agent blocked. User paused via /gsd-pause-work rather than continue now."
+}
