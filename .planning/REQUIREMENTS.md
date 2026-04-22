@@ -69,25 +69,25 @@ Which phases cover which requirements. Populated by `/gsd-plan-phase` and the ro
 
 | Requirement | Phase | Status |
 |---|---|---|
-| STAB-01 | — | Pending |
-| STAB-02 | — | Pending |
-| STAB-03 | — | Pending |
-| STAB-04 | — | Pending |
-| BREAK-01 | — | Pending |
-| BREAK-02 | — | Pending |
-| BREAK-03 | — | Pending |
-| BREAK-04 | — | Pending |
-| REL-01 | — | Pending |
-| REL-02 | — | Pending |
-| DOC-01 | — | Pending |
-| DOC-02 | — | Pending |
-| SAMP-01 | — | Pending |
+| STAB-01 | Phase 5 — Bug Fix Execution | Pending |
+| STAB-02 | Phase 5 — Bug Fix Execution | Pending |
+| STAB-03 | Phase 8 — Release Engineering | Pending |
+| STAB-04 | Phase 8 — Release Engineering | Pending |
+| BREAK-01 | Phase 2 — Javalin Package Consolidation | Pending |
+| BREAK-02 | Phase 3 — PicoCLI Package Rename | Pending |
+| BREAK-03 | Phase 4 — Deprecation Sweep & API Shape Cleanups | Pending |
+| BREAK-04 | Phase 4 — Deprecation Sweep & API Shape Cleanups | Pending |
+| REL-01 | Phase 8 — Release Engineering | Pending |
+| REL-02 | Phase 8 — Release Engineering | Pending |
+| DOC-01 | Phase 6 — Documentation | Pending |
+| DOC-02 | Phase 6 — Documentation | Pending |
+| SAMP-01 | Phase 7 — Sample Project | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 13 ⚠️ — resolves when roadmapper runs
+- Mapped to phases: 13 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-22*
-*Last updated: 2026-04-22 after initial definition*
+*Last updated: 2026-04-22 — traceability populated by roadmapper*
