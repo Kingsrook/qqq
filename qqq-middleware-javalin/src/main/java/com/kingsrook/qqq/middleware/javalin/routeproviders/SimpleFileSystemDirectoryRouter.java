@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.middleware.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.RouteAuthenticatorInterface;

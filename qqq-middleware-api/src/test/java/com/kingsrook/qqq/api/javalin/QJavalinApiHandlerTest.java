@@ -57,7 +57,7 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
-import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.middleware.javalin.QJavalinImplementation;
 import io.javalin.apibuilder.EndpointGroup;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;

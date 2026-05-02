@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.javalin;
+package com.kingsrook.qqq.middleware.javalin;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;

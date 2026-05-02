@@ -35,8 +35,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
-import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
-import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
+import com.kingsrook.qqq.middleware.javalin.QJavalinMetaData;
+import com.kingsrook.qqq.middleware.javalin.QJavalinUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.io.TableQueryInput;
 import com.kingsrook.qqq.middleware.javalin.executors.io.TableQueryOutputInterface;
 

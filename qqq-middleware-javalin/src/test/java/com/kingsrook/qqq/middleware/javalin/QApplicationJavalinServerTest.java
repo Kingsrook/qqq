@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
-import com.kingsrook.qqq.backend.javalin.TestUtils;
+import com.kingsrook.qqq.middleware.javalin.TestUtils;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.IsolatedSpaRouteProvider;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.SimpleFileSystemDirectoryRouter;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.SpaNotFoundHandlerRegistry;
@@ -856,7 +856,7 @@ class QApplicationJavalinServerTest
       ////////////////////////////////////////
       // Test javalinMetaData getter/setter //
       ////////////////////////////////////////
-      com.kingsrook.qqq.backend.javalin.QJavalinMetaData metaData = new com.kingsrook.qqq.backend.javalin.QJavalinMetaData();
+      com.kingsrook.qqq.middleware.javalin.QJavalinMetaData metaData = new com.kingsrook.qqq.middleware.javalin.QJavalinMetaData();
       javalinServer.setJavalinMetaData(metaData);
       assertEquals(metaData, javalinServer.getJavalinMetaData());
    }

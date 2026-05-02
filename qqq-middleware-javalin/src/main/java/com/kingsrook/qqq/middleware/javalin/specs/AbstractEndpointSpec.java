@@ -39,7 +39,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
+import com.kingsrook.qqq.middleware.javalin.QJavalinUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.AbstractMiddlewareExecutor;
 import com.kingsrook.qqq.middleware.javalin.executors.ExecutorSessionUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.io.AbstractMiddlewareInput;

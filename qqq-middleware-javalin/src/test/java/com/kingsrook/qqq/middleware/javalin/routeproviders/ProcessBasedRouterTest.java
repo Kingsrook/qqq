@@ -25,7 +25,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.javalin.TestUtils;
+import com.kingsrook.qqq.middleware.javalin.TestUtils;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import io.javalin.apibuilder.EndpointGroup;
 import org.junit.jupiter.api.AfterEach;

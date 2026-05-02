@@ -87,8 +87,8 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
-import com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger;
-import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.middleware.javalin.QJavalinAccessLogger;
+import com.kingsrook.qqq.middleware.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.openapi.model.HttpMethod;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
@@ -99,7 +99,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
-import static com.kingsrook.qqq.backend.javalin.QJavalinImplementation.SLOW_LOG_THRESHOLD_MS;
+import static com.kingsrook.qqq.middleware.javalin.QJavalinImplementation.SLOW_LOG_THRESHOLD_MS;
 
 
 /*******************************************************************************

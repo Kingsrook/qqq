@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.javalin;
+package com.kingsrook.qqq.middleware.javalin;
 
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.junit.jupiter.api.Test;
-import static com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger.DISABLED_PROPERTY;
+import static com.kingsrook.qqq.middleware.javalin.QJavalinAccessLogger.DISABLED_PROPERTY;
 
 
 /*******************************************************************************

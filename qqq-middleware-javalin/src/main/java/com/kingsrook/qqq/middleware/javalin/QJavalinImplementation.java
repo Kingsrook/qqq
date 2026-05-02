@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.javalin;
+package com.kingsrook.qqq.middleware.javalin;
 
 
 import java.io.File;
@@ -146,7 +146,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
-import static com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger.logPairIfSlow;
+import static com.kingsrook.qqq.middleware.javalin.QJavalinAccessLogger.logPairIfSlow;
 import static io.javalin.apibuilder.ApiBuilder.delete;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.patch;

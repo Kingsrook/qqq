@@ -46,7 +46,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger;
+import com.kingsrook.qqq.middleware.javalin.QJavalinAccessLogger;
 import com.kingsrook.qqq.middleware.javalin.executors.io.ProcessInitOrStepInput;
 import com.kingsrook.qqq.middleware.javalin.executors.io.ProcessInitOrStepOrStatusOutputInterface;
 import com.kingsrook.qqq.middleware.javalin.executors.utils.ProcessExecutorUtils;

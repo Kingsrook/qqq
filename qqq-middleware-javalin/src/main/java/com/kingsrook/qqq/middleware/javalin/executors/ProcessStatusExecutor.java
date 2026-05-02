@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger;
+import com.kingsrook.qqq.middleware.javalin.QJavalinAccessLogger;
 import com.kingsrook.qqq.middleware.javalin.executors.io.ProcessInitOrStepOrStatusOutputInterface;
 import com.kingsrook.qqq.middleware.javalin.executors.io.ProcessStatusInput;
 import com.kingsrook.qqq.middleware.javalin.executors.utils.ProcessExecutorUtils;
