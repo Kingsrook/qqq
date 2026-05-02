@@ -23,7 +23,7 @@ package com.kingsrook.sampleapp;
 
 
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
+import com.kingsrook.qqq.middleware.picocli.QPicoCliImplementation;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 
 

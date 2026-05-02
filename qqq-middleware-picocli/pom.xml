@@ -106,7 +106,7 @@
                </descriptorRefs>
                <archive>
                   <manifest>
-                     <mainClass>com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation</mainClass>
+                     <mainClass>com.kingsrook.qqq.middleware.picocli.QPicoCliImplementation</mainClass>
                   </manifest>
                </archive>
             </configuration>

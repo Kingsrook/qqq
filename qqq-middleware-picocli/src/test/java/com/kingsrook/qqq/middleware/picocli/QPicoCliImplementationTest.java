@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.frontend.picocli;
+package com.kingsrook.qqq.middleware.picocli;
 
 
 import java.io.ByteArrayInputStream;
