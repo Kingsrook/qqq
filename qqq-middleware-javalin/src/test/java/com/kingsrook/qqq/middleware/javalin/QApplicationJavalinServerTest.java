@@ -260,7 +260,7 @@ class QApplicationJavalinServerTest
       javalinServer = new QApplicationJavalinServer(new QApplicationJavalinServerTest.TestApplication())
          .withServeFrontendMaterialDashboard(false)
          .withPort(PORT)
-         .withAdditionalRouteProvider(new SimpleFileSystemDirectoryRouter("/statically-served-from-jar", "static-site-from-jar/"));
+         .withAdditionalRouteProviders(List.of(new SimpleFileSystemDirectoryRouter("/statically-served-from-jar", "static-site-from-jar/")));
 
       javalinServer.start();
 
@@ -414,14 +414,13 @@ class QApplicationJavalinServerTest
          .withPort(PORT)
          .withServeFrontendMaterialDashboard(false)
          .withServeLegacyUnversionedMiddlewareAPI(false)
-         .withAdditionalRouteProvider(
+         .withAdditionalRouteProviders(List.of(
             new SimpleFileSystemDirectoryRouter("/app", "test-spa-app/")
                .withSpaRootPath("/app")
-               .withSpaRootFile("test-spa-app/index.html"))
-         .withAdditionalRouteProvider(
+               .withSpaRootFile("test-spa-app/index.html"),
             new SimpleFileSystemDirectoryRouter("/admin", "test-spa-admin/")
                .withSpaRootPath("/admin")
-               .withSpaRootFile("test-spa-admin/index.html"));
+               .withSpaRootFile("test-spa-admin/index.html")));
       javalinServer.start();
 
       Unirest.config().setDefaultResponseEncoding("UTF-8");
@@ -515,10 +514,10 @@ class QApplicationJavalinServerTest
          .withPort(PORT)
          .withServeFrontendMaterialDashboard(false)
          .withServeLegacyUnversionedMiddlewareAPI(false)
-         .withAdditionalRouteProvider(
+         .withAdditionalRouteProviders(List.of(
             new SimpleFileSystemDirectoryRouter("/app", "test-spa-app/")
                .withSpaRootPath("/app")
-               .withSpaRootFile("test-spa-app/index.html"));
+               .withSpaRootFile("test-spa-app/index.html")));
       javalinServer.start();
 
       Unirest.config().setDefaultResponseEncoding("UTF-8");
@@ -582,8 +581,8 @@ class QApplicationJavalinServerTest
          .withPort(PORT)
          .withServeFrontendMaterialDashboard(false)
          .withServeLegacyUnversionedMiddlewareAPI(false)
-         .withAdditionalRouteProvider(
-            new SimpleFileSystemDirectoryRouter("/static", "static-site/"));
+         .withAdditionalRouteProviders(List.of(
+            new SimpleFileSystemDirectoryRouter("/static", "static-site/")));
       javalinServer.start();
 
       Unirest.config().setDefaultResponseEncoding("UTF-8");
@@ -619,10 +618,10 @@ class QApplicationJavalinServerTest
          .withPort(PORT)
          .withServeFrontendMaterialDashboard(false)
          .withServeLegacyUnversionedMiddlewareAPI(true)  // Enable legacy API routes
-         .withAdditionalRouteProvider(
+         .withAdditionalRouteProviders(List.of(
             new SimpleFileSystemDirectoryRouter("/app", "test-spa-app/")
                .withSpaRootPath("/app")
-               .withSpaRootFile("test-spa-app/index.html"));
+               .withSpaRootFile("test-spa-app/index.html")));
       javalinServer.start();
 
       Unirest.config().setDefaultResponseEncoding("UTF-8");
@@ -1017,11 +1016,11 @@ class QApplicationJavalinServerTest
       javalinServer.setPort(PORT);
       javalinServer.setServeFrontendMaterialDashboard(false);
 
-      javalinServer.withAdditionalRouteProvider(
+      javalinServer.withAdditionalRouteProviders(List.of(
          new IsolatedSpaRouteProvider("/mdb", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
-            .withLoadFromJar(true));
+            .withLoadFromJar(true)));
 
       javalinServer.start();
 
@@ -1061,11 +1060,11 @@ class QApplicationJavalinServerTest
       javalinServer.setPort(PORT);
       javalinServer.setServeFrontendMaterialDashboard(false);
 
-      javalinServer.withAdditionalRouteProvider(
+      javalinServer.withAdditionalRouteProviders(List.of(
          new IsolatedSpaRouteProvider("/", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
-            .withLoadFromJar(true));
+            .withLoadFromJar(true)));
 
       javalinServer.start();
 
@@ -1141,11 +1140,11 @@ class QApplicationJavalinServerTest
       javalinServer.setPort(PORT);
       javalinServer.setServeFrontendMaterialDashboard(false);
 
-      javalinServer.withAdditionalRouteProvider(
+      javalinServer.withAdditionalRouteProviders(List.of(
          new IsolatedSpaRouteProvider("/mdb", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
-            .withLoadFromJar(true));
+            .withLoadFromJar(true)));
 
       javalinServer.start();
 
@@ -1454,13 +1453,13 @@ class QApplicationJavalinServerTest
       ////////////////////////////////////////////////////////////////
       // Custom SPA (using material-dashboard files for testing) at //
       ////////////////////////////////////////////////////////////////
-      javalinServer.withAdditionalRouteProvider(
+      javalinServer.withAdditionalRouteProviders(List.of(
          new IsolatedSpaRouteProvider("/", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
             .withLoadFromJar(true)
             .withExcludedPaths(List.of("/dashboard"))  // Exclude the dashboard path
-      );
+      ));
 
       javalinServer.start();
 
@@ -1551,12 +1550,12 @@ class QApplicationJavalinServerTest
       ////////////////////////////////////////////////////////////////////////
       // Custom SPA at /custom (using material-dashboard files for testing) //
       ////////////////////////////////////////////////////////////////////////
-      javalinServer.withAdditionalRouteProvider(
+      javalinServer.withAdditionalRouteProviders(List.of(
          new IsolatedSpaRouteProvider("/custom", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
             .withLoadFromJar(true)
-      );
+      ));
 
       javalinServer.start();
 
@@ -1646,25 +1645,23 @@ class QApplicationJavalinServerTest
       javalinServer.setPort(PORT);
       javalinServer.setServeFrontendMaterialDashboard(false);
 
-      /////////////////
-      // SPA at /app //
-      /////////////////
-      javalinServer.withAdditionalRouteProvider(
+      javalinServer.withAdditionalRouteProviders(List.of(
+         /////////////////
+         // SPA at /app //
+         /////////////////
          new IsolatedSpaRouteProvider("/app", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
-            .withLoadFromJar(true)
-      );
+            .withLoadFromJar(true),
 
-      ///////////////////
-      // SPA at /admin //
-      ///////////////////
-      javalinServer.withAdditionalRouteProvider(
+         ///////////////////
+         // SPA at /admin //
+         ///////////////////
          new IsolatedSpaRouteProvider("/admin", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
             .withLoadFromJar(true)
-      );
+      ));
 
       javalinServer.start();
 
@@ -2112,27 +2109,25 @@ class QApplicationJavalinServerTest
       javalinServer.setPort(PORT);
       javalinServer.setServeFrontendMaterialDashboard(false);
 
-      //////////////////////////////
-      // Root SPA with exclusions //
-      //////////////////////////////
-      javalinServer.withAdditionalRouteProvider(
+      javalinServer.withAdditionalRouteProviders(List.of(
+         //////////////////////////////
+         // Root SPA with exclusions //
+         //////////////////////////////
          new IsolatedSpaRouteProvider("/", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
             .withLoadFromJar(true)
-            .withExcludedPaths(List.of("/api", "/portal"))  // Exclude /portal for the other SPA
-      );
+            .withExcludedPaths(List.of("/api", "/portal")),  // Exclude /portal for the other SPA
 
-      /////////////////////////////////////////////////////
-      // Non-root SPA at /portal with its own exclusions //
-      /////////////////////////////////////////////////////
-      javalinServer.withAdditionalRouteProvider(
+         /////////////////////////////////////////////////////
+         // Non-root SPA at /portal with its own exclusions //
+         /////////////////////////////////////////////////////
          new IsolatedSpaRouteProvider("/portal", "material-dashboard")
             .withSpaIndexFile("material-dashboard/index.html")
             .withDeepLinking(true)
             .withLoadFromJar(true)
             .withExcludedPaths(List.of("/portal/api", "/portal/webhook"))
-      );
+      ));
 
       javalinServer.start();
 

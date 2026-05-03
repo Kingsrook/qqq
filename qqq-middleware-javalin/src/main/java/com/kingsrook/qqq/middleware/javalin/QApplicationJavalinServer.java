@@ -143,7 +143,7 @@ public class QApplicationJavalinServer
             .withDeepLinking(true)
             .withLoadFromJar(true);
 
-         withAdditionalRouteProvider(materialDashboardProvider);
+         addRouteProvider(materialDashboardProvider);
       }
 
       service = Javalin.create(config ->
@@ -445,15 +445,15 @@ public class QApplicationJavalinServer
                }
             }
 
-            withAdditionalRouteProvider(spaProvider);
+            addRouteProvider(spaProvider);
          }
          else if(StringUtils.hasContent(routeProviderMetaData.getProcessName()) && StringUtils.hasContent(routeProviderMetaData.getHostedPath()))
          {
-            withAdditionalRouteProvider(new ProcessBasedRouter(routeProviderMetaData));
+            addRouteProvider(new ProcessBasedRouter(routeProviderMetaData));
          }
          else if(StringUtils.hasContent(routeProviderMetaData.getFileSystemPath()) && StringUtils.hasContent(routeProviderMetaData.getHostedPath()))
          {
-            withAdditionalRouteProvider(new SimpleFileSystemDirectoryRouter(routeProviderMetaData));
+            addRouteProvider(new SimpleFileSystemDirectoryRouter(routeProviderMetaData));
          }
          else
          {
@@ -475,7 +475,7 @@ public class QApplicationJavalinServer
 
             LOG.info("Auto-registering route provider from metadata", LogUtils.logPair("provider", providerRef.getName()));
 
-            withAdditionalRouteProvider(provider);
+            addRouteProvider(provider);
          }
          catch(Exception e)
          {
@@ -748,7 +748,7 @@ public class QApplicationJavalinServer
     *******************************************************************************/
    public void setAdditionalRouteProviders(List<QJavalinRouteProviderInterface> additionalRouteProviders)
    {
-      this.additionalRouteProviders = additionalRouteProviders;
+      this.additionalRouteProviders = new ArrayList<>(additionalRouteProviders);
    }
 
 
@@ -758,47 +758,22 @@ public class QApplicationJavalinServer
     *******************************************************************************/
    public QApplicationJavalinServer withAdditionalRouteProviders(List<QJavalinRouteProviderInterface> additionalRouteProviders)
    {
-      this.additionalRouteProviders = additionalRouteProviders;
+      this.additionalRouteProviders = new ArrayList<>(additionalRouteProviders);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter to add a single additionalRouteProvider
-    **
-    ** @deprecated As of QQQ 0.x, use metadata producers with
-    **             {@link QJavalinMetaData#withAdditionalRouteProviderReference(QCodeReference)}
-    **             to register route providers declaratively. This method remains
-    **             for backward compatibility but will be removed in a future release.
-    **
-    ** Migration example:
-    ** <pre>
-    ** // OLD (programmatic):
-    ** .withAdditionalRouteProvider(new JavalinHealthRouteProvider())
-    **
-    ** // NEW (metadata-driven):
-    ** // Create a MetaDataProducer that returns QJavalinMetaData:
-    ** public class HealthMetaDataProducer extends MetaDataProducer&lt;QJavalinMetaData&gt;
-    ** {
-    **    public QJavalinMetaData produce(QInstance qInstance) {
-    **       return QJavalinMetaData.ofOrWithNew(qInstance)
-    **          .withAdditionalRouteProviderReference(
-    **             new QCodeReference(JavalinHealthRouteProvider.class)
-    **          );
-    **    }
-    ** }
-    ** </pre>
+    ** Private helper to append a route provider to the list.
     *******************************************************************************/
-   @Deprecated
-   public QApplicationJavalinServer withAdditionalRouteProvider(QJavalinRouteProviderInterface additionalRouteProvider)
+   private void addRouteProvider(QJavalinRouteProviderInterface additionalRouteProvider)
    {
       if(this.additionalRouteProviders == null)
       {
          this.additionalRouteProviders = new ArrayList<>();
       }
       this.additionalRouteProviders.add(additionalRouteProvider);
-      return (this);
    }
 
 
@@ -815,7 +790,8 @@ public class QApplicationJavalinServer
     *******************************************************************************/
    public QApplicationJavalinServer withIsolatedSpaRouteProvider(String spaPath, String staticFilesPath)
    {
-      return withAdditionalRouteProvider(new IsolatedSpaRouteProvider(spaPath, staticFilesPath));
+      addRouteProvider(new IsolatedSpaRouteProvider(spaPath, staticFilesPath));
+      return (this);
    }
 
 
@@ -833,8 +809,9 @@ public class QApplicationJavalinServer
     *******************************************************************************/
    public QApplicationJavalinServer withIsolatedSpaRouteProvider(String spaPath, String staticFilesPath, String spaIndexFile)
    {
-      return withAdditionalRouteProvider(new IsolatedSpaRouteProvider(spaPath, staticFilesPath)
+      addRouteProvider(new IsolatedSpaRouteProvider(spaPath, staticFilesPath)
          .withSpaIndexFile(spaIndexFile));
+      return (this);
    }
 
 

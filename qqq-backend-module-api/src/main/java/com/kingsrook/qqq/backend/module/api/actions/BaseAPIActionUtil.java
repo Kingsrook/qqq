@@ -975,18 +975,6 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
-    ** one-line method, factored out so mock/tests can override
-    ** Deprecated, in favor of more generic overload that takes HttpRequestBase
-    *******************************************************************************/
-   @Deprecated
-   protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpPost request) throws IOException
-   {
-      return client.execute(request);
-   }
-
-
-
-   /*******************************************************************************
     ** As part of making a request - set up its content-type header.
     *******************************************************************************/
    protected void setupContentTypeInRequest(HttpRequestBase request)
