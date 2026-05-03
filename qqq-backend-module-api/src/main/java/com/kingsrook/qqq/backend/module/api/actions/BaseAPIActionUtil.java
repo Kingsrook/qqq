@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
-import com.kingsrook.qqq.backend.core.model.metadata.variants.LegacyBackendVariantSetting;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -790,7 +789,7 @@ public class BaseAPIActionUtil
       if(backendMetaData.getUsesVariants())
       {
          QRecord record = BackendVariantsUtil.getVariantRecord(backendMetaData);
-         return (record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.API_KEY, APIBackendVariantSetting.API_KEY)));
+         return (record.getValueString(getVariantSettingSourceFieldName(backendMetaData, APIBackendVariantSetting.API_KEY)));
       }
 
       return (backendMetaData.getApiKey());
@@ -799,13 +798,12 @@ public class BaseAPIActionUtil
 
 
    /***************************************************************************
-    ** todo - once deprecated variant methods are removed from QBackendMetaData,
-    ** then we can remove the LegacyBackendVariantSetting enum, and this param.
+    **
     ***************************************************************************/
-   private String getVariantSettingSourceFieldName(APIBackendMetaData backendMetaData, LegacyBackendVariantSetting legacyBackendVariantSetting, APIBackendVariantSetting apiBackendVariantSetting)
+   private String getVariantSettingSourceFieldName(APIBackendMetaData backendMetaData, APIBackendVariantSetting apiBackendVariantSetting)
    {
       Map<BackendVariantSetting, String> map = CollectionUtils.nonNullMap(backendMetaData.getBackendVariantsConfig().getBackendSettingSourceFieldNameMap());
-      return map.getOrDefault(legacyBackendVariantSetting, map.get(apiBackendVariantSetting));
+      return map.get(apiBackendVariantSetting);
    }
 
 
@@ -819,8 +817,8 @@ public class BaseAPIActionUtil
       {
          QRecord record = BackendVariantsUtil.getVariantRecord(backendMetaData);
          return (Pair.of(
-            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.USERNAME, APIBackendVariantSetting.USERNAME)),
-            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.PASSWORD, APIBackendVariantSetting.PASSWORD))
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, APIBackendVariantSetting.USERNAME)),
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, APIBackendVariantSetting.PASSWORD))
          ));
       }
 
@@ -944,8 +942,8 @@ public class BaseAPIActionUtil
       {
          QRecord record = BackendVariantsUtil.getVariantRecord(backendMetaData);
          return (Pair.of(
-            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.CLIENT_ID, APIBackendVariantSetting.CLIENT_ID)),
-            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.CLIENT_SECRET, APIBackendVariantSetting.CLIENT_SECRET))
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, APIBackendVariantSetting.CLIENT_ID)),
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, APIBackendVariantSetting.CLIENT_SECRET))
          ));
       }
 
