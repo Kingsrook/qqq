@@ -152,6 +152,10 @@
                </additionalClasspathElements>
             </configuration>
          </plugin>
+         <!-- RETAINED: source/target=11 here is intentional — the Javalin openapi-annotation-processor
+              generates Java 11 bytecode. Producing Java 11 class files from a Java 21 JDK is legal.
+              This block does NOT pin the project's runtime; the rest of the project compiles at Java 21.
+              BREAK-04-03: reviewed 2026-05-03, retention confirmed. -->
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
