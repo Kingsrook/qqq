@@ -147,6 +147,18 @@ class QJavaExecutorTest extends BaseTest
          public void acceptLogLine(String logLine)
          {
          }
+
+
+         @Override
+         public void acceptException(Exception exception)
+         {
+         }
+
+
+         @Override
+         public void acceptExecutionEnd(java.io.Serializable output)
+         {
+         }
       };
    }
 

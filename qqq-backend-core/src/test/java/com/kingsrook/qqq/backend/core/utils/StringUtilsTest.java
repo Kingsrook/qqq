@@ -465,4 +465,56 @@ class StringUtilsTest extends BaseTest
    }
 
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testIsUUID_validUUID_returnsTrue()
+   {
+      assertTrue(StringUtils.isUUID("550e8400-e29b-41d4-a716-446655440000"));
+      assertTrue(StringUtils.isUUID("00000000-0000-0000-0000-000000000000"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testIsUUID_invalidFormats_returnsFalse()
+   {
+      assertFalse(StringUtils.isUUID("not-a-uuid"));
+      assertFalse(StringUtils.isUUID("550e8400-e29b-41d4-a716-44665544000"));    // too short
+      assertFalse(StringUtils.isUUID("550e8400-e29b-41d4-a716-4466554400000"));  // too long
+      assertFalse(StringUtils.isUUID("550e8400e29b41d4a716446655440000"));        // no dashes
+      assertFalse(StringUtils.isUUID("GGGGGGGG-e29b-41d4-a716-446655440000"));   // non-hex chars
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReplaceNonAsciiCharacters_accentedChars_transliterated()
+   {
+      assertEquals("ae", StringUtils.replaceNonAsciiCharacters("æ"));
+      assertEquals("Duesseldorf", StringUtils.replaceNonAsciiCharacters("Düsseldorf"));
+      assertEquals("Resume", StringUtils.replaceNonAsciiCharacters("Résumé"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReplaceNonAsciiCharacters_pureAscii_unchanged()
+   {
+      assertEquals("hello world", StringUtils.replaceNonAsciiCharacters("hello world"));
+      assertEquals("", StringUtils.replaceNonAsciiCharacters(""));
+   }
+
+
 }

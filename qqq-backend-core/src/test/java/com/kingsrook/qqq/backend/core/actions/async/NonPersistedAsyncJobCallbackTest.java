@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.async;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import org.junit.jupiter.api.MethodOrderer;
@@ -70,8 +71,7 @@ class NonPersistedAsyncJobCallbackTest extends BaseTest
       // The state provider must not have been written to for this job id. //
       ///////////////////////////////////////////////////////////////////////
       UUIDAndTypeStateKey key   = new UUIDAndTypeStateKey(jobUUID, StateType.ASYNC_JOB_STATUS);
-      AsyncJobStatus saved = AsyncJobManager.getStateProvider().get(AsyncJobStatus.class, key);
-      assertThat(saved).isNull();
+      assertThat(AsyncJobManager.getStateProvider().get(AsyncJobStatus.class, key)).isEmpty();
    }
 
 
@@ -93,8 +93,7 @@ class NonPersistedAsyncJobCallbackTest extends BaseTest
       assertThat(asyncJobStatus.getCurrent()).isEqualTo(2);
 
       UUIDAndTypeStateKey key   = new UUIDAndTypeStateKey(jobUUID, StateType.ASYNC_JOB_STATUS);
-      Object              saved = InMemoryStateProvider.getInstance().get(AsyncJobStatus.class, key);
-      assertThat(saved).isNull();
+      assertThat(InMemoryStateProvider.getInstance().get(AsyncJobStatus.class, key)).isEmpty();
    }
 
 
@@ -134,8 +133,7 @@ class NonPersistedAsyncJobCallbackTest extends BaseTest
       assertThat(asyncJobStatus.getTotal()).isNull();
 
       UUIDAndTypeStateKey key   = new UUIDAndTypeStateKey(jobUUID, StateType.ASYNC_JOB_STATUS);
-      Object              saved = InMemoryStateProvider.getInstance().get(AsyncJobStatus.class, key);
-      assertThat(saved).isNull();
+      assertThat(InMemoryStateProvider.getInstance().get(AsyncJobStatus.class, key)).isEmpty();
    }
 
 }
