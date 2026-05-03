@@ -1,0 +1,684 @@
+= Migrating to QQQ 4.0
+:toc: left
+:toclevels: 3
+:source-highlighter: coderay
+:icons: font
+
+This guide covers every breaking change in QQQ 4.0.0 and provides step-by-step instructions for
+migrating existing applications. Changes are grouped into four categories; each category includes
+at least one concrete before/after example.
+
+== Javalin import updates (BREAK-01) [[javalin-imports]]
+
+The `qqq-middleware-javalin` module's root package changed from `com.kingsrook.qqq.backend.javalin`
+to `com.kingsrook.qqq.middleware.javalin`. Apply this rename to every import statement that
+references the old package.
+
+=== What changed
+
+[cols="1,1", options="header"]
+|===
+|Old import (0.x)
+|New import (4.0)
+
+|`com.kingsrook.qqq.backend.javalin.QJavalinImplementation`
+|`com.kingsrook.qqq.middleware.javalin.QJavalinImplementation`
+
+|`com.kingsrook.qqq.backend.javalin.QJavalinMetaData`
+|`com.kingsrook.qqq.middleware.javalin.QJavalinMetaData`
+
+|`com.kingsrook.qqq.backend.javalin.QJavalinProcessHandler`
+|`com.kingsrook.qqq.middleware.javalin.QJavalinProcessHandler`
+
+|`com.kingsrook.qqq.backend.javalin.QJavalinScriptsHandler`
+|`com.kingsrook.qqq.middleware.javalin.QJavalinScriptsHandler`
+
+|`com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger`
+|`com.kingsrook.qqq.middleware.javalin.QJavalinAccessLogger`
+
+|`com.kingsrook.qqq.backend.javalin.QJavalinUtils`
+|`com.kingsrook.qqq.middleware.javalin.QJavalinUtils`
+
+|`com.kingsrook.qqq.backend.javalin.*` (any class)
+|`com.kingsrook.qqq.middleware.javalin.*`
+|===
+
+=== Migration example
+
+[source,java]
+.Before (0.x)
+----
+import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
+import com.kingsrook.qqq.backend.javalin.QJavalinProcessHandler;
+----
+
+[source,java]
+.After (4.0)
+----
+import com.kingsrook.qqq.middleware.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.middleware.javalin.QJavalinMetaData;
+import com.kingsrook.qqq.middleware.javalin.QJavalinProcessHandler;
+----
+
+=== How to update
+
+Use a bulk find-and-replace across your project source tree:
+
+[source,bash]
+----
+# In your project root
+find . -name "*.java" ! -path "*/target/*" \
+  -exec sed -i 's/com\.kingsrook\.qqq\.backend\.javalin/com.kingsrook.qqq.middleware.javalin/g' {} +
+----
+
+Verify no residuals remain:
+
+[source,bash]
+----
+grep -r 'com\.kingsrook\.qqq\.backend\.javalin' . --include='*.java' --exclude-dir=target
+# Expected: no output
+----
+
+
+== PicoCLI import updates (BREAK-02) [[picocli-imports]]
+
+The `qqq-middleware-picocli` module's root package changed from `com.kingsrook.qqq.frontend.picocli`
+to `com.kingsrook.qqq.middleware.picocli`.
+
+=== What changed
+
+[cols="1,1", options="header"]
+|===
+|Old import (0.x)
+|New import (4.0)
+
+|`com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation`
+|`com.kingsrook.qqq.middleware.picocli.QPicoCliImplementation`
+
+|`com.kingsrook.qqq.frontend.picocli.QCommandBuilder`
+|`com.kingsrook.qqq.middleware.picocli.QCommandBuilder`
+
+|`com.kingsrook.qqq.frontend.picocli.PicoCliProcessCallback`
+|`com.kingsrook.qqq.middleware.picocli.PicoCliProcessCallback`
+|===
+
+=== Migration example
+
+[source,java]
+.Before (0.x)
+----
+import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
+import com.kingsrook.qqq.frontend.picocli.QCommandBuilder;
+----
+
+[source,java]
+.After (4.0)
+----
+import com.kingsrook.qqq.middleware.picocli.QPicoCliImplementation;
+import com.kingsrook.qqq.middleware.picocli.QCommandBuilder;
+----
+
+If your `pom.xml` has a `<mainClass>` referencing `frontend.picocli`, update that as well:
+
+[source,xml]
+.Before
+----
+<mainClass>com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation</mainClass>
+----
+
+[source,xml]
+.After
+----
+<mainClass>com.kingsrook.qqq.middleware.picocli.QPicoCliImplementation</mainClass>
+----
+
+=== How to update
+
+[source,bash]
+----
+find . \( -name "*.java" -o -name "*.xml" \) ! -path "*/target/*" \
+  -exec sed -i 's/com\.kingsrook\.qqq\.frontend\.picocli/com.kingsrook.qqq.middleware.picocli/g' {} +
+----
+
+
+== Removed @Deprecated APIs (BREAK-03) [[removed-deprecated-apis]]
+
+All elements annotated `@Deprecated` on the public surface of every published module were removed
+in 4.0.0. The items below are grouped by the module and commit they were removed from.
+
+[NOTE]
+====
+If your code fails to compile with `cannot find symbol` errors after upgrading, check this section
+first. Every removed element has a direct replacement.
+====
+
+=== BREAK-03-A: QBackendMetaData variantOptionsTable accessors removed
+
+22 deprecated elements removed from `QBackendMetaData` in `qqq-backend-core`:
+2 private fields (`variantOptionsTableTypeField`, `variantOptionsTableTypeValue`),
+20 deprecated `variantOptionsTable*` accessors,
+and the `LegacyBackendVariantSetting` companion enum.
+
+[source,java]
+.Before (0.x) — using deprecated variantOptionsTable accessors
+----
+metaData.setVariantOptionsTableName("myTable");
+metaData.setVariantOptionsTableIdField("id");
+metaData.setVariantOptionsTableTypeField("type");
+----
+
+[source,java]
+.After (4.0) — use the non-deprecated replacement accessors
+----
+// The non-deprecated getters/setters for variant options remain on QBackendMetaData.
+// Remove any calls to the deprecated variantOptionsTable* overloads.
+// Use APIBackendVariantSetting directly instead of LegacyBackendVariantSetting.
+----
+
+=== BREAK-03-B: Miscellaneous zero-caller deprecated elements removed
+
+Removed from 5 files in `qqq-backend-core` and `qqq-middleware-api`:
+
+[cols="2,1,2", options="header"]
+|===
+|Removed element
+|Module
+|Replacement
+
+|`ExtractViaQueryStep.customizeInputPreQuery(QueryInput)` 1-arg
+|qqq-backend-core
+|Use the 2-arg overload with `Consumer<QueryInput>` callback
+
+|`QRecordListMetaData.addField(QFieldMetaData)`
+|qqq-backend-core
+|Use `withField(field)` fluent builder
+
+|`QRecordEntity.toQRecordOnlyChangedFields()` 0-arg
+|qqq-backend-core
+|Use `toQRecordOnlyChangedFields(false)`
+
+|`BaseAPIActionUtil.setSession(QSession)`
+|qqq-middleware-api
+|Remove call — unused setter
+
+|`ApiFieldCustomValueMapper.customizeFilterCriteria(QueryInput...)` vararg
+|qqq-middleware-api
+|Override `customizeFilterCriteriaForQueryOrCount` — now no-op by default
+|===
+
+[source,java]
+.Before (0.x)
+----
+entity.toQRecordOnlyChangedFields();
+----
+
+[source,java]
+.After (4.0)
+----
+entity.toQRecordOnlyChangedFields(false);
+----
+
+=== BREAK-03-C: qqq-openapi String-typed setIn/withIn/setType/withType type-narrowed
+
+`Parameter.setIn(String)` / `withIn(String)` and `Schema.setType(String)` / `withType(String)`
+overloads that accepted free-form `String` arguments were removed.
+Use the `Parameter.In` and `Schema.Type` enum-typed overloads.
+
+[source,java]
+.Before (0.x)
+----
+parameter.setIn("query");
+schema.setType("string");
+----
+
+[source,java]
+.After (4.0)
+----
+parameter.setIn(Parameter.In.QUERY);
+schema.setType(Schema.Type.STRING);
+----
+
+
+== API-shape cleanups (BREAK-04) [[api-shape-cleanups]]
+
+These are targeted API-shape changes where the replacement has a different method signature,
+type parameter, or class hierarchy. Each item is identified by its BREAK-04-NN ID from the backlog.
+
+=== BREAK-04-01: qqq-bom now manages 5 additional modules
+
+*Module:* `qqq-bom`
+
+The following 5 modules were not previously managed by `qqq-bom`. They are now included.
+If you had explicit version pins for these modules in your `pom.xml`, remove them.
+
+[source,xml]
+.Newly managed by qqq-bom (4.0)
+----
+qqq-backend-module-sqlite
+qqq-backend-module-postgres
+qqq-middleware-lambda
+qqq-middleware-health
+qqq-utility-lambdas
+----
+
+=== BREAK-04-02: qqq-utility-lambdas promoted to Java 21
+
+*Module:* `qqq-utility-lambdas`
+
+The module now targets Java 21 bytecode (previously Java 11). If your project targets Java 11
+or 17, you cannot use `qqq-utility-lambdas`. Upgrade to Java 21.
+
+=== BREAK-04-03: qqq-middleware-javalin annotation-processor block retained at Java 11
+
+*Module:* `qqq-middleware-javalin`
+
+The annotation-processor compiler block that generates OpenAPI bytecode is intentionally
+retained at Java 11. The Java 21 JDK can legally produce Java 11 class files. No action required.
+
+=== BREAK-04-04: Qodana static analysis aligned to JDK 21
+
+*File:* `.qodana.yml` (or `qodana.yml`)
+
+[source,yaml]
+.Before
+----
+projectJDK: 17
+----
+
+[source,yaml]
+.After
+----
+projectJDK: 21
+----
+
+=== BREAK-04-06: JsonUtils deprecated 2-arg toJson removed
+
+*Location:* `qqq-backend-core` — `JsonUtils.toJson(Object, Consumer<ObjectMapper>)`
+
+[source,java]
+.Before (0.x)
+----
+String json = JsonUtils.toJson(myObject,
+   mapper -> mapper.disable(SerializationFeature.INDENT_OUTPUT));
+----
+
+[source,java]
+.After (4.0) — use toJsonCustomized for builder-level config
+----
+String json = JsonUtils.toJsonCustomized(myObject,
+   builder -> builder.disable(SerializationFeature.INDENT_OUTPUT));
+----
+
+Or use `toJsonWithMapper` when you need post-build mapper access:
+
+[source,java]
+.After (4.0) — use toJsonWithMapper for post-build mapper config
+----
+String json = JsonUtils.toJsonWithMapper(myObject,
+   mapper -> mapper.setSerializerProvider(customProvider));
+----
+
+=== BREAK-04-07: YamlUtils deprecated 2-arg toYaml removed
+
+*Location:* `qqq-backend-core` — `YamlUtils.toYaml(Object, Consumer<ObjectMapper>)`
+
+[source,java]
+.Before (0.x)
+----
+String yaml = YamlUtils.toYaml(myObject, mapper -> mapper.configure(...));
+----
+
+[source,java]
+.After (4.0)
+----
+String yaml = YamlUtils.toYamlCustomized(myObject, mapper -> mapper.configure(...));
+----
+
+=== BREAK-04-08: AbstractActionInput.getInstance() and getSession() removed
+
+*Location:* `qqq-backend-core` — `AbstractActionInput`
+
+[source,java]
+.Before (0.x)
+----
+QInstance instance = actionInput.getInstance();
+QSession session = actionInput.getSession();
+----
+
+[source,java]
+.After (4.0)
+----
+QInstance instance = QContext.getQInstance();
+QSession session = QContext.getQSession();
+----
+
+=== BREAK-04-09: QQueryFilter.interpretValues(FilterUseCase, Map) 2-arg overload removed
+
+*Location:* `qqq-backend-core` — `QQueryFilter`
+
+[source,java]
+.Before (0.x)
+----
+filter.interpretValues(new RemoveFromFilterUseCase(), inputValues);
+----
+
+[source,java]
+.After (4.0)
+----
+filter.interpretValues(MapBuilder.of("input", inputValues), new RemoveFromFilterUseCase());
+----
+
+=== BREAK-04-10: NowWithOffset TimeUnit factories removed
+
+*Location:* `qqq-backend-core` — `NowWithOffset`
+
+[source,java]
+.Before (0.x)
+----
+NowWithOffset offset = NowWithOffset.minus(7, TimeUnit.DAYS);
+----
+
+[source,java]
+.After (4.0)
+----
+NowWithOffset offset = NowWithOffset.minus(7, ChronoUnit.DAYS);
+----
+
+=== BREAK-04-11: QInstance.setAuthentication() removed
+
+*Location:* `qqq-backend-core` — `QInstance`
+
+[source,java]
+.Before (0.x)
+----
+qInstance.setAuthentication(authMetaData);
+----
+
+[source,java]
+.After (4.0)
+----
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.AuthScope;
+
+qInstance.registerAuthenticationProvider(AuthScope.instanceDefault(), authMetaData);
+----
+
+=== BREAK-04-12: QInstance.metaDataFilter removed (use metaDataCustomizer)
+
+*Location:* `qqq-backend-core` — `QInstance`
+
+[source,java]
+.Before (0.x)
+----
+qInstance.setMetaDataFilter(codeRef);
+----
+
+[source,java]
+.After (4.0)
+----
+qInstance.setMetaDataCustomizer(codeRef);
+----
+
+=== BREAK-04-13: QBrandingMetaData.environmentBannerText/Color removed
+
+*Location:* `qqq-backend-core` — `QBrandingMetaData`
+
+[source,java]
+.Before (0.x)
+----
+qBrandingMetaData.setEnvironmentBannerText("DEV");
+qBrandingMetaData.setEnvironmentBannerColor("#FF0000");
+----
+
+[source,java]
+.After (4.0)
+----
+qBrandingMetaData.withBanner(BannerSlot.TOP, new Banner().withText("DEV").withColor("#FF0000"));
+----
+
+=== BREAK-04-14: QProcessMetaData.addStep() removed (use withStep)
+
+*Location:* `qqq-backend-core` — `QProcessMetaData`
+
+[source,java]
+.Before (0.x)
+----
+qProcessMetaData.addStep(step);
+qProcessMetaData.addStep(2, step);
+----
+
+[source,java]
+.After (4.0)
+----
+qProcessMetaData.withStep(step);
+qProcessMetaData.withStep(2, step);
+----
+
+=== BREAK-04-15: QProcessMetaData.addOptionalStep() removed (use withOptionalStep)
+
+*Location:* `qqq-backend-core` — `QProcessMetaData`
+
+[source,java]
+.Before (0.x)
+----
+qProcessMetaData.addOptionalStep(step);
+----
+
+[source,java]
+.After (4.0)
+----
+qProcessMetaData.withOptionalStep(step);
+----
+
+=== BREAK-04-16: QFunctionInputMetaData.addField() removed (use withField)
+
+*Location:* `qqq-backend-core` — `QFunctionInputMetaData`
+
+[source,java]
+.Before (0.x)
+----
+inputMetaData.addField(field);
+----
+
+[source,java]
+.After (4.0)
+----
+new QFunctionInputMetaData().withField(field);
+----
+
+=== BREAK-04-17: AbstractHTMLWidgetRenderer input-param overloads removed
+
+*Location:* `qqq-backend-core` — `AbstractHTMLWidgetRenderer`
+
+[source,java]
+.Before (0.x)
+----
+renderer.linkRecordEdit(input, tableName, id);
+renderer.linkRecordView(input, tableName, id);
+renderer.linkTableView(input, tableName);
+----
+
+[source,java]
+.After (4.0)
+----
+renderer.linkRecordEdit(tableName, id);
+renderer.linkRecordView(tableName, id);
+renderer.linkTableView(tableName);
+----
+
+=== BREAK-04-18: RecordCustomizerUtilityInterface.getValueFromRecordOrOldRecord removed
+
+*Location:* `qqq-backend-core` — `RecordCustomizerUtilityInterface`
+
+[source,java]
+.Before (0.x)
+----
+Object value = getValueFromRecordOrOldRecord(fieldName, record, pkey, oldRecordMap);
+----
+
+[source,java]
+.After (4.0)
+----
+Object value = getValueFromRecordElseFromOldRecord(fieldName, record, pkey, oldRecordMap);
+// Use ValueUtils for type conversion if needed
+----
+
+=== BREAK-04-19: RecordAutomationHandler abstract class deleted (use interface)
+
+*Location:* `qqq-backend-core` — `RecordAutomationHandler`
+
+[source,java]
+.Before (0.x)
+----
+class MyHandler extends RecordAutomationHandler
+{
+   @Override
+   public void execute(RecordAutomationInput input) throws QException { ... }
+}
+----
+
+[source,java]
+.After (4.0)
+----
+class MyHandler implements RecordAutomationHandlerInterface
+{
+   @Override
+   public void execute(RecordAutomationInput input) throws QException { ... }
+}
+----
+
+=== BREAK-04-20: AllowAllMetaDataFilter and MetaDataFilterInterface deleted
+
+*Location:* `qqq-backend-core`
+
+[source,java]
+.Before (0.x)
+----
+qInstance.setMetaDataFilter(new QCodeReference(AllowAllMetaDataFilter.class));
+// or implement MetaDataFilterInterface
+----
+
+[source,java]
+.After (4.0)
+----
+// Use metaDataCustomizer with DefaultNoopMetaDataActionCustomizer or your own impl
+qInstance.setMetaDataCustomizer(new QCodeReference(MyMetaDataCustomizer.class));
+----
+
+=== BREAK-04-21: RenderTemplateAction input-param overloads removed
+
+*Location:* `qqq-backend-core` — `RenderTemplateAction`
+
+[source,java]
+.Before (0.x)
+----
+RenderTemplateAction.renderVelocity(actionInput, context, code);
+----
+
+[source,java]
+.After (4.0)
+----
+RenderTemplateAction.renderVelocity(context, code);
+----
+
+=== BREAK-04-22: BaseAPIActionUtil.executeOAuthTokenRequest overload removed
+
+*Location:* `qqq-middleware-api` — `BaseAPIActionUtil`
+
+[source,java]
+.Before (0.x)
+----
+executeOAuthTokenRequest(httpClient, httpPost);
+----
+
+[source,java]
+.After (4.0)
+----
+// Use the generic HttpRequestBase overload
+executeOAuthTokenRequest(httpClient, httpRequest);
+----
+
+=== BREAK-04-23: AbstractBaseFilesystemAction.writeFile 3-arg overload removed
+
+*Location:* `qqq-backend-module-filesystem` — `AbstractBaseFilesystemAction`
+
+[source,java]
+.Before (0.x)
+----
+writeFile(backend, path, contents);
+----
+
+[source,java]
+.After (4.0)
+----
+writeFile(backend, table, record, path, contents);
+// Pass null for table and record if not applicable
+----
+
+=== BREAK-04-24: QApplicationJavalinServer.withAdditionalRouteProvider removed
+
+*Location:* `qqq-middleware-javalin` — `QApplicationJavalinServer`
+
+[source,java]
+.Before (0.x)
+----
+server.withAdditionalRouteProvider(routeProvider);
+----
+
+[source,java]
+.After (4.0)
+----
+server.withAdditionalRouteProviders(List.of(routeProvider));
+----
+
+=== BREAK-04-25: ApiQueryFilterUtils.manageCriteriaFields 5-arg overload removed
+
+*Location:* `qqq-middleware-api` — `ApiQueryFilterUtils`
+
+[source,java]
+.Before (0.x)
+----
+ApiQueryFilterUtils.manageCriteriaFields(field, value, filter, table, apiVersion);
+// (5-arg form without apiVersion parameter in first position)
+----
+
+[source,java]
+.After (4.0)
+----
+// Use the 6-arg form with apiVersion as the first parameter
+ApiQueryFilterUtils.manageCriteriaFields(apiVersion, field, value, filter, table, context);
+----
+
+=== BREAK-04-26: ApiFilterUtils getTableApiFieldMap/getTableApiFieldList overloads removed
+
+*Location:* `qqq-middleware-api` — `ApiFilterUtils`
+
+The `ApiNameVersionAndTableName` inner record and its associated
+`getTableApiFieldMap(ApiNameVersionAndTableName)` and `getTableApiFieldList(ApiNameVersionAndTableName)`
+overloads have been removed.
+
+[source,java]
+.Before (0.x)
+----
+var key = new ApiFilterUtils.ApiNameVersionAndTableName(apiName, apiVersion, tableName);
+Map<String, QFieldMetaData> fieldMap = ApiFilterUtils.getTableApiFieldMap(key);
+----
+
+[source,java]
+.After (4.0)
+----
+GetTableApiFieldsInput input = new GetTableApiFieldsInput()
+   .withApiName(apiName)
+   .withApiVersion(apiVersion)
+   .withTableName(tableName);
+Map<String, QFieldMetaData> fieldMap = ApiFilterUtils.getTableApiFieldMap(input);
+----
+
+=== Deferred items (not in 4.0.0)
+
+The following item from the original BREAK-04 backlog was deferred by Phase 4 and will be
+addressed in a future 4.x release:
+
+* *BREAK-04-05*: AWS SDK v1 and v2 consolidation — mixed SDK usage (`software.amazon.awssdk` and
+  `com.amazonaws`) remains in the RDBMS and S3 filesystem modules. No action required for 4.0
+  migration; consolidation tracked for a future release.
