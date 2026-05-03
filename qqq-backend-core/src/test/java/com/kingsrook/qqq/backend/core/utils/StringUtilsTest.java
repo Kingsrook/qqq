@@ -500,7 +500,8 @@ class StringUtilsTest extends BaseTest
    void testReplaceNonAsciiCharacters_accentedChars_transliterated()
    {
       assertEquals("ae", StringUtils.replaceNonAsciiCharacters("æ"));
-      assertEquals("Duesseldorf", StringUtils.replaceNonAsciiCharacters("Düsseldorf"));
+      // ICU4J Any-Latin;Latin-ASCII strips diacritics (ü→u) rather than using German spelling-out (ü→ue)
+      assertEquals("Dusseldorf", StringUtils.replaceNonAsciiCharacters("Düsseldorf"));
       assertEquals("Resume", StringUtils.replaceNonAsciiCharacters("Résumé"));
    }
 
