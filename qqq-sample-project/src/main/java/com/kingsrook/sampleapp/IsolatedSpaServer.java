@@ -71,39 +71,35 @@ public class IsolatedSpaServer
             .withPort(PORT)
             .withServeFrontendMaterialDashboard(false)  // Disable default dashboard
             .withServeLegacyUnversionedMiddlewareAPI(true)  // Enable all APIs
-            .withServeVersionedMiddlewareAPI(true)  // Enable versioned APIs
-            
-            // Root SPA - Public website
-            .withAdditionalRouteProvider(
+            .withAdditionalRouteProviders(List.of(
+
+               // Root SPA - Public website
                new IsolatedSpaRouteProvider("/", "public-site/")
                   .withSpaIndexFile("public-site/index.html")
                   .withExcludedPaths(List.of(
                      "/admin", "/customer", "/dashboard",
-                     "/api", "/qqq-api", "/metaData", "/data", 
+                     "/api", "/qqq-api", "/metaData", "/data",
                      "/processes", "/reports", "/download", "/health"))
                   .withDeepLinking(true)
-                  .withLoadFromJar(false))
-            
-            // Admin SPA - Requires authentication
-            .withAdditionalRouteProvider(
+                  .withLoadFromJar(false),
+
+               // Admin SPA - Requires authentication
                new IsolatedSpaRouteProvider("/admin", "admin-spa/dist/")
                   .withSpaIndexFile("admin-spa/dist/index.html")
                   .withDeepLinking(true)
-                  .withLoadFromJar(false))
-            
-            // Customer Portal SPA
-            .withAdditionalRouteProvider(
+                  .withLoadFromJar(false),
+
+               // Customer Portal SPA
                new IsolatedSpaRouteProvider("/customer", "customer-portal/build/")
                   .withSpaIndexFile("customer-portal/build/index.html")
                   .withDeepLinking(true)
-                  .withLoadFromJar(false))
-            
-            // Dashboard SPA - Internal tooling
-            .withAdditionalRouteProvider(
+                  .withLoadFromJar(false),
+
+               // Dashboard SPA - Internal tooling
                new IsolatedSpaRouteProvider("/dashboard", "dashboard-app/dist/")
                   .withSpaIndexFile("dashboard-app/dist/index.html")
                   .withDeepLinking(true)
-                  .withLoadFromJar(false));
+                  .withLoadFromJar(false)));
 
          javalinServer.start();
 
@@ -276,7 +272,10 @@ public class IsolatedSpaServer
     *******************************************************************************/
    private String padRight(String str, int length)
    {
-      if(str == null) str = "";
+      if(str == null)
+      {
+         str = "";
+      }
       return String.format("%-" + length + "s", str.length() > length ? str.substring(0, length) : str);
    }
 }

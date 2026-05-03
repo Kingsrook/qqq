@@ -69,7 +69,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-frontend-material-dashboard</artifactId>
-         <version>0.24.0</version>
+         <version>0.40.0</version>
       </dependency>
       <dependency>
          <groupId>com.h2database</groupId>
@@ -133,6 +133,36 @@
    <build>
       <plugins>
          <!-- plugins specifically for this module -->
+
+         <!-- Exclude server entry-point main-classes from JaCoCo coverage measurement.
+              IsolatedSpaServer and ConfigFileBasedSampleJavalinServer are executable
+              server launchers that call javalinServer.start() — not unit-testable — and
+              should not count against the class-coverage gate. -->
+         <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <configuration>
+               <excludes>
+                  <exclude>com/kingsrook/sampleapp/IsolatedSpaServer.class</exclude>
+                  <exclude>com/kingsrook/sampleapp/ConfigFileBasedSampleJavalinServer.class</exclude>
+               </excludes>
+            </configuration>
+         </plugin>
+
+         <!-- qqq-sample-project is not part of the main qqq reactor; PMD ruleset.xml
+              is at the qqq root and resolves via maven.multiModuleProjectDirectory when
+              run from within the full build, but requires an explicit path override here
+              to support standalone -f qqq-sample-project/pom.xml invocations. -->
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-pmd-plugin</artifactId>
+            <configuration>
+               <rulesets>
+                  <ruleset>${project.basedir}/../pmd/ruleset.xml</ruleset>
+               </rulesets>
+            </configuration>
+         </plugin>
+
          <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
             <configuration>
