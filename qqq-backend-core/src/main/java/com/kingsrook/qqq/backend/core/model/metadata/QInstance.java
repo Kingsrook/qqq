@@ -1105,26 +1105,6 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Setter for authentication
-    **
-    ** @deprecated Use {@link #registerAuthenticationProvider(AuthScope, QAuthenticationMetaData)}
-    **             with {@link AuthScope#instanceDefault()} instead, or use
-    **             {@link #withInstanceDefaultAuthentication(QAuthenticationMetaData)} for fluent chaining.
-    **             This method automatically registers the provider under the instance default scope.
-    *******************************************************************************/
-   @Deprecated(since = "Use registerAuthenticationProvider(AuthScope.instanceDefault(), authMetaData) instead")
-   public QInstance setAuthentication(QAuthenticationMetaData authentication)
-   {
-      this.authentication = authentication;
-      if(authentication != null)
-      {
-         registerAuthenticationProvider(AuthScope.instanceDefault(), authentication);
-      }
-      return this; // Enable chaining
-   }
-
-
-   /*******************************************************************************
     ** Fluent setter for instance default authentication.
     **
     ** <p>This is a convenience method that registers the authentication provider
@@ -1136,7 +1116,8 @@ public class QInstance
     *******************************************************************************/
    public QInstance withInstanceDefaultAuthentication(QAuthenticationMetaData authMetaData)
    {
-      return setAuthentication(authMetaData);
+      registerAuthenticationProvider(AuthScope.instanceDefault(), authMetaData);
+      return (this);
    }
 
 

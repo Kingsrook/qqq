@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.AuthScope;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.TableBasedAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.TableBasedAuthenticationModule;
@@ -208,7 +209,7 @@ public class QJavalinImplementationAuthenticationTest extends QJavalinTestBase
          fail("Error inserting test user.", e);
       }
 
-      qInstance.setAuthentication(tableBasedAuthenticationMetaData);
+      qInstance.registerAuthenticationProvider(AuthScope.instanceDefault(), tableBasedAuthenticationMetaData);
 
       restartServerWithInstance(qInstance);
    }
