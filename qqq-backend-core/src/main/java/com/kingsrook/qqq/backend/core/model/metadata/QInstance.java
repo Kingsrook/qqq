@@ -143,9 +143,6 @@ public class QInstance
 
    private ListingHash<String, QCodeReference> tableCustomizers;
 
-   @Deprecated(since = "migrated to metaDataCustomizer")
-   private QCodeReference metaDataFilter = null;
-
    private QCodeReference metaDataActionCustomizer = null;
 
    //////////////////////////////////////////////////////////////////////////////////////
@@ -1800,40 +1797,6 @@ public class QInstance
       }
 
       QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for metaDataFilter
-    *******************************************************************************/
-   @Deprecated(since = "migrated to metaDataCustomizer")
-   public QCodeReference getMetaDataFilter()
-   {
-      return (this.metaDataFilter);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for metaDataFilter
-    *******************************************************************************/
-   @Deprecated(since = "migrated to metaDataCustomizer")
-   public void setMetaDataFilter(QCodeReference metaDataFilter)
-   {
-      this.metaDataFilter = metaDataFilter;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for metaDataFilter
-    *******************************************************************************/
-   @Deprecated(since = "migrated to metaDataCustomizer")
-   public QInstance withMetaDataFilter(QCodeReference metaDataFilter)
-   {
-      this.metaDataFilter = metaDataFilter;
-      return (this);
    }
 
 
