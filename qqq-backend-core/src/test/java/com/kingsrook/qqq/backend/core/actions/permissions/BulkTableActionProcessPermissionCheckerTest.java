@@ -241,6 +241,25 @@ class BulkTableActionProcessPermissionCheckerTest extends BaseTest
 
 
          @Override
+         public void setName(String name)
+         {
+         }
+
+
+         @Override
+         public String getLabel()
+         {
+            return name;
+         }
+
+
+         @Override
+         public void setLabel(String label)
+         {
+         }
+
+
+         @Override
          public QPermissionRules getPermissionRules()
          {
             return null;
