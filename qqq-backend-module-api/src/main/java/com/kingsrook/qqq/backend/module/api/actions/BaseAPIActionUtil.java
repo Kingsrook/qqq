@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -1470,17 +1469,6 @@ public class BaseAPIActionUtil
    public void setActionInput(AbstractTableActionInput actionInput)
    {
       this.actionInput = actionInput;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for session
-    **
-    *******************************************************************************/
-   @Deprecated(since = "wasn't used.")
-   public void setSession(QSession session)
-   {
    }
 
 
