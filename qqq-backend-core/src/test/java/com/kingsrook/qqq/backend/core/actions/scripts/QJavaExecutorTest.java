@@ -138,11 +138,15 @@ class QJavaExecutorTest extends BaseTest
       return new QCodeExecutionLoggerInterface()
       {
          @Override
-         public void acceptExecutionStart(ExecuteCodeInput executeCodeInput) { }
+         public void acceptExecutionStart(ExecuteCodeInput executeCodeInput)
+         {
+         }
 
 
          @Override
-         public void acceptLogLine(String logLine) { }
+         public void acceptLogLine(String logLine)
+         {
+         }
       };
    }
 
