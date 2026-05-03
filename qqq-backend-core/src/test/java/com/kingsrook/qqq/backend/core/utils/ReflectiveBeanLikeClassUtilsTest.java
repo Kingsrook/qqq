@@ -64,9 +64,15 @@ class ReflectiveBeanLikeClassUtilsTest
       // QQueryFilter has no single-char getter, so we use a local stub via  //
       // anonymous class to exercise the length-1 branch                     //
       /////////////////////////////////////////////////////////////////////////
+      /*******************************************************************************
+       ** Minimal bean stub with a single-character getter for testing.
+       *******************************************************************************/
       class StubBean
       {
 
+         /*******************************************************************************
+          ** Single-char getter — exercises the length-1 branch in getFieldNameFromGetter.
+          *******************************************************************************/
          @SuppressWarnings("unused")
          public String getX()
          {

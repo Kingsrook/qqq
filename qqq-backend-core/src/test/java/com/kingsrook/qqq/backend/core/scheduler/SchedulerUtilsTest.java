@@ -38,6 +38,9 @@ class SchedulerUtilsTest
    private static final String PROPERTY = "qqq.scheduleManager.onlyStartNamesMatching";
 
 
+   /*******************************************************************************
+    ** Clear system property before each test to ensure clean test state.
+    *******************************************************************************/
    @BeforeEach
    void clearProperty()
    {
@@ -45,6 +48,9 @@ class SchedulerUtilsTest
    }
 
 
+   /*******************************************************************************
+    ** Clear system property after each test to avoid polluting other tests.
+    *******************************************************************************/
    @AfterEach
    void restoreProperty()
    {
