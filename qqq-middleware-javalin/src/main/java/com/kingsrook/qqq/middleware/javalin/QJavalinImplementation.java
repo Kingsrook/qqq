@@ -1793,7 +1793,7 @@ public class QJavalinImplementation
             String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
             PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-            defaultQueryFilter.interpretValues(useCase, otherValues);
+            defaultQueryFilter.interpretValues(MapBuilder.of("input", otherValues), useCase);
          }
 
          finishPossibleValuesRequest(context, possibleValueSourceName, defaultQueryFilter, otherValues);
