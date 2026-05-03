@@ -457,7 +457,7 @@ public class QJavalinProcessHandler
       ///////////////////////////////////////////////////////////////////////////////////
       try
       {
-         String json = JsonUtils.toJson(resultForCaller, mapper ->
+         String json = JsonUtils.toJsonWithMapper(resultForCaller, mapper ->
          {
             mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
 

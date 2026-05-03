@@ -243,7 +243,7 @@ public class ProcessSpecUtilsV1
                String valueAsJsonString;
                try
                {
-                  valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson, mapper ->
+                  valueAsJsonString = JsonUtils.toJsonWithMapper(valueToMakeIntoJson, mapper ->
                   {
                      mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
 

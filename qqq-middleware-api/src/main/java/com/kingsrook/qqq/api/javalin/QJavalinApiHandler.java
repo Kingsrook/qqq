@@ -631,9 +631,9 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static String toJson(Object object)
    {
-      return JsonUtils.toJson(object, mapper ->
+      return JsonUtils.toJsonCustomized(object, builder ->
       {
-         mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+         builder.serializationInclusion(JsonInclude.Include.ALWAYS);
       });
    }
 
