@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-05-02
+
+### Breaking Changes
+
+**Package renames:**
+- **BREAK-01 (qqq-middleware-javalin)** — `com.kingsrook.qqq.backend.javalin.*` renamed to
+  `com.kingsrook.qqq.middleware.javalin.*`. All 16 classes (including `QJavalinImplementation`,
+  `QJavalinMetaData`, `QJavalinProcessHandler`, `QJavalinScriptsHandler`, `QJavalinAccessLogger`,
+  `QJavalinUtils`, etc.) now live under the new root package. Update all import statements.
+  See [Migration Guide](docs/migration/4.0.adoc#javalin-imports).
+- **BREAK-02 (qqq-middleware-picocli)** — `com.kingsrook.qqq.frontend.picocli.*` renamed to
+  `com.kingsrook.qqq.middleware.picocli.*`. Affected classes: `QPicoCliImplementation`,
+  `QCommandBuilder`, `PicoCliProcessCallback`. If your `pom.xml` has a `<mainClass>` referencing
+  `frontend.picocli`, update that as well. See [Migration Guide](docs/migration/4.0.adoc#picocli-imports).
+
+**Removed deprecated APIs (BREAK-03):**
+- **BREAK-03-A** — `QBackendMetaData` deprecated elements removed: 2 private fields
+  (`variantOptionsTableTypeField`, `variantOptionsTableTypeValue`), 20 deprecated
+  `variantOptionsTable*` accessors, and the `LegacyBackendVariantSetting` enum.
+  See [Migration Guide](docs/migration/4.0.adoc#removed-deprecated-apis).
+- **BREAK-03-B** — Miscellaneous zero-caller deprecated elements removed from 5 files:
+  `ExtractViaQueryStep.customizeInputPreQuery(QueryInput)` 1-arg overload,
+  `QRecordListMetaData.addField()`, `QRecordEntity.toQRecordOnlyChangedFields()` 0-arg overload,
+  `BaseAPIActionUtil.setSession()`, and `ApiFieldCustomValueMapper.customizeFilterCriteria()` vararg
+  overload.
+- **BREAK-03-C** — `qqq-openapi`: `Parameter.setIn(String)` / `withIn(String)` and
+  `Schema.setType(String)` / `withType(String)` type-narrowed from `String` to enum.
+  Use the `Parameter.In` and `Schema.Type` enum overloads that already existed.
+
+**API-shape cleanups (BREAK-04):**
+- **BREAK-04-01** — `qqq-bom`: Added 5 previously-unmanaged modules
+  (`qqq-backend-module-sqlite`, `qqq-backend-module-postgres`, `qqq-middleware-lambda`,
+  `qqq-middleware-health`, `qqq-utility-lambdas`). Update your BOM import; remove any manual
+  version pins for these modules.
+- **BREAK-04-02** — `qqq-utility-lambdas` promoted from Java 11 to Java 21 compiler target.
+- **BREAK-04-03** — `qqq-middleware-javalin` annotation-processor compiler block retained at Java 11
+  (documented; not a version drift issue).
+- **BREAK-04-04** — Qodana static analysis aligned from JDK 17 to JDK 21.
+- **BREAK-04-06** — `JsonUtils.toJson(Object, Consumer<ObjectMapper>)` removed.
+  Use `toJsonCustomized(Object, Consumer<JsonMapper.Builder>)` for builder-level config or
+  `toJsonWithMapper(Object, Consumer<JsonMapper>)` for post-build mapper config.
+- **BREAK-04-07** — `YamlUtils.toYaml(Object, Consumer<ObjectMapper>)` removed.
+  Use `toYamlCustomized(Object, Consumer<ObjectMapper>)`.
+- **BREAK-04-08** — `AbstractActionInput.getInstance()` and `getSession()` removed.
+  Use `QContext.getQInstance()` and `QContext.getQSession()`.
+- **BREAK-04-09** — `QQueryFilter.interpretValues(FilterUseCase, Map)` 2-arg overload removed.
+  Use the 3-arg form: `interpretValues(Map, FilterUseCase)`.
+- **BREAK-04-10** — `NowWithOffset.minus/plus(int, TimeUnit)` factories removed.
+  Use `NowWithOffset.minus/plus(int, ChronoUnit)`.
+- **BREAK-04-11** — `QInstance.setAuthentication(QAuthenticationMetaData)` removed.
+  Use `qInstance.registerAuthenticationProvider(AuthScope.instanceDefault(), authMetaData)`.
+  Add import: `com.kingsrook.qqq.backend.core.model.metadata.authentication.AuthScope`.
+- **BREAK-04-12** — `QInstance.metaDataFilter` property and accessors removed.
+  Use `qInstance.setMetaDataCustomizer(codeRef)`.
+- **BREAK-04-13** — `QBrandingMetaData.environmentBannerText` / `environmentBannerColor`
+  fields and accessors removed. Use `withBanner(BannerSlot.TOP, new Banner(...))`.
+- **BREAK-04-14** — `QProcessMetaData.addStep(QStepMetaData)` and `addStep(int, QStepMetaData)`
+  removed. Use `withStep(step)` and `withStep(index, step)`.
+- **BREAK-04-15** — `QProcessMetaData.addOptionalStep()` removed. Use `withOptionalStep(step)`.
+- **BREAK-04-16** — `QFunctionInputMetaData.addField()` removed. Use `withField(field)`.
+- **BREAK-04-17** — `AbstractHTMLWidgetRenderer` 3-arg `linkRecord*` overloads removed.
+  Use the 2-arg forms without the `input` parameter.
+- **BREAK-04-18** — `RecordCustomizerUtilityInterface.getValueFromRecordOrOldRecord()` removed.
+  Use `getValueFromRecordElseFromOldRecord()` with `ValueUtils` for type conversion.
+- **BREAK-04-19** — `RecordAutomationHandler` abstract class deleted.
+  Implement `RecordAutomationHandlerInterface` directly.
+- **BREAK-04-20** — `AllowAllMetaDataFilter` class and `MetaDataFilterInterface` deleted.
+  Implement the `metaDataCustomizer` `CodeReference` pattern instead.
+- **BREAK-04-21** — `RenderTemplateAction.renderVelocity(ActionInput, ...)` overloads removed.
+  Use the overloads without the `actionInput` parameter.
+- **BREAK-04-22** — `BaseAPIActionUtil.executeOAuthTokenRequest(CloseableHttpClient, HttpPost)`
+  overload removed. Use the generic `HttpRequestBase` overload.
+- **BREAK-04-23** — `AbstractBaseFilesystemAction.writeFile(backend, path, contents)` 3-arg
+  overload removed. Use `writeFile(backend, table, record, path, contents)`.
+- **BREAK-04-24** — `QApplicationJavalinServer.withAdditionalRouteProvider(instance)` removed.
+  Use `withAdditionalRouteProviders(List.of(instance))`.
+- **BREAK-04-25** — `ApiQueryFilterUtils.manageCriteriaFields(...)` deprecated 5-arg overload
+  removed. Use the 6-arg form with `apiVersion`.
+- **BREAK-04-26** — `ApiFilterUtils.getTableApiFieldMap/getTableApiFieldList(ApiNameVersionAndTableName)`
+  overloads removed along with the `ApiNameVersionAndTableName` inner record.
+  Use `GetTableApiFieldsInput` directly.
+
+### Fixed
+
+**Resolved bugs (Phase 5):**
+- **#331** — `MockAuthenticationModule` now calls `customizeSession()` when a session customizer
+  is configured, consistent with `Auth0AuthenticationModule` and `OAuth2AuthenticationModule`.
+  Applications using MockAuth in dev mode to pin user IDs or set security keys now work correctly.
+- **#357** — Child record list widgets now default to `NOT_PROTECTED` permission rules, fixing
+  a visibility defect where child record list tabs were invisibly filtered out when the QInstance
+  had restrictive default permission rules.
+
+### Known Issues / Deferred Bugs
+
+None. All open bugs triaged at 4.0.0 release were resolved. See [.planning/bug-triage.md](.planning/bug-triage.md).
+
+### Migration
+
+See [docs/migration/4.0.adoc](docs/migration/4.0.adoc) for step-by-step migration guidance
+covering all four breaking-change categories.
+
 ## [0.40.0] - 2026-03-29
 
 ### Breaking Changes
