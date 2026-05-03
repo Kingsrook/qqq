@@ -189,8 +189,8 @@ class ProcessSummaryWarningsAndErrorsRollupTest
       rollup.addToList(list);
 
       assertThat(list).hasSize(2);
-      assertThat(((ProcessSummaryLine) list.get(0)).getStatus()).isEqualTo(Status.ERROR);
-      assertThat(((ProcessSummaryLine) list.get(1)).getStatus()).isEqualTo(Status.WARNING);
+      assertThat(list.get(0).getStatus()).isEqualTo(Status.ERROR);
+      assertThat(list.get(1).getStatus()).isEqualTo(Status.WARNING);
    }
 
 }

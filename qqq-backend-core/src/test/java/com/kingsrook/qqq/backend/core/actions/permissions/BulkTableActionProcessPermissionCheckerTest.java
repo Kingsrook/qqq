@@ -57,13 +57,14 @@ class BulkTableActionProcessPermissionCheckerTest extends BaseTest
 
 
    /*******************************************************************************
-    ** bulkInsert with INSERT permission granted does not throw.
+    ** bulkInsert with WRITE permission granted does not throw.
+    ** Note: READ_WRITE_PERMISSIONS level maps INSERT/EDIT/DELETE → "write".
     *******************************************************************************/
    @Test
    void testCheckPermissions_bulkInsert_withInsertPermission_passes() throws QPermissionDeniedException
    {
       QInstance instance = buildInstanceWithTablePermissionLevel(PermissionLevel.READ_WRITE_PERMISSIONS);
-      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".insert"));
+      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".write"));
 
       BulkTableActionProcessPermissionChecker checker = new BulkTableActionProcessPermissionChecker();
       checker.checkPermissionsThrowing(new AbstractActionInput(), namedProcess(TABLE_NAME + ".bulkInsert"));
@@ -88,13 +89,14 @@ class BulkTableActionProcessPermissionCheckerTest extends BaseTest
 
 
    /*******************************************************************************
-    ** bulkEdit with EDIT permission granted does not throw.
+    ** bulkEdit with WRITE permission granted does not throw.
+    ** Note: READ_WRITE_PERMISSIONS level maps EDIT → "write".
     *******************************************************************************/
    @Test
    void testCheckPermissions_bulkEdit_withEditPermission_passes() throws QPermissionDeniedException
    {
       buildInstanceWithTablePermissionLevel(PermissionLevel.READ_WRITE_PERMISSIONS);
-      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".edit"));
+      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".write"));
 
       BulkTableActionProcessPermissionChecker checker = new BulkTableActionProcessPermissionChecker();
       checker.checkPermissionsThrowing(new AbstractActionInput(), namedProcess(TABLE_NAME + ".bulkEdit"));
@@ -104,12 +106,13 @@ class BulkTableActionProcessPermissionCheckerTest extends BaseTest
 
    /*******************************************************************************
     ** bulkEditWithFile routes to the same EDIT check as bulkEdit.
+    ** Note: READ_WRITE_PERMISSIONS level maps EDIT → "write".
     *******************************************************************************/
    @Test
    void testCheckPermissions_bulkEditWithFile_withEditPermission_passes() throws QPermissionDeniedException
    {
       buildInstanceWithTablePermissionLevel(PermissionLevel.READ_WRITE_PERMISSIONS);
-      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".edit"));
+      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".write"));
 
       BulkTableActionProcessPermissionChecker checker = new BulkTableActionProcessPermissionChecker();
       checker.checkPermissionsThrowing(new AbstractActionInput(), namedProcess(TABLE_NAME + ".bulkEditWithFile"));
@@ -118,13 +121,14 @@ class BulkTableActionProcessPermissionCheckerTest extends BaseTest
 
 
    /*******************************************************************************
-    ** bulkDelete with DELETE permission granted does not throw.
+    ** bulkDelete with WRITE permission granted does not throw.
+    ** Note: READ_WRITE_PERMISSIONS level maps DELETE → "write".
     *******************************************************************************/
    @Test
    void testCheckPermissions_bulkDelete_withDeletePermission_passes() throws QPermissionDeniedException
    {
       buildInstanceWithTablePermissionLevel(PermissionLevel.READ_WRITE_PERMISSIONS);
-      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".delete"));
+      QContext.setQSession(new QSession().withPermission(TABLE_NAME + ".write"));
 
       BulkTableActionProcessPermissionChecker checker = new BulkTableActionProcessPermissionChecker();
       checker.checkPermissionsThrowing(new AbstractActionInput(), namedProcess(TABLE_NAME + ".bulkDelete"));
