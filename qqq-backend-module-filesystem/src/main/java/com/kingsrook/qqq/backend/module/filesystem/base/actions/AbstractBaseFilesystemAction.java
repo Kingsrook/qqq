@@ -126,15 +126,6 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public abstract InputStream readFile(FILE file) throws IOException;
 
-   /***************************************************************************
-    ** Legacy signature for this method - before table & record params were added.
-    ***************************************************************************/
-   @Deprecated(since = "call the overload that takes table and record")
-   public void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException
-   {
-      writeFile(backend, null, null, path, contents);
-   }
-
    /*******************************************************************************
     ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
