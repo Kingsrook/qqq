@@ -367,6 +367,16 @@ class DMLAuditActionTest extends BaseTest
          .isPresent()
          .get().extracting(r -> r.getValueString("message"))
          .matches(s -> s.matches("Changed Sequence No. from 1 to 2"));
+
+      ////////////////////////////////////////////////////////////////////////////////////
+      // field not present in record at all (patch-style update) - must produce no audit //
+      // this prevents treating every absent field as if it was explicitly cleared       //
+      ////////////////////////////////////////////////////////////////////////////////////
+      QRecord patchRecord = new QRecord(); // name key not present in values map
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("name", table, UPDATE,
+         patchRecord,
+         new QRecord().withValue("name", "Homer")))
+         .isEmpty();
    }
 
 
@@ -398,6 +408,25 @@ class DMLAuditActionTest extends BaseTest
       QContext.setQSession(new QSession().withValue("apiVersion", "20230921").withValue("apiLabel", "Our Public API"));
       assertEquals(" while shipping an order via Script \"My Script\" during process: Greet via Our Public API Version: 20230921", DMLAuditAction.getContentSuffix(new DMLAuditInput().withAuditContext("while shipping an order")));
       QContext.popAction();
+   }
+
+
+
+   /*******************************************************************************
+    ** automationStatus is a QQQ-internal system field that must be excluded from
+    ** audit details just like createDate and modifyDate.  Its value changes on
+    ** every automated operation, producing noisy irrelevant audit trail if included.
+    *******************************************************************************/
+   @Test
+   void testMakeAuditDetailRecordForField_automationStatusField_isExcluded()
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withField(new QFieldMetaData("automationStatus", QFieldType.INTEGER).withLabel("Automation Status"));
+
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("automationStatus", table, UPDATE,
+         new QRecord().withValue("automationStatus", 2),
+         new QRecord().withValue("automationStatus", 1)))
+         .isEmpty();
    }
 
 

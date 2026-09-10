@@ -13,7 +13,7 @@ workflows:
           context: [qqq-maven-registry-credentials, build-qqq-sample-app]
           filters:
             branches:
-              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
+              ignore: /(develop|release/.*|hotfix/.*|integration.*)/
             tags:
               only: []
       # Static analysis runs in parallel with tests
@@ -21,7 +21,7 @@ workflows:
           context: [qqq-maven-registry-credentials]
           filters:
             branches:
-              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
+              ignore: /(develop|release/.*|hotfix/.*|integration.*)/
             tags:
               only: []
 
@@ -55,9 +55,17 @@ workflows:
 
   publish_release_candidate:
     jobs:
+      - qqq-orb/static_analysis:
+          name: candidate_static_analysis
+          context: [qqq-maven-registry-credentials]
+          filters:
+            branches:
+              only:
+                - /release\/.*/
       - qqq-orb/mvn_publish:
           context: [qqq-maven-registry-credentials, build-qqq-sample-app]
           branch_type: release_candidate
+          requires: [candidate_static_analysis]
           filters:
             branches:
               only:
@@ -65,14 +73,23 @@ workflows:
 
   publish_release:
     jobs:
+      - qqq-orb/static_analysis:
+          name: release_static_analysis
+          context: [qqq-maven-registry-credentials]
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
       - qqq-orb/mvn_publish:
           context: [qqq-maven-registry-credentials, build-qqq-sample-app]
           branch_type: release
+          requires: [release_static_analysis]
           filters:
             branches:
-              only: [main]
+              ignore: /.*/
             tags:
-              only: [/v.*/]
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
 
   publish_hotfix_release:
     jobs:

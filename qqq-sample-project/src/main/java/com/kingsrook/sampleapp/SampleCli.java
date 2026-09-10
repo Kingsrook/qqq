@@ -50,7 +50,7 @@ public class SampleCli
    {
       try
       {
-         QInstance qInstance = SampleMetaDataProvider.defineInstance();
+         QInstance qInstance = new SampleMetaDataProvider().defineQInstance();
          return (run(qInstance, args));
       }
       catch(Exception e)

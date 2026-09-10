@@ -135,7 +135,7 @@ public class SampleMetaDataProvider extends AbstractQQQApplication
    @Override
    public QInstance defineQInstance() throws QException
    {
-      return (defineInstance());
+      return (Boolean.getBoolean("qqq.sample.mockAuthentication") ? defineTestInstance() : defineInstance());
    }
 
 
@@ -243,6 +243,7 @@ public class SampleMetaDataProvider extends AbstractQQQApplication
    private static void defineBranding(QInstance qInstance)
    {
       qInstance.setBranding(new QBrandingMetaData()
+         .withAppName("QQQ Sample")
          .withLogo("/samples-logo.png")
          .withIcon("/kr-icon.png"));
    }
