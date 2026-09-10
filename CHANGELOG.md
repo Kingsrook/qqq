@@ -105,6 +105,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Invalid sharing scopes now identify the rejected input in the validation message instead of
   reporting `[null]`.
 
+### Security
+
+- Align Jackson modules on 2.21.5 and Netty modules on 4.1.137.Final through their BOMs.
+- Update Log4j to 2.25.5, jsoup to 1.23.1, PostgreSQL JDBC to 42.7.12,
+  c3p0 to 0.14.0, mchange-commons to 0.6.0, and Plexus Utils to 4.0.3.
+- Update affected test dependencies: AssertJ 3.27.7, HttpClient 5.6.3,
+  HttpCore 5.4.3, and Handlebars 4.5.2.
+- Jetty 11 advisory remediation remains an open release gate while the Javalin 7 / Jetty 12
+  migration is being evaluated. These dependency updates do not resolve those Jetty advisories.
+
 ### Known Issues / Deferred Bugs
 
 No bug/defect-labeled issues remained open in the September 9 release review. The resolved bugs
