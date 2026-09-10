@@ -92,6 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `QBackendMetaData.withoutCapabilities(Set<Capability>)` now disables the supplied capabilities, matching the varargs overload. Previously it enabled them, so tables could retain operations the backend configuration intended to exclude.
+
 **Resolved bugs:**
 - **#331** — `MockAuthenticationModule` now calls `customizeSession()` when a session customizer
   is configured, consistent with `Auth0AuthenticationModule` and `OAuth2AuthenticationModule`.
