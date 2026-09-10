@@ -119,7 +119,7 @@ public class SharedRecordProcessUtils
       }
       catch(IllegalArgumentException e)
       {
-         throw (new QException("[" + shareScope + "] is not a recognized value for shareScope.  Allowed values are: " + Arrays.toString(ShareScope.values())));
+         throw (new QException("[" + scopeId + "] is not a recognized value for shareScope.  Allowed values are: " + Arrays.toString(ShareScope.values())));
       }
    }
 

@@ -15,37 +15,36 @@ A Widget is defined in a QQQ Instance in a `*QWidgetMetaData*` object.
 *QWidgetMetaData Properties:*
 
 * `name` - *String, Required* - Unique name for the widget within the QQQ Instance.
-* `type` - *String, Required* - Specifies the UI & data type for the widget.
+* `type` - *String, Required* - Specifies the UI & data type for the widget. Use a `WidgetType` enum value's `getType()` method.
 * `label` - *String* - User-facing header or title for a widget.
 * `tooltip` - *String* - Text contents to be placed in a tooltip associated with the widget's label in the UI.
-** Values should come from the `WidgetType` enum's `getType()` method (e.g., `WidgetType.BAR_CHART.getType()`)
 * `gridColumns` - *Integer* - for a desktop-sized screen, in a 12-based grid,
 how many columns the widget should consume.
 * `codeReference` - *QCodeReference, Required* - Reference to the custom code,
 a subclass of `AbstractWidgetRenderer`, which is responsible for loading data to render the widget.
 * `footerHTML` - *String* - HTML String, which, if present, will be displayed in the
 footer of the widget (not supported by all widget types).
-* `isCard` - *boolean, default false* #TODO#
-* `showReloadButton` - *boolean, default true* #TODO#
-* `showExportButton` - *boolean, default false* #TODO#
-* `dropdowns` - #TODO#
-* `storeDropdownSelections` - *boolean* #TODO#
-* `icons` - *Map<String, QIcon>* #TODO#
-* `defaultValues` - *Map<String, Serializable>* #TODO#
+* `isCard` - *boolean, default false* - Requests card styling in frontends that support it.
+* `showReloadButton` - *boolean, default true* - Requests a control to reload the widget data.
+* `showExportButton` - *boolean, default false* - Requests an export control for widget types/frontends that support export.
+* `dropdowns` - *List<WidgetDropdownData>* - Selection controls whose values are passed to the renderer.
+* `storeDropdownSelections` - *boolean, default false* - Requests that the frontend retain dropdown selections.
+* `icons` - *Map<String, QIcon>* - Named icons used by the selected widget type.
+* `defaultValues` - *Map<String, Serializable>* - Default named values available to widget rendering.
 
 There are also some subclasses of `QWidgetMetaData`, for some specific widget types:
 
 *ParentWidgetMetaData Properties:*
 
-* `title` - *String* #TODO - how does this differ from label?#
+* `title` - *String* - A metadata property retained by this subclass. The standard ParentWidgetRenderer does not copy it to its output; use the widget label or explicitly set the label in a custom renderer.
 * `childWidgetNameList` - *List<String>, Required*
-* `childProcessNameList` - *List<String>* #TODO appears unused - check, and delete#
-* `laytoutType` - *enum of GRID or TABS, default GRID*
+* `childProcessNameList` - *List<String>* - Retained metadata property; the standard ParentWidgetRenderer does not render this list. Use process widgets in `childWidgetNameList` to show processes.
+* `layoutType` - *enum of GRID or TABS, default GRID*
 
 *QNoCodeWidgetMetaData Properties:*
 
-* `values` - *List<AbstractWidgetValueSource>* #TODO#
-* `outputs` - *List<AbstractWidgetOutput>* #TODO#
+* `values` - *List<AbstractWidgetValueSource>* - Definitions of the data values to obtain while rendering.
+* `outputs` - *List<AbstractWidgetOutput>* - Definitions of the output widgets built from those values.
 
-#TODO - Examples#
+See <<Rendering Widgets>> for complete pie and composite renderers. The {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/actions/dashboard/widgets/NoCodeWidgetRenderer.java[NoCodeWidgetRenderer] and {qqq-tree-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/model/metadata/dashboard/nocode[no-code metadata classes] define the supported declarative value/output combinations.
 

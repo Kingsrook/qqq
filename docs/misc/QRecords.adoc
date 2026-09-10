@@ -26,7 +26,7 @@ In this overload, if the value is `null` or `Serializable`, the primary version 
 Otherwise, the `value` is passed through `String::valueOf`, and the result is stored.
 ** Overloaded as `setValue(QFieldMetaData field, Serializable value)` - which simply defers to the primary version of `setValue`, passing `field.getName()` as the first parameter.
 * `removeValue(String fieldName)` - Remove the given field from the `values` map.
-** Note that in some situations this is an important distinction from having a `null` value in the map (See <<UpdateAction)>>).
+** Note that in some situations this is an important distinction from having a `null` value in the map (See {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/actions/tables/UpdateAction.java[UpdateAction]).
 * `setValues(Map<String, Serializable> values)` - Sets the full map of `values`.
 * `getValues()` - Returns the full map of `values`.
 * `getValue(String fieldName)` - Returns the value for the named field - possibly `null` - as a `Serializable`.
@@ -51,7 +51,7 @@ By default, a `QRecord` will not have its `displayValues` populated.
 To populate `displayValues`, the <<QueryAction>> and <<GetAction>> classes take a property in their inputs called `shouldGenerateDisplayValues`, which must be set to `true` to generate `displayValues`.
 In addition, these two actions also have a property `shouldTranslatePossibleValues` in their inputs, which needs to be set to `true` if possible-value lookups are to be performed.
 
-As an alternative to the `shouldGenerateDisplayValues` and `shouldTranslatePossibleValues` inputs to <<QueryAction>> and <<GetAction>>, one can directly call the `QValueFormatter.setDisplayValuesInRecords` and/or `qPossibleValueTranslator.translatePossibleValuesInRecords` methods.
+As an alternative to the `shouldGenerateDisplayValues` and `shouldTranslatePossibleValues` inputs to <<QueryAction>> and <<GetAction>>, one can directly call the `QValueFormatter.setDisplayValuesInRecords` and/or `QPossibleValueTranslator.translatePossibleValuesInRecords` methods.
 Or, for special cases, `setDisplayValue(String fieldName, String displayValue)` or `setDisplayValues(Map<String, String> displayValues)` can be called directly.
 
 === Backend Details
@@ -62,7 +62,9 @@ For example, an API backend may store the full JSON `String` that came from the 
 Or fields that are marked as `isHeavy`, if the full (heavy) value of the field hasn't been fetched, then the lengths of any such heavy fields may be stored in `backendDetails`.
 
 === Errors and Warnings
-#todo#
+
+A QRecord can carry QErrorMessage and QWarningMessage lists, accessed through getErrors()/getWarnings() and populated with addError()/addWarning(). Inspect the records returned by an action for row-level validation results; a returned record alone does not imply that a write succeeded. getErrorsAsString() and getWarningsAsString() provide text summaries. The action determines how errors and warnings affect processing.
 
 === Associated Records
-#todo#
+
+The associatedRecords map holds named lists of related QRecords. Use withAssociatedRecords(name, records) or withAssociatedRecord(name, record) to populate it. Retrieval actions include associations only when requested and supported by the table metadata. This map is separate from flattened fields selected through a QueryJoin. See {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/model/data/QRecord.java[QRecord].

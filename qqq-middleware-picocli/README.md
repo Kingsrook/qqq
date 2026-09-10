@@ -1,37 +1,15 @@
 # QQQ Middleware - PicoCLI
 
-CLI middleware using [PicoCLI](https://picocli.info). Build command-line applications with QQQ.
+Command-line interface built with picocli. `QPicoCliImplementation` takes a configured `QInstance`; `runCli(String name, String[] args)` returns the command exit code. `QCommandBuilder` defines the available commands and options. Use the [sample CLI](../qqq-sample-project/README.md) and its `--help` output for runnable invocation examples.
 
-## Features
+QQQ 4.0 requires Java 21. See the [release and build instructions](../README.md) and [4.0 migration guide](../docs/migration/4.0.adoc).
 
-- Command-line interface for QQQ operations
-- Table queries and data manipulation via CLI
-- Process execution from command line
-- Scripting and automation support
+## Source and examples
 
-## Usage
-
-```java
-QInstance instance = new QInstance();
-// ... configure instance ...
-
-QPicocliImplementation cli = new QPicocliImplementation(instance);
-cli.runCli(args);
-```
-
-## Commands
-
-```bash
-# Query a table
-myapp query users --filter "status=active"
-
-# Run a process
-myapp process run-report --input file.csv
-
-# Insert records
-myapp insert orders --data '{"customer_id": 123}'
-```
+- [QPicoCliImplementation](src/main/java/com/kingsrook/qqq/middleware/picocli/QPicoCliImplementation.java)
+- [QCommandBuilder](src/main/java/com/kingsrook/qqq/middleware/picocli/QCommandBuilder.java)
+- [Module tests](src/test/java/)
 
 ## License
 
-GNU Affero General Public License v3.0
+See the repository [LICENSE](../LICENSE), [NOTICE](../NOTICE), and the license headers in individual source files.

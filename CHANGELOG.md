@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [4.0.0] - 2026-05-02
+## [4.0.0] - Unreleased
 
 ### Breaking Changes
 
@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overload.
 - **BREAK-03-C** — `qqq-openapi`: `Parameter.setIn(String)` / `withIn(String)` and
   `Schema.setType(String)` / `withType(String)` type-narrowed from `String` to enum.
-  Use the `Parameter.In` and `Schema.Type` enum overloads that already existed.
+  Use the `com.kingsrook.qqq.openapi.model.In` and `Type` enum overloads that already existed.
 
 **API-shape cleanups (BREAK-04):**
 - **BREAK-04-01** — `qqq-bom`: Added 5 previously-unmanaged modules
@@ -49,32 +49,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Use `toJsonCustomized(Object, Consumer<JsonMapper.Builder>)` for builder-level config or
   `toJsonWithMapper(Object, Consumer<JsonMapper>)` for post-build mapper config.
 - **BREAK-04-07** — `YamlUtils.toYaml(Object, Consumer<ObjectMapper>)` removed.
-  Use `toYamlCustomized(Object, Consumer<ObjectMapper>)`.
+  Use `toYamlCustomized(Object, Consumer<YAMLMapper.Builder>)`.
 - **BREAK-04-08** — `AbstractActionInput.getInstance()` and `getSession()` removed.
   Use `QContext.getQInstance()` and `QContext.getQSession()`.
 - **BREAK-04-09** — `QQueryFilter.interpretValues(FilterUseCase, Map)` 2-arg overload removed.
-  Use the 3-arg form: `interpretValues(Map, FilterUseCase)`.
+  Use `interpretValues(Map, FilterUseCase)` with a map of named value maps.
 - **BREAK-04-10** — `NowWithOffset.minus/plus(int, TimeUnit)` factories removed.
   Use `NowWithOffset.minus/plus(int, ChronoUnit)`.
 - **BREAK-04-11** — `QInstance.setAuthentication(QAuthenticationMetaData)` removed.
   Use `qInstance.registerAuthenticationProvider(AuthScope.instanceDefault(), authMetaData)`.
   Add import: `com.kingsrook.qqq.backend.core.model.metadata.authentication.AuthScope`.
 - **BREAK-04-12** — `QInstance.metaDataFilter` property and accessors removed.
-  Use `qInstance.setMetaDataCustomizer(codeRef)`.
+  Use `qInstance.setMetaDataActionCustomizer(codeRef)`.
 - **BREAK-04-13** — `QBrandingMetaData.environmentBannerText` / `environmentBannerColor`
-  fields and accessors removed. Use `withBanner(BannerSlot.TOP, new Banner(...))`.
+  fields and accessors removed. Use `withBanner(slot, new Banner().withMessageText(...))` with a frontend-supported `BannerSlot`.
 - **BREAK-04-14** — `QProcessMetaData.addStep(QStepMetaData)` and `addStep(int, QStepMetaData)`
   removed. Use `withStep(step)` and `withStep(index, step)`.
 - **BREAK-04-15** — `QProcessMetaData.addOptionalStep()` removed. Use `withOptionalStep(step)`.
 - **BREAK-04-16** — `QFunctionInputMetaData.addField()` removed. Use `withField(field)`.
-- **BREAK-04-17** — `AbstractHTMLWidgetRenderer` 3-arg `linkRecord*` overloads removed.
+- **BREAK-04-17** — `AbstractHTMLWidgetRenderer` input-taking `linkRecordEdit`, `linkProcessForFilter`,
+  and `linkProcessForRecord` overloads removed.
   Use the 2-arg forms without the `input` parameter.
 - **BREAK-04-18** — `RecordCustomizerUtilityInterface.getValueFromRecordOrOldRecord()` removed.
   Use `getValueFromRecordElseFromOldRecord()` with `ValueUtils` for type conversion.
 - **BREAK-04-19** — `RecordAutomationHandler` abstract class deleted.
   Implement `RecordAutomationHandlerInterface` directly.
 - **BREAK-04-20** — `AllowAllMetaDataFilter` class and `MetaDataFilterInterface` deleted.
-  Implement the `metaDataCustomizer` `CodeReference` pattern instead.
+  Implement the `metaDataActionCustomizer` `CodeReference` pattern instead.
 - **BREAK-04-21** — `RenderTemplateAction.renderVelocity(ActionInput, ...)` overloads removed.
   Use the overloads without the `actionInput` parameter.
 - **BREAK-04-22** — `BaseAPIActionUtil.executeOAuthTokenRequest(CloseableHttpClient, HttpPost)`
@@ -85,13 +86,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Use `withAdditionalRouteProviders(List.of(instance))`.
 - **BREAK-04-25** — `ApiQueryFilterUtils.manageCriteriaFields(...)` deprecated 5-arg overload
   removed. Use the 6-arg form with `apiVersion`.
-- **BREAK-04-26** — `ApiFilterUtils.getTableApiFieldMap/getTableApiFieldList(ApiNameVersionAndTableName)`
+- **BREAK-04-26** — `GetTableApiFieldsAction.getTableApiFieldMap/getTableApiFieldList(ApiNameVersionAndTableName)`
   overloads removed along with the `ApiNameVersionAndTableName` inner record.
   Use `GetTableApiFieldsInput` directly.
 
 ### Fixed
 
-**Resolved bugs (Phase 5):**
+- `QBackendMetaData.withoutCapabilities(Set<Capability>)` now disables the supplied capabilities, matching the varargs overload. Previously it enabled them, so tables could retain operations the backend configuration intended to exclude.
+
+**Resolved bugs:**
 - **#331** — `MockAuthenticationModule` now calls `customizeSession()` when a session customizer
   is configured, consistent with `Auth0AuthenticationModule` and `OAuth2AuthenticationModule`.
   Applications using MockAuth in dev mode to pin user IDs or set security keys now work correctly.
@@ -99,9 +102,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a visibility defect where child record list tabs were invisibly filtered out when the QInstance
   had restrictive default permission rules.
 
+- Endpoint specifications with no tag now generate their OpenAPI method without a null-pointer
+  exception. Tags remain optional; tagged endpoints retain their existing behavior.
+- Invalid sharing scopes now identify the rejected input in the validation message instead of
+  reporting `[null]`.
+
+### Security
+
+- Align Jackson modules on 2.21.5 and Netty modules on 4.1.137.Final through their BOMs.
+- Update Log4j to 2.25.5, jsoup to 1.23.1, PostgreSQL JDBC to 42.7.12,
+  c3p0 to 0.14.0, mchange-commons to 0.6.0, and Plexus Utils to 4.0.3.
+- Update affected test dependencies: AssertJ 3.27.7, HttpClient 5.6.3,
+  HttpCore 5.4.3, and Handlebars 4.5.2.
+- Jetty 11 advisory remediation remains an open release gate while the Javalin 7 / Jetty 12
+  migration is being evaluated. These dependency updates do not resolve those Jetty advisories.
+
 ### Known Issues / Deferred Bugs
 
-None. All open bugs triaged at 4.0.0 release were resolved. See [.planning/bug-triage.md](.planning/bug-triage.md).
+No bug/defect-labeled issues remained open in the September 9 release review. The resolved bugs
+are listed above. AWS SDK v1/v2 consolidation remains deferred (BREAK-04-05); existing SDK usage
+is unchanged in this release.
 
 ### Migration
 

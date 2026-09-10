@@ -2,12 +2,23 @@
 == Permission Rules
 include::../variables.adoc[]
 
-#TODO#
+QPermissionRules controls access to metadata objects such as tables and processes. Authentication identifies a session; permission rules determine which operations that session may perform. Instance defaults and object-specific rules are combined by PermissionsHelper. Configure and test both allowed and denied operations rather than treating a visible menu item as an authorization check.
 
-=== PermissionRule
-#TODO#
+=== QPermissionRules
 
-*PermissionRule Properties:*
+* `level` selects `NOT_PROTECTED`, `HAS_ACCESS_PERMISSION`, `READ_WRITE_PERMISSIONS`, or `READ_INSERT_EDIT_DELETE_PERMISSIONS`.
+* `denyBehavior` is `HIDDEN` or `DISABLED` for presentation of denied metadata.
+* `permissionBaseName` customizes the base used to construct permission names.
+* `customPermissionChecker` references an implementation of CustomPermissionChecker for application-specific checks.
 
-#TODO#
+[source,java]
+.An object rule requiring separate read/insert/edit/delete permissions
+----
+QPermissionRules rules = new QPermissionRules()
+   .withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS)
+   .withDenyBehavior(DenyBehavior.HIDDEN);
+----
 
+Attach the rule to the relevant metadata object and supply the matching permissions in the session. QPermissionRules.defaultInstance() uses NOT_PROTECTED and HIDDEN; it is not a secure application-wide policy by itself. Record-level security keys are a separate part of access control.
+
+See {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/model/metadata/permissions/QPermissionRules.java[QPermissionRules] and {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/actions/permissions/PermissionsHelper.java[permission evaluation and permission-name construction].

@@ -1,3 +1,4 @@
+[#Javalin]
 == QQQ Middleware:  Javalin web server
 include::../variables.adoc[]
 
@@ -13,18 +14,23 @@ For example, if your application metadata is defined in a directory of yaml file
 [source,java]
 .ConfigFileBasedQQQApplication usage example
 ----
-public static void main(String[] args)
+public class MyServer
 {
-   try
+   private static final QLogger LOG = QLogger.getLogger(MyServer.class);
+
+   public static void main(String[] args)
    {
-      String path = "src/main/resources/metadata";
-      ConfigFilesBasedQQQApplication application = new ConfigFilesBasedQQQApplication(path);
-      QApplicationJavalinServer javalinServer = new QApplicationJavalinServer(application);
-      javalinServer.start();
-   }
-   catch(Exception e)
-   {
-      LOG.error("Failed to start javalin server.  See stack trace for details.", e);
+      try
+      {
+         String path = "src/main/resources/metadata";
+         ConfigFilesBasedQQQApplication application = new ConfigFilesBasedQQQApplication(path);
+         QApplicationJavalinServer javalinServer = new QApplicationJavalinServer(application);
+         javalinServer.start();
+      }
+      catch(Exception e)
+      {
+         LOG.error("Failed to start javalin server.  See stack trace for details.", e);
+      }
    }
 }
 ----
@@ -77,7 +83,7 @@ to HTTP requests.
 * `String processName` - required for a dynamic, process-based router.  Must be a process name within the QQQ Instance.
 See below for additional details
 * `List<String> methods` - required list of HTTP methods (verbs) that are served by the route provider
-* `QCodeReference routeAuthenticator - Optional reference to a class that implements `RouteAuthenticatorInterface`,
+* `QCodeReference routeAuthenticator` - Optional reference to a class that implements `RouteAuthenticatorInterface`,
 to provide security authentication to all requests handled by the route provider.
 ** A default implementation is provided as `SimpleRouteAuthenticator`, which requires that a user session be present
 to access paths served by the route provider.

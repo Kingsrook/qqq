@@ -47,7 +47,7 @@ insertInput.setRecords(List.of(personRecord));
 QRecord insertedRecord = new InsertAction().executeForRecord(insertInput);
 
 // or more compactly, using InsertInput.withRecord (instead of withRecords)
-QRecord insertedRecord = new InsertAction()
+QRecord compactInsertedRecord = new InsertAction()
    .executeForRecord(new InsertInput("person").withRecord(personRecord));
 ----
 

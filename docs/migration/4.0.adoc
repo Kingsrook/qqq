@@ -150,7 +150,7 @@ in 4.0.0. The items below are grouped by the module and commit they were removed
 [NOTE]
 ====
 If your code fails to compile with `cannot find symbol` errors after upgrading, check this section
-first. Every removed element has a direct replacement.
+first. The replacement APIs and configuration steps are listed below.
 ====
 
 === BREAK-03-A: QBackendMetaData variantOptionsTable accessors removed
@@ -166,19 +166,34 @@ and the `LegacyBackendVariantSetting` companion enum.
 metaData.setVariantOptionsTableName("myTable");
 metaData.setVariantOptionsTableIdField("id");
 metaData.setVariantOptionsTableTypeField("type");
+metaData.setVariantOptionsTableTypeValue("customer");
+metaData.setVariantOptionsTableApiKeyField("apiKey");
 ----
 
 [source,java]
 .After (4.0) — use the non-deprecated replacement accessors
 ----
-// The non-deprecated getters/setters for variant options remain on QBackendMetaData.
-// Remove any calls to the deprecated variantOptionsTable* overloads.
-// Use APIBackendVariantSetting directly instead of LegacyBackendVariantSetting.
+metaData.withBackendVariantsConfig(new BackendVariantsConfig()
+   .withOptionsTableName("myTable")
+   .withVariantTypeKey("customer")
+   .withOptionsFilter(new QQueryFilter(
+      new QFilterCriteria("type", QCriteriaOperator.EQUALS, "customer")))
+   .withBackendSettingSourceFieldName(APIBackendVariantSetting.API_KEY, "apiKey"));
 ----
+
+The options table's primary key and record label replace `variantOptionsTableIdField` and
+`variantOptionsTableNameField`; configure those on the table itself. The table-name setter moves
+to `BackendVariantsConfig.optionsTableName`. The type-field/value setters become `optionsFilter`
+and `variantTypeKey`. The username, password, API-key, client-ID, and client-secret field setters
+move to `withBackendSettingSourceFieldName` using the corresponding `APIBackendVariantSetting`
+constant for API backends. Other backend modules use their own `BackendVariantSetting` enums.
+
+Import `BackendVariantsConfig` from `com.kingsrook.qqq.backend.core.model.metadata.variants`
+and `APIBackendVariantSetting` from `com.kingsrook.qqq.backend.module.api.model.metadata`.
 
 === BREAK-03-B: Miscellaneous zero-caller deprecated elements removed
 
-Removed from 5 files in `qqq-backend-core` and `qqq-middleware-api`:
+Removed from 5 files in `qqq-backend-core`, `qqq-backend-module-api`, and `qqq-middleware-api`:
 
 [cols="2,1,2", options="header"]
 |===
@@ -188,7 +203,7 @@ Removed from 5 files in `qqq-backend-core` and `qqq-middleware-api`:
 
 |`ExtractViaQueryStep.customizeInputPreQuery(QueryInput)` 1-arg
 |qqq-backend-core
-|Use the 2-arg overload with `Consumer<QueryInput>` callback
+|Override `customizeInputPreQuery(RunBackendStepInput, QueryInput)`; keep the `super` call to preserve callback dispatch
 
 |`QRecordListMetaData.addField(QFieldMetaData)`
 |qqq-backend-core
@@ -199,7 +214,7 @@ Removed from 5 files in `qqq-backend-core` and `qqq-middleware-api`:
 |Use `toQRecordOnlyChangedFields(false)`
 
 |`BaseAPIActionUtil.setSession(QSession)`
-|qqq-middleware-api
+|qqq-backend-module-api
 |Remove call — unused setter
 
 |`ApiFieldCustomValueMapper.customizeFilterCriteria(QueryInput...)` vararg
@@ -223,7 +238,7 @@ entity.toQRecordOnlyChangedFields(false);
 
 `Parameter.setIn(String)` / `withIn(String)` and `Schema.setType(String)` / `withType(String)`
 overloads that accepted free-form `String` arguments were removed.
-Use the `Parameter.In` and `Schema.Type` enum-typed overloads.
+Use the `com.kingsrook.qqq.openapi.model.In` and `Type` enum-typed overloads.
 
 [source,java]
 .Before (0.x)
@@ -235,8 +250,11 @@ schema.setType("string");
 [source,java]
 .After (4.0)
 ----
-parameter.setIn(Parameter.In.QUERY);
-schema.setType(Schema.Type.STRING);
+import com.kingsrook.qqq.openapi.model.In;
+import com.kingsrook.qqq.openapi.model.Type;
+
+parameter.setIn(In.QUERY);
+schema.setType(Type.STRING);
 ----
 
 
@@ -249,7 +267,7 @@ type parameter, or class hierarchy. Each item is identified by its BREAK-04-NN I
 
 *Module:* `qqq-bom`
 
-The following 5 modules were not previously managed by `qqq-bom`. They are now included.
+The following 5 modules were not previously managed by `com.kingsrook.qqq:qqq-bom-pom`. They are now included.
 If you had explicit version pins for these modules in your `pom.xml`, remove them.
 
 [source,xml]
@@ -326,13 +344,13 @@ String json = JsonUtils.toJsonWithMapper(myObject,
 [source,java]
 .Before (0.x)
 ----
-String yaml = YamlUtils.toYaml(myObject, mapper -> mapper.configure(...));
+String yaml = YamlUtils.toYaml(myObject, mapper -> mapper.disable(SerializationFeature.INDENT_OUTPUT));
 ----
 
 [source,java]
 .After (4.0)
 ----
-String yaml = YamlUtils.toYamlCustomized(myObject, mapper -> mapper.configure(...));
+String yaml = YamlUtils.toYamlCustomized(myObject, mapper -> mapper.disable(SerializationFeature.INDENT_OUTPUT));
 ----
 
 === BREAK-04-08: AbstractActionInput.getInstance() and getSession() removed
@@ -360,13 +378,15 @@ QSession session = QContext.getQSession();
 [source,java]
 .Before (0.x)
 ----
-filter.interpretValues(new RemoveFromFilterUseCase(), inputValues);
+FilterUseCase useCase = () -> CriteriaMissingInputValueBehavior.REMOVE_FROM_FILTER;
+filter.interpretValues(useCase, inputValues);
 ----
 
 [source,java]
 .After (4.0)
 ----
-filter.interpretValues(MapBuilder.of("input", inputValues), new RemoveFromFilterUseCase());
+FilterUseCase useCase = () -> CriteriaMissingInputValueBehavior.REMOVE_FROM_FILTER;
+filter.interpretValues(MapBuilder.of("input", inputValues), useCase);
 ----
 
 === BREAK-04-10: NowWithOffset TimeUnit factories removed
@@ -403,7 +423,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.authentication.AuthScope;
 qInstance.registerAuthenticationProvider(AuthScope.instanceDefault(), authMetaData);
 ----
 
-=== BREAK-04-12: QInstance.metaDataFilter removed (use metaDataCustomizer)
+=== BREAK-04-12: QInstance.metaDataFilter removed (use metaDataActionCustomizer)
 
 *Location:* `qqq-backend-core` — `QInstance`
 
@@ -416,7 +436,7 @@ qInstance.setMetaDataFilter(codeRef);
 [source,java]
 .After (4.0)
 ----
-qInstance.setMetaDataCustomizer(codeRef);
+qInstance.setMetaDataActionCustomizer(codeRef);
 ----
 
 === BREAK-04-13: QBrandingMetaData.environmentBannerText/Color removed
@@ -433,8 +453,16 @@ qBrandingMetaData.setEnvironmentBannerColor("#FF0000");
 [source,java]
 .After (4.0)
 ----
-qBrandingMetaData.withBanner(BannerSlot.TOP, new Banner().withText("DEV").withColor("#FF0000"));
+import com.kingsrook.qqq.frontend.materialdashboard.model.metadata.MaterialDashboardBannerSlots;
+
+qBrandingMetaData.withBanner(MaterialDashboardBannerSlots.QFMD_TOP_OF_SITE, new Banner()
+   .withMessageText("DEV")
+   .withBackgroundColor("#FF0000"));
 ----
+
+`BannerSlot` is an interface. This example uses the slot enum from the Material Dashboard
+artifact; another frontend may define its own slot names. Keep the frontend dependency at
+a version that supports banners.
 
 === BREAK-04-14: QProcessMetaData.addStep() removed (use withStep)
 
@@ -483,7 +511,7 @@ inputMetaData.addField(field);
 [source,java]
 .After (4.0)
 ----
-new QFunctionInputMetaData().withField(field);
+inputMetaData.withField(field);
 ----
 
 === BREAK-04-17: AbstractHTMLWidgetRenderer input-param overloads removed
@@ -493,17 +521,17 @@ new QFunctionInputMetaData().withField(field);
 [source,java]
 .Before (0.x)
 ----
-renderer.linkRecordEdit(input, tableName, id);
-renderer.linkRecordView(input, tableName, id);
-renderer.linkTableView(input, tableName);
+AbstractHTMLWidgetRenderer.linkRecordEdit(input, tableName, id);
+AbstractHTMLWidgetRenderer.linkProcessForFilter(input, processName, filter);
+AbstractHTMLWidgetRenderer.linkProcessForRecord(input, processName, id);
 ----
 
 [source,java]
 .After (4.0)
 ----
-renderer.linkRecordEdit(tableName, id);
-renderer.linkRecordView(tableName, id);
-renderer.linkTableView(tableName);
+AbstractHTMLWidgetRenderer.linkRecordEdit(tableName, id);
+AbstractHTMLWidgetRenderer.linkProcessForFilter(processName, filter);
+AbstractHTMLWidgetRenderer.linkProcessForRecord(processName, id);
 ----
 
 === BREAK-04-18: RecordCustomizerUtilityInterface.getValueFromRecordOrOldRecord removed
@@ -519,7 +547,8 @@ Object value = getValueFromRecordOrOldRecord(fieldName, record, pkey, oldRecordM
 [source,java]
 .After (4.0)
 ----
-Object value = getValueFromRecordElseFromOldRecord(fieldName, record, pkey, oldRecordMap);
+Object value = RecordCustomizerUtilityInterface.getValueFromRecordElseFromOldRecord(
+   fieldName, record, pkey, oldRecordMap);
 // Use ValueUtils for type conversion if needed
 ----
 
@@ -561,8 +590,8 @@ qInstance.setMetaDataFilter(new QCodeReference(AllowAllMetaDataFilter.class));
 [source,java]
 .After (4.0)
 ----
-// Use metaDataCustomizer with DefaultNoopMetaDataActionCustomizer or your own impl
-qInstance.setMetaDataCustomizer(new QCodeReference(MyMetaDataCustomizer.class));
+// Use metaDataActionCustomizer with DefaultNoopMetaDataActionCustomizer or your own impl
+qInstance.setMetaDataActionCustomizer(new QCodeReference(MyMetaDataCustomizer.class));
 ----
 
 === BREAK-04-21: RenderTemplateAction input-param overloads removed
@@ -583,7 +612,7 @@ RenderTemplateAction.renderVelocity(context, code);
 
 === BREAK-04-22: BaseAPIActionUtil.executeOAuthTokenRequest overload removed
 
-*Location:* `qqq-middleware-api` — `BaseAPIActionUtil`
+*Location:* `qqq-backend-module-api` — `BaseAPIActionUtil`
 
 [source,java]
 .Before (0.x)
@@ -638,20 +667,19 @@ server.withAdditionalRouteProviders(List.of(routeProvider));
 [source,java]
 .Before (0.x)
 ----
-ApiQueryFilterUtils.manageCriteriaFields(field, value, filter, table, apiVersion);
-// (5-arg form without apiVersion parameter in first position)
+ApiQueryFilterUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, input);
 ----
 
 [source,java]
 .After (4.0)
 ----
-// Use the 6-arg form with apiVersion as the first parameter
-ApiQueryFilterUtils.manageCriteriaFields(apiVersion, field, value, filter, table, context);
+ApiQueryFilterUtils.manageCriteriaFields(
+   filter, tableApiFields, badRequestMessages, apiName, apiVersion, input);
 ----
 
-=== BREAK-04-26: ApiFilterUtils getTableApiFieldMap/getTableApiFieldList overloads removed
+=== BREAK-04-26: GetTableApiFieldsAction getTableApiFieldMap/getTableApiFieldList overloads removed
 
-*Location:* `qqq-middleware-api` — `ApiFilterUtils`
+*Location:* `qqq-middleware-api` — `GetTableApiFieldsAction`
 
 The `ApiNameVersionAndTableName` inner record and its associated
 `getTableApiFieldMap(ApiNameVersionAndTableName)` and `getTableApiFieldList(ApiNameVersionAndTableName)`
@@ -660,8 +688,8 @@ overloads have been removed.
 [source,java]
 .Before (0.x)
 ----
-var key = new ApiFilterUtils.ApiNameVersionAndTableName(apiName, apiVersion, tableName);
-Map<String, QFieldMetaData> fieldMap = ApiFilterUtils.getTableApiFieldMap(key);
+var key = new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName);
+Map<String, QFieldMetaData> fieldMap = GetTableApiFieldsAction.getTableApiFieldMap(key);
 ----
 
 [source,java]
@@ -669,9 +697,9 @@ Map<String, QFieldMetaData> fieldMap = ApiFilterUtils.getTableApiFieldMap(key);
 ----
 GetTableApiFieldsInput input = new GetTableApiFieldsInput()
    .withApiName(apiName)
-   .withApiVersion(apiVersion)
+   .withVersion(apiVersion)
    .withTableName(tableName);
-Map<String, QFieldMetaData> fieldMap = ApiFilterUtils.getTableApiFieldMap(input);
+Map<String, QFieldMetaData> fieldMap = GetTableApiFieldsAction.getTableApiFieldMap(input);
 ----
 
 === Deferred items (not in 4.0.0)

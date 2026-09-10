@@ -64,4 +64,33 @@ class SampleCliTest
       assertNotEquals(0, exitCode);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testHelpWithExplicitMockAuthentication()
+   {
+      String originalProperty = System.getProperty("qqq.sample.mockAuthentication");
+      try
+      {
+         System.setProperty("qqq.sample.mockAuthentication", "true");
+         QContext.clear();
+         assertEquals(0, new SampleCli().run(new String[] { "--help" }));
+      }
+      finally
+      {
+         QContext.clear();
+         if(originalProperty == null)
+         {
+            System.clearProperty("qqq.sample.mockAuthentication");
+         }
+         else
+         {
+            System.setProperty("qqq.sample.mockAuthentication", originalProperty);
+         }
+      }
+   }
+
 }

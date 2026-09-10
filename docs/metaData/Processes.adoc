@@ -36,13 +36,13 @@ See {link-permissionRules} for details.
 ** `steps` is a map, including all steps from `stepList`, but which may also include steps which can used by the process if its backend steps make the decision to do so, at run-time (e.g., using <<_custom_process_flow>>).
 ** A process's steps are normally defined in one of two was:
 *** 1) by a single call to `.withStepList(List<QStepMetaData>)`, which internally adds each step into the `steps` map.
-*** 2) by multiple calls to `.addStep(QStepMetaData)`, which adds a step to both the `stepList` and `steps` map.
-** If a process also needs optional steps (for a <<_custom_process_flow>>), they should be added by a call to `.addOptionalStep(QStepMetaData)`, which only places them in the `steps` map.
+*** 2) by multiple calls to `.withStep(QStepMetaData)`, which adds a step to both the `stepList` and `steps` map.
+** If a process also needs optional steps (for a <<_custom_process_flow>>), they should be added by a call to `.withOptionalStep(QStepMetaData)`, which only places them in the `steps` map.
 * `stepFlow` - *enum, default LINEAR* - specifies the the flow-control logic between steps.  Possible values are:
 ** `LINEAR` - steps are executed in-order, through the `stepList`.
 A backend step _can_ customize the `nextStepName` or re-order the `stepList`, if needed.
 In a frontend step, a user may be given the option to go _back_ to a previous step as well.
-** `STATE_MACHINE` - steps are executed as a Fine State Machine, starting with the first step in `stepList`,
+** `STATE_MACHINE` - steps are executed as a Finite State Machine, starting with the first step in `stepList`,
 but then proceeding based on the `nextStepName` specified by the previous step.
 Thus allowing much more flexible flows.
 * `schedule` - *<<QScheduleMetaData>>* - set up the process to run automatically on the specified schedule.
@@ -50,7 +50,7 @@ See below for details.
 * `minInputRecords` - *Integer* - #not used...#
 * `maxInputRecords` - *Integer* - #not used...#
 
-#todo: supplementalMetaData (API)#
+The `supplementalMetaData` map attaches module-specific process settings. For application APIs, see {qqq-source-url}/qqq-middleware-api/src/main/java/com/kingsrook/qqq/api/model/metadata/processes/ApiProcessMetaData.java[ApiProcessMetaData].
 
 ==== QStepMetaData
 
@@ -192,7 +192,7 @@ A common pattern for QQQ processes to exhibit is called the "Streamed ETL With F
 This pattern is to do an "Extract, Transform, Load" job on a potentially large set of records.
 
 The records are Streamed through the process's steps, meaning, QQQ runs multiple threads - a producer, which is selecting records, and a consumer, which is processing records.
-As such, in general, an unlimited number of records can be processed by a process, without worrying about exhausting server resources (e.g., OutOfMemory).
+As such, in general, records can be processed a page at a time. Custom steps must also bound their caches and retained data to avoid exhausting server memory.
 
 These processes also have a standard user-interface for displaying a summary of what the process will do (and has done), with a small number of records as a preview.
 The goal of the summary is to give the user the big-picture of what the process will do (e.g., X records will be inserted; Y records will be updated), along with a small view of some details on the records that will be stored (e.g., on record A field B will be set to C).
@@ -272,8 +272,10 @@ It should be noted, that the "last" step name (as tracked by QQQ within `RunProc
 does need to be found in the new `stepNameList` - otherwise, the framework will not know where you were,
 for figuring out where to go next.
 
+The following fragments share one enclosing application class. Supply `PROCESS_NAME`, replace each omitted QCodeReference target with the application's BackendStep class, and put the process-building statements inside the metadata producer method.
+
 [source,java]
-.Example of a defining process that can use a customized linear flow:
+.Class fields and metadata-method statements for a customized linear flow:
 ----
 // for a case like this, it would be recommended to define all step names in constants:
 public final static String STEP_START = "start";
@@ -304,17 +306,17 @@ QProcessMetaData process = new QProcessMetaData()
          .withName(STEP_END)
    ));
 
-// the additional steps get added via `addOptionalStep`, which only puts them in
+// the additional steps get added via `withOptionalStep`, which only puts them in
 // the process's stepMap, not its stepList!
-process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_A));
-process.addOptionalStep(new QBackendStepMetaData().withName(STEP_B)
+process.withOptionalStep(new QFrontendStepMetaData().withName(STEP_A));
+process.withOptionalStep(new QBackendStepMetaData().withName(STEP_B)
    .withCode(new QCodeReference(/*...*/)));
-process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_C));
+process.withOptionalStep(new QFrontendStepMetaData().withName(STEP_C));
 
-process.addOptionalStep(new QBackendStepMetaData().withName(STEP_1)
+process.withOptionalStep(new QBackendStepMetaData().withName(STEP_1)
    .withCode(new QCodeReference(/*...*/)));
-process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_2));
-process.addOptionalStep(new QBackendStepMetaData().withName(STEP_3)
+process.withOptionalStep(new QFrontendStepMetaData().withName(STEP_2));
+process.withOptionalStep(new QBackendStepMetaData().withName(STEP_3)
    .withCode(new QCodeReference(/*...*/)));
 
 ----
@@ -338,7 +340,7 @@ public static class StartStep implements BackendStep
   {
      Boolean skipSomeSteps = runBackendStepInput.getValueBoolean("skipSomeSteps");
 
-     if(runBackendStepInput.getValueString("which").equals("letters"))
+     if("letters".equals(runBackendStepInput.getValueString("which")))
      {
         runBackendStepOutput.updateStepList(LETTERS_STEP_LIST);
         if(BooleanUtils.isTrue(skipSomeSteps))
