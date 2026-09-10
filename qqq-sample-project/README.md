@@ -36,4 +36,4 @@ This sample is built from the repository and is not published to Maven Central. 
 
 ## License
 
-GNU Affero General Public License v3.0; see the repository [LICENSE](../LICENSE).
+See the repository [LICENSE](../LICENSE), [NOTICE](../NOTICE), and the license headers in individual source files.
