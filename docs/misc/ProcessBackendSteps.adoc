@@ -53,7 +53,7 @@ All output from a process step should be placed in its `RunBackendStepOutput` ob
 Key methods in this class are:
 
 * `addValue(String fieldName, Serializable value)` - Adds a single named value to the process's state, overwriting it the value if it already exists.
-* `addRecord(QRecord record)` - Add a `<<QRecord>>` to the process's output.
+* `addRecord(QRecord record)` - Add a `<<QRecords,QRecord>>` to the process's output.
 * `addAuditSingleInput(AuditSingleInput auditSingleInput)` - Add a new entry to the process's list of audit inputs, to be stored at the completion of the process.
 ** An `AuditSingleInput` object can most easily be built with the constructor: `AuditSingleInput(String tableName, QRecord record, String auditMessage)`.
 ** Additional audit details messages (sub-bullets that accompany the primary `auditMessage`) can be added to an `AuditSingleInput` via the `addDetail(String message)` method.
@@ -144,12 +144,6 @@ _A quick word on terminology - this step is actually doing what we are more like
 Another distinction between StreamedELTWithFrontendProcess steps and general QQQ process backend steps, is that the list of records in the input & output objects is NOT shared for StreamedELTWithFrontendProcess steps.
 The direct implication of this is, that a Transform step MUST explicitly call `output.addRecord()` for any records that it wants to pass along to the Load step.
 
-==== Example
+==== Source examples
 
-[source,java]
-.Examples of a Transform and Load step for a StreamedELTWithFrontendProcess
-----
-   // todo!
-----
-
-#todo: more details on these 3 specialized types of process steps (e.g., method to overload, when stuff like pre-action is called; how summaries work).#
+See {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/processes/implementations/etl/streamedwithfrontend/AbstractTransformStep.java[AbstractTransformStep] for runOnePage() and getProcessSummary(), and {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/processes/implementations/etl/streamedwithfrontend/LoadViaInsertStep.java[LoadViaInsertStep] for writing the transformed records. The <<TableSyncProcess,table-sync walkthrough>> demonstrates a concrete transform. Override the lifecycle methods required by your use case and keep writes in the execution/load phase.

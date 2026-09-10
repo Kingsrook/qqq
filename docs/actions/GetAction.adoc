@@ -14,7 +14,7 @@ In addition, for tables that define a `UniqueKey`, name/value pairs (in the form
 GetInput input = new GetInput();
 input.setTableName("orders");
 input.setPrimaryKey(1);
-GetOutput output = new GetAction.execute(input);
+GetOutput output = new GetAction().execute(input);
 QRecord record = output.getRecord();
 ----
 
@@ -24,7 +24,7 @@ QRecord record = output.getRecord();
 GetInput input = new GetInput();
 input.setTableName("products");
 input.setUniqueKey(Map.of("storeId", 1701, "sku", "ABCD"));
-GetOutput output = new GetAction.execute(input);
+GetOutput output = new GetAction().execute(input);
 QRecord record = output.getRecord();
 ----
 

@@ -30,7 +30,7 @@ The properties of the `UniqueKey` object are:
 * `backendDetails` - *QTableBackendDetails or subclass* - Additional data to configure the table within its {link-backend}.
 ** For example, for an RDBMS-type backend, the name of the table within the database.
 ** vs. a FileSystem backend, this may be the sub-path where files for the table are stored.
-** #todo - details on these#
+** Use the backend module's table-details class; see the module README and metadata source for its storage-specific fields.
 * `automationDetails` - *<<QTableAutomationDetails>>* - Configuration of automated jobs that run against records in the table, e.g., upon insert or update.
 * `customizers` - *Map of String → QCodeReference* - References to custom code that are injected into standard table actions, that allow applications to customize certain parts of how the table works.
 ** Allowed values for keys in this map come from the `role` property of the `TableCustomizers` enum.
@@ -39,11 +39,8 @@ The properties of the `UniqueKey` object are:
 
 [source,java]
 ----
-// in defining a QTableMetaData, a customizer can be added as:
-.withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(MyPreInsCustomizer.class))
-
-// where MyPreInsCustomizer would be defined as:
-public class MyPreInsCustomizer extends AbstractPreInsertCustomizer
+// MyPreInsCustomizer is the application class extending AbstractPreInsertCustomizer.
+table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(MyPreInsCustomizer.class));
 ----
 
 
@@ -84,7 +81,7 @@ See CacheOf object below for details.
 * `exposedJoins` - *List of <<ExposedJoin>> objects* - optional list of joined tables that are to be exposed in User Interfaces.
 See ExposedJoin object below for details.
 
-#todo: supplementalMetaData (API)#
+The `supplementalMetaData` map attaches module-specific table settings. For application APIs, see {qqq-source-url}/qqq-middleware-api/src/main/java/com/kingsrook/qqq/api/model/metadata/tables/ApiTableMetaData.java[ApiTableMetaData].
 
 
 ==== QFieldSection
@@ -132,7 +129,7 @@ Actions with a smaller value for `priority` are executed first.  Ties are broken
 ** `includeRecordAssociations` - *Boolean, default false* - for tables that have associations, control whether or not a record's associated records are loaded when records are fetched and passed into the action's custom code.
 ** `values` - *Map of String → Serializable* - optional application-defined map of name=value pairs that can be passed into the action's custom code.
 ** `processName` - *String, Conditional* - name of a {link-processes} in the QQQ Instance which is executed as the custom-code of the action.
-** `codeReference` - *QCodeReference, Conditional* - reference to a class that extends `RecordAutomationHandler`, to be executed as the custom-code of the action.
+** `codeReference` - *QCodeReference, Conditional* - reference to a class that implements `RecordAutomationHandlerInterface`, to be executed as the custom-code of the action.
 *** Note, exactly one of `processName` or `codeReference` must be provided.
 
 

@@ -47,12 +47,12 @@ if the value in the field is longer than the `maxLength`, then one of the follow
 .Examples of using ValueTooLongBehavior
 ----
    new QFieldMetaData("sku", QFieldType.STRING)
-      .withMaxLength(40),
-      .withBehavior(ValueTooLongBehavior.ERROR),
+      .withMaxLength(40)
+      .withBehavior(ValueTooLongBehavior.ERROR);
 
    new QFieldMetaData("reason", QFieldType.STRING)
-      .withMaxLength(250),
-      .withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS),
+      .withMaxLength(250)
+      .withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
 
 ----
 
@@ -75,15 +75,15 @@ not allowEqualTo).
     new QFieldMetaData("noOfShoes", QFieldType.INTEGER)
       .withBehavior(new ValueRangeBehavior().withMinValue(0));
 
-    new QFieldMetaData("price", QFieldType.BIG_DECIMAL)
+    new QFieldMetaData("price", QFieldType.DECIMAL)
       .withBehavior(new ValueRangeBehavior()
          // set the min value to be >= 0, and an error if an input is < 0.
          .withMinValue(BigDecimal.ZERO)
          .withMinAllowEqualTo(true)
-         .withMinBehavior(ERROR)
+         .withMinBehavior(ValueRangeBehavior.Behavior.ERROR)
          // set the max value to be < 100 - but effectively, clip larger values to 99.99
          // here we use the .withMax() method that takes 4 params vs. calling 4 .withMax*() methods.
-         .withMax(new BigDecimal("100.00"), false, CLIP, new BigDecimal("0.01"))
+         .withMax(new BigDecimal("100.00"), false, ValueRangeBehavior.Behavior.CLIP, new BigDecimal("0.01"))
     );
 ----
 
@@ -105,13 +105,13 @@ on the `QInstanceEnricher` instance used by the application to `false`._
 .Examples of using DynamicDefaultValueBehavior
 ----
    new QFieldMetaData("createDate", QFieldType.DATE_TIME)
-      .withBehavior(DynamicDefaultValueBehavior.CREATE_DATE),
+      .withBehavior(DynamicDefaultValueBehavior.CREATE_DATE);
 
    new QFieldMetaData("modifyDate", QFieldType.DATE_TIME)
-      .withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE),
+      .withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
 
    new QFieldMetaData("createdByUserId", QFieldType.STRING)
-      .withBehavior(DynamicDefaultValueBehavior.USER_ID),
+      .withBehavior(DynamicDefaultValueBehavior.USER_ID);
 ----
 
 ===== DateTimeDisplayValueBehavior
@@ -132,9 +132,8 @@ Or, it can be set up to get the time zone to use from another field in the table
 .Examples of using DateTimeDisplayValueBehavior
 ----
 new QTableMetaData().withName("flights").withFields(List.of(
-   ...
    new QFieldMetaData("departureTimeZoneId", QFieldType.STRING),
-   new QFieldMetaData("arrivaTimeZoneId", QFieldType.STRING),
+   new QFieldMetaData("arrivalTimeZoneId", QFieldType.STRING),
 
    new QFieldMetaData("departureTime", QFieldType.DATE_TIME)
       .withBehavior(new DateTimeDisplayValueBehavior()
@@ -142,11 +141,11 @@ new QTableMetaData().withName("flights").withFields(List.of(
 
    new QFieldMetaData("arrivalTime", QFieldType.DATE_TIME)
       .withBehavior(new DateTimeDisplayValueBehavior()
-         .withZoneIdFromFieldName("arrivalTimeZoneId"))
+         .withZoneIdFromFieldName("arrivalTimeZoneId")),
 
    new QFieldMetaData("ticketSaleStartDateTime", QFieldType.DATE_TIME)
       .withBehavior(new DateTimeDisplayValueBehavior()
-         .withDefaultZoneId("UTC"))
+         .withDefaultZoneId("UTC"))));
 ----
 
 ===== CaseChangeBehavior
@@ -159,8 +158,8 @@ and after it is read from a backend, by adding a CaseChangeBehavior to it:
 new QTableMetaData().withName("item").withFields(List.of(
 
    new QFieldMetaData("sku", QFieldType.STRING)
-      .withBehavior(CaseChangeBehavior.TO_UPPER_CASE)),
+      .withBehavior(CaseChangeBehavior.TO_UPPER_CASE),
 
    new QFieldMetaData("username", QFieldType.STRING)
-      .withBehavior(CaseChangeBehavior.TO_LOWER_CASE)),
+      .withBehavior(CaseChangeBehavior.TO_LOWER_CASE)));
 ----

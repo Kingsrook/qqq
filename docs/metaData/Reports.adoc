@@ -63,7 +63,7 @@ A single report can have multiple views, specifically, for the use-case where an
 ** *SUMMARY* views are essentially pre-computed Pivot Tables.
 That is to say, the aggregation done by a Pivot Table in a spreadsheet file is done by QQQ while generating the report.
 In this way, a non-spreadsheet report (e.g., PDF or CSV) can have summarized data, as though it were a Pivot Table in a live spreadsheet.
-** *PIVOT* views produce actual Pivot Tables, and are only supported in Excel files _(and are not supported at the time of this writing)_.
+** *PIVOT* views produce native pivot tables with an output format that supports them, including the Excel POI implementation. Define pivotTableSourceViewName to identify the source view. Formats without native pivot support do not render a native PIVOT view; use SUMMARY for computed aggregate data. See {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/model/actions/reporting/ReportFormat.java[ReportFormat capabilities].
 * `dataSourceName` - *String, Required* - Reference to a DataSource within the report, that is used to provide the rows for the view.
 * `varianceDataSourceName` - *String* - Optional reference to a second DataSource within the report, that is used in `*SUMMARY*` type views for computing variances.
 ** For example, given a Data Source with a filter that selects all sales records for a given year, a Variance Data Source may have a filter that selects the previous year, for doing comparissons.
@@ -93,15 +93,15 @@ All numeric columns are summed to produce values in the totals row.
 ** If true, then totals row is put in the view.
 ** If false, then no totals row is put in the view.
 * `includePivotSubTotals` - *boolean, default false* - For a *SUMMARY* or *PIVOT* type view, if there are more than 1 *pivotFields* being used, this field is an indication that each higher-level pivot should include sub-totals.
-** #TODO - provide example#
+** See {qqq-source-url}/qqq-backend-core/src/test/java/com/kingsrook/qqq/backend/core/actions/reporting/GenerateReportActionTest.java[report generation examples and assertions] for concrete configurations.
 * `columns` - *List of QReportField, required* - Definition of the columns to appear in the view.  See section on QReportField for details.
 * `orderByFields` - *List of QFilterOrderBy, optional* - For a *SUMMARY* or *PIVOT* type view, how to sort the rows.
 * `recordTransformStep` - *QCodeReference, subclass of `AbstractTransformStep`* - Custom code reference that can be used to transform records after they are queried from the data source, and before they are placed into the view.
 Can be used to transform or customize values, or to look up additional values to add to the report.
-** #TODO - provide example#
+** See {qqq-source-url}/qqq-backend-core/src/test/java/com/kingsrook/qqq/backend/core/actions/reporting/GenerateReportActionTest.java[report generation examples and assertions] for concrete configurations.
 * `viewCustomizer` - *QCodeReference, implementation of interface `Function<QReportView, QReportView>`* - Custom code reference that can be used to customize the report view, at runtime.
 Can be used, for example, to dynamically define the report's *columns*.
-** #TODO - provide example#
+** See {qqq-source-url}/qqq-backend-core/src/test/java/com/kingsrook/qqq/backend/core/actions/reporting/GenerateReportActionTest.java[report generation examples and assertions] for concrete configurations.
 
 ===== QReportField
 Report Fields define the fields (AKA columns) of data that appear in a report view.

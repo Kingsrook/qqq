@@ -38,8 +38,8 @@ See https://www.quartz-scheduler.org/documentation/[Quartz's documentation] for 
 qInstance.addScheduler(new SimpleSchedulerMetaData().withName("mySimpleScheduler"));
 
 qInstance.addScheduler(new QuartzSchedulerMetaData()
-   .withName("myQuartzScheduler")
-   .withProperties(myQuartzProperties);
+   .withProperties(myQuartzProperties)
+   .withName("myQuartzScheduler"));
 ----
 
 === SchedulableTypes
@@ -110,11 +110,11 @@ INSERT INTO scheduled_job_parameter (scheduled_job_id, `key`, value) VALUES
 
 === Running Scheduled Jobs
 In a server running QQQ, if you wish to start running scheduled jobs, you need to initialize
-the `QScheduleManger` singleton class, then call its `start()` method.
+the `QScheduleManager` singleton class, then call its `start()` method.
 
 Note that internally, this class will check for a system property of `qqq.scheduleManager.enabled`
 or an environment variable of `QQQ_SCHEDULE_MANAGER_ENABLED`, and if the first value found is
-`"false"`, then the scheduler will not actually run its jobs (but, in the case of the `QuartzSchdeuler`,
+`"false"`, then the scheduler will not actually run its jobs (but, in the case of the `QuartzScheduler`,
 it will be available for managing scheduled jobs).
 
 The method `QScheduleManager.initInstance` requires 2 parameters:  Your `QInstance`, and a
@@ -136,6 +136,6 @@ QProcessMetaData myProcess = new QProcessMetaData()
    .withSchedule(new QScheduleMetaData()
       .withSchedulerName("myScheduler")
       .withDescription("Run myProcess every five minutes")
-      .withRepeatSeconds(300))
+      .withRepeatSeconds(300));
 ----
 

@@ -9,6 +9,8 @@ For example, out-of-the-box, QQQ can connect to:
 * <<RDBMSBackendMetaData,RDBMS>> (Relational Database Management Systems, such as MySQL)
 * File Systems (<<S3BackendMetaData,Amazon S3>> or <<FilesystemBackendMetaData,local disk>>)
 * <<APIBackendMetaData,JSON Web APIs>> (_using a custom mapping class per-API backend_).
+* MongoDB document storage, via `MongoDBBackendMetaData`
+* PostgreSQL and SQLite through their dedicated RDBMS backend modules
 * In-Memory data stores
 
 All {link-tables} in a QQQ instance must belong to a backend. As such, any instance using tables (which would be almost all instances) must define 1 or more backends.
@@ -22,15 +24,15 @@ These objects will have some common attributes, but many different attributes ba
 * `name` - *String, Required* - Unique name for the backend within the QQQ Instance.
 * `backendType` - *String, Required* - Identifier for the backend type being defined.
 ** This attribute is typically set in the constructor of a `QBackendMetaData` subclass, and as such does not need to be set when defining a backend meta data object.
-* `enabledCapabilities` and `disabledCapability` - *Sets*, containing *Capability* enum values.
+* `enabledCapabilities` and `disabledCapabilities` - *Sets*, containing *Capability* enum values.
 Basic rules that apply to all tables in the backend, describing what actions (such as Delete, or Count) are supported in the backend.
 ** By default, QQQ assumes that a backend supports _most_ capabilities, with one exception being `QUERY_STATS`.
-** #TODO# fully explain rules here
+** When the backend disables a capability, a table-level enabled entry overrides that exclusion. Otherwise, a table-level disabled entry disables it. Avoid contradictory enabled and disabled entries. A flag cannot add an operation that the selected backend implementation does not implement.
 * `usesVariants` - *Boolean, default false* - Control whether or not the backend supports the concept of "Variants".
 ** Supporting variants means that tables within the backend can exist in alternative "variants" of the backend.
 For example, this might mean a sharded or multi-tenant database backend (perhaps a different server or database name per-client).
 Or this might mean using more than one set of credentials for connecting to an API backend - each of those credential sets would be a "variant".
-** A backend that uses variants requires additional properties to be set.  #TODO complete variant documentation#
+** Configure `backendVariantsConfig`: its variant type key, options table/filter or lookup function, and mapping from backend settings to fields on a variant record. See {qqq-source-url}/qqq-backend-core/src/main/java/com/kingsrook/qqq/backend/core/model/metadata/variants/BackendVariantsConfig.java[BackendVariantsConfig] and validate the configuration with QInstanceValidator.
 
 In a QQQ application, one will typically not create an instance of `QBackendMetaData` directly, but instead will create an instance of one of its subclasses, specific to the type of backend being used.
 The currently available list of such classes are:
@@ -119,29 +121,28 @@ To deal with this, a QQQ API Backend can define a custom class in the `actionUti
 For example, an application need not define the full method for executing a Query against an API backend (which would need to make the HTTP request (actually multiple, to deal with pagination)).
 Instead, one can just override the `buildQueryStringForGet` method, where the unique details of making the request are defined, and maybe the `jsonObjectToRecord` method, where records are mapped from the API's response to a QRecord.
 
-#todo - full reference and examples for `BaseAPIActionUtil`#
+See {qqq-source-url}/qqq-backend-module-api/src/main/java/com/kingsrook/qqq/backend/module/api/actions/BaseAPIActionUtil.java[BaseAPIActionUtil] for the complete override contract and {qqq-tree-url}/qqq-backend-module-api/src/test/java[module tests] for request/response examples.
 
 *APIBackendMetaData Properties:*
 
 * `baseUrl` - *String, Required* - Base URL for connecting to the API.
 * `contentType` - *String, Required* - value of `Content-type` header included in all requests to the API.
 * `actionUtil` - *QCodeReference, Required* - Reference to a class that extends `BaseAPIActionUtil`, where custom code for working with this API backend is defined.
-* `customValues` - *Map of String → Serializable* - Application-defined additional name=value pairs that can
+* `customValues` - *Map of String → Serializable* - Application-defined additional name=value pairs available to the backend action utility.
 * `authorizationType` - *Enum, Required* - Specifies how authentication is provided for the API.
 The value here, dictates which other authentication-related properties are required.
 Possible values are:
 ** `API_KEY_HEADER` - Uses the `apiKey` property in an HTTP header named `API-Key`.
 _In the future, when needed, QQQ will add a property, tentatively named `apiKeyHeaderName`, to allow customization of this header name._
-** `API_TOKEN` - Uses the `apiKey` property in an `Authroization` header, as: `"Token " + apiKey`
-** `BASIC_AUTH_API_KEY` - Uses the `apiKey` property, Base64-encoded, in an `Authroization` header, as `"Basic " + base64(apiKey)`
-** `BASIC_AUTH_USERNAME_PASSWORD` - Combines the `username` and `password` properties, Base64-encoded, in an `Authroization` header, as `"Basic " + base64(username + ":" + password)`
+** `API_TOKEN` - Uses the `apiKey` property in an `Authorization` header, as: `"Token " + apiKey`
+** `BASIC_AUTH_API_KEY` - Uses the `apiKey` property, Base64-encoded, in an `Authorization` header, as `"Basic " + base64(apiKey)`
+** `BASIC_AUTH_USERNAME_PASSWORD` - Combines the `username` and `password` properties, Base64-encoded, in an `Authorization` header, as `"Basic " + base64(username + ":" + password)`
 ** `OAUTH2` - Implements an OAuth2 client credentials token grant flow, using the properties `clientId` and `clientSecret`.
 By default, the id & secret are sent as query-string parameters to the API's `oauth/token` endpoint.
 Alternatively, if the meta-data has a `customValue` of `setCredentialsInHeader=true`, then the id & secret are posted in an `Authorization` header (base-64 encoded, and concatenated with `":"`).
 ** `API_KEY_QUERY_PARAM` - Uses the `apiKey` property as a query-string parameter, with its name taken from the `apiKeyQueryParamName` property.
 ** `CUSTOM` - Has a no-op implementation at the QQQ layer.
 Assumes that an override of `protected void handleCustomAuthorization(HttpRequestBase request)` be implemented in the backend's `actionUtil` class.
-This would be
 * `apiKey` - *String, Conditional* - See `authorizationType` above for details.
 * `clientId` - *String, Conditional* - See `authorizationType` above for details.
 * `clientSecret` - *String, Conditional* - See `authorizationType` above for details.

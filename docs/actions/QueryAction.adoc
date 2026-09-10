@@ -13,7 +13,7 @@ input.setTableName("orders");
 input.setFilter(new QQueryFilter()
    .withCriteria(new QFilterCriteria("total", GREATER_THAN, new BigDecimal("3.50")))
    .withOrderBy(new QFilterOrderBy("orderDate", false)));
-QueryOutput output = new QueryAction.execute(input);
+QueryOutput output = new QueryAction().execute(input);
 List<QRecord> records = output.getRecords();
 ----
 
@@ -110,27 +110,27 @@ Only used for *operators* that expect 1 value (e.g., `EQUALS` or `LESS_THAN_OR_E
 .QFilterCriteria definition examples:
 ----
 // in-line, via constructors that take (List<Serializable> values) or (Serializable... values) as 3rd arg
-new QFilterCriteria("id", IN, 1, 2, 3)
-new QFilterCriteria("name", IS_BLANK)
-new QFilterCriteria("orderNo", IN, orderNoList)
-new QFilterCriteria("state", EQUALS, "MO")
+new QFilterCriteria("id", IN, 1, 2, 3);
+new QFilterCriteria("name", IS_BLANK);
+new QFilterCriteria("orderNo", IN, orderNoList);
+new QFilterCriteria("state", EQUALS, "MO");
 
 // long-form, with fluent setters
 new QFilterCriteria()
    .withFieldName("quantity")
-   .withOpeartor(QCriteriaOperator.GREATER_THAN)
+   .withOperator(QCriteriaOperator.GREATER_THAN)
    .withValues(List.of(47));
 
 // to use otherFieldName, long-form must be used
 new QFilterCriteria()
    .withFieldName("firstName")
-   .withOpeartor(QCriteriaOperator.EQUALS)
+   .withOperator(QCriteriaOperator.EQUALS)
    .withOtherFieldName("lastName");
 
 // using otherFieldName to build a criterion that looks at two fields from two different join tables
 new QFilterCriteria()
    .withFieldName("billToCustomer.lastName")
-   .withOpeartor(QCriteriaOperator.NOT_EQUALS)
+   .withOperator(QCriteriaOperator.NOT_EQUALS)
    .withOtherFieldName("shipToCustomer.lastName");
 
 ----
@@ -145,8 +145,8 @@ new QFilterCriteria()
 .QFilterOrderBy definition examples:
 ----
 // short-form, via constructors
-new QFilterOrderBy("id") // isAscending defaults to true.
-new QFilterOrderBy("name", false)
+new QFilterOrderBy("id"); // isAscending defaults to true.
+new QFilterOrderBy("name", false);
 
 // long-form, with fluent setters
 new QFilterOrderBy()
@@ -175,19 +175,19 @@ If *true*, then the `QRecord` objects returned by this query will have values wi
 // selecting from an "orderLine" table, joined to its corresponding (parent) "order" table
 queryInput.withTableName("orderLine");
 queryInput.withQueryJoin(new QueryJoin("order").withSelect(true));
-...
+QueryOutput queryOutput = new QueryAction().execute(queryInput);
 queryOutput.getRecords().get(0).getValueBigDecimal("order.grandTotal");
 ----
 
 [source,java]
 ."V" shaped query - selecting from one parent table, and two children joined to it:
 ----
-// TODO this needs verified for accuracy, though is a reasonable starting point as-is
+// Requires the named tables and joins to be registered in the QInstance.
 // selecting from an "order" table, and two children of it, orderLine and customer
 queryInput.withTableName("order");
 queryInput.withQueryJoin(new QueryJoin("orderLine").withSelect(true));
 queryInput.withQueryJoin(new QueryJoin("customer").withSelect(true));
-...
+QueryOutput queryOutput = new QueryAction().execute(queryInput);
 QRecord joinedRecord = queryOutput.getRecords().get(0);
 joinedRecord.getValueString("orderNo");
 joinedRecord.getValueString("orderLine.sku");
@@ -197,12 +197,12 @@ joinedRecord.getValueString("customer.firstName");
 [source,java]
 ."Chain" shaped query - selecting from one parent table, a child table, and a grandchild:
 ----
-// TODO this needs verified for accuracy, though is a reasonable starting point as-is
+// Requires the named tables and joins to be registered in the QInstance.
 // selecting from an "order" table, with a "customer" child table, and an "address" sub-table
 queryInput.withTableName("order");
 queryInput.withQueryJoin(new QueryJoin("customer").withSelect(true));
-queryInput.withQueryJoin(new QueryJoin("address").withSelect(true));
-...
+queryInput.withQueryJoin(new QueryJoin("address").withBaseTableOrAlias("customer").withSelect(true));
+QueryOutput queryOutput = new QueryAction().execute(queryInput);
 QRecord joinedRecord = queryOutput.getRecords().get(0);
 joinedRecord.getValueString("orderNo");
 joinedRecord.getValueString("customer.firstName");
@@ -212,7 +212,7 @@ joinedRecord.getValueString("address.street1");
 [source,java]
 .QueryJoin usage example where two tables have two different joins between them:
 ----
-// TODO this needs verified for accuracy, though is a reasonable starting point as-is
+// Requires the named tables and joins to be registered in the QInstance.
 // here there's a "fulfillmentPlan" table, which points at the order table (many-to-one,
 // as an order's plan can change over time, and we keep old plans around).
 // This join is named:  fulfillmentPlanJoinOrder
@@ -221,14 +221,16 @@ joinedRecord.getValueString("address.street1");
 // This join is named:  orderJoinCurrentFulfillmentPlan
 
 // to select an order along with its current fulfillment plan:
-queryInput.withTableName("order");
-queryInput.withQueryJoin(new QueryJoin(instance.getJoin("orderJoinCurrentFulfillmentPlan"))
-   .withSelect(true));
+QueryInput currentPlanQuery = new QueryInput("order")
+   .withQueryJoin(new QueryJoin(instance.getJoin("orderJoinCurrentFulfillmentPlan"))
+      .withSelect(true));
 
-// to select an order, and all fulfillment plans for an order (1 or more records):
-queryInput.withTableName("order");
-queryInput.withQueryJoin(new QueryJoin(instance.getJoin("fulfillmentPlanJoinOrder"))
-   .withSelect(true));
+// alternatively, select an order and all its fulfillment plans:
+QueryInput allPlansQuery = new QueryInput("order")
+   .withQueryJoin(new QueryJoin(instance.getJoin("fulfillmentPlanJoinOrder"))
+      .withBaseTableOrAlias("order")
+      .withJoinTable("fulfillmentPlan")
+      .withSelect(true));
 ----
 
 [source,java]
@@ -239,25 +241,21 @@ queryInput.withQueryJoin(new QueryJoin(instance.getJoin("fulfillmentPlanJoinOrde
 // we must also define an alias for each of the QueryJoins
 queryInput.withTableName("order");
 queryInput.withQueryJoins(List.of(
-   new QueryJoin(instance.getJoin("orderJoinShipToCustomer")
+   new QueryJoin(instance.getJoin("orderJoinShipToCustomer"))
        .withAlias("shipToCustomer")
-       .withSelect(true)),
-   new QueryJoin(instance.getJoin("orderJoinBillToCustomer")
+       .withSelect(true),
+   new QueryJoin(instance.getJoin("orderJoinBillToCustomer"))
        .withAlias("billToCustomer")
-       .withSelect(true))));
-...
-record.getValueString("billToCustomer.firstName")
+       .withSelect(true)));
+QueryOutput queryOutput = new QueryAction().execute(queryInput);
+QRecord record = queryOutput.getRecords().get(0);
+String description = record.getValueString("billToCustomer.firstName")
    + " paid for an order, to be sent to "
-   + record.getValueString("shipToCustomer.firstName")
+   + record.getValueString("shipToCustomer.firstName");
 
 ----
 
-[source,java]
-.Implicit QueryJoin, where unambiguous and required by QQueryFilter
-----
-// TODO finish and verify
-queryInput.withTableName("order");
-----
+Implicit joins depend on an unambiguous metadata path. Prefer an explicit `QueryJoin` when selecting fields or choosing between multiple relationships. The examples above require an initialized QContext, the named tables/joins, and a caller that handles QException. Check that records exist before accessing element zero.
 
 === QueryOutput
 * `records` - *List of QRecord* - List of 0 or more records that match the query filter.
